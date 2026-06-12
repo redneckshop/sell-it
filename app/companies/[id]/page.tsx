@@ -67,9 +67,42 @@ export default async function CompanyDetailPage({ params }: PageProps) {
         fontFamily: "Arial, sans-serif",
       }}
     >
-      <Link href="/companies" style={{ color: "white" }}>
-        ← Back to Companies
-      </Link>
+      <div
+  style={{
+    display: "flex",
+    gap: "12px",
+    marginBottom: "32px",
+    flexWrap: "wrap",
+  }}
+>
+  <Link
+    href="/"
+    style={{
+      color: "black",
+      backgroundColor: "white",
+      padding: "10px 14px",
+      borderRadius: "6px",
+      textDecoration: "none",
+      fontWeight: "bold",
+    }}
+  >
+    Home
+  </Link>
+
+  <Link
+    href="/companies"
+    style={{
+      color: "black",
+      backgroundColor: "white",
+      padding: "10px 14px",
+      borderRadius: "6px",
+      textDecoration: "none",
+      fontWeight: "bold",
+    }}
+  >
+    Back to Companies
+  </Link>
+</div>
 
       {error && (
         <p style={{ color: "red", marginTop: "32px" }}>
