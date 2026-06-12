@@ -89,6 +89,20 @@ export default async function Home() {
         >
           Open Contacts
         </Link>
+
+        <Link
+          href="/tasks"
+          style={{
+            backgroundColor: "white",
+            color: "black",
+            padding: "12px 20px",
+            borderRadius: "6px",
+            textDecoration: "none",
+            fontWeight: "bold",
+          }}
+        >
+          Open Tasks
+        </Link>
       </div>
 
       {error && <p style={{ color: "red" }}>{error.message}</p>}

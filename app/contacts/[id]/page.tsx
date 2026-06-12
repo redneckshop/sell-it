@@ -16,6 +16,14 @@ type Contact = {
   } | null;
 };
 
+type Task = {
+  id: string;
+  title: string;
+  due_date: string | null;
+  priority: string;
+  status: string;
+};
+
 type PageProps = {
   params: Promise<{
     id: string;
@@ -43,6 +51,14 @@ export default async function ContactDetailPage({ params }: PageProps) {
     `)
     .eq("id", id)
     .single();
+
+  const { data: taskRows, error: tasksError } = await supabase
+    .from("tasks")
+    .select("id, title, due_date, priority, status")
+    .eq("contact_id", id)
+    .order("created_at", { ascending: false });
+
+  const tasks: Task[] = taskRows ?? [];
 
   return (
     <main
@@ -112,6 +128,42 @@ export default async function ContactDetailPage({ params }: PageProps) {
                 : "Not available"}
             </p>
           </div>
+
+          <section style={{ marginTop: "40px", maxWidth: "700px" }}>
+            <h2>Related Tasks</h2>
+
+            {tasksError && (
+              <p style={{ color: "red" }}>
+                Tasks error: {tasksError.message}
+              </p>
+            )}
+
+            {!tasksError && tasks.length === 0 && (
+              <p>No tasks linked to this contact yet.</p>
+            )}
+
+            {tasks.map((task) => (
+              <Link
+                key={task.id}
+                href={`/tasks/${task.id}`}
+                style={{
+                  display: "block",
+                  border: "1px solid #333",
+                  padding: "16px",
+                  marginBottom: "12px",
+                  borderRadius: "8px",
+                  backgroundColor: "#1a1a1a",
+                  color: "white",
+                  textDecoration: "none",
+                }}
+              >
+                <h3 style={{ marginTop: 0 }}>{task.title}</h3>
+                <p>Status: {task.status}</p>
+                <p>Priority: {task.priority}</p>
+                {task.due_date && <p>Due: {task.due_date}</p>}
+              </Link>
+            ))}
+          </section>
         </section>
       )}
     </main>

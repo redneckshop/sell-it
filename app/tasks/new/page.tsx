@@ -1,0 +1,293 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "../../lib/supabase";
+
+const WORKSPACE_ID = "ba491d9b-3b36-426d-b98a-f05b0bf271ed";
+const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
+
+type Company = {
+  id: string;
+  name: string;
+};
+
+type Contact = {
+  id: string;
+  first_name: string;
+  last_name: string | null;
+};
+
+type Profile = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+};
+
+const inputStyle: CSSProperties = {
+  display: "block",
+  width: "100%",
+  padding: "12px",
+  marginTop: "6px",
+  backgroundColor: "white",
+  color: "black",
+  border: "1px solid #555",
+  borderRadius: "6px",
+  fontSize: "16px",
+};
+
+export default function NewTaskPage() {
+  const router = useRouter();
+
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [priority, setPriority] = useState("Normal");
+  const [status, setStatus] = useState("Open");
+  const [assignedTo, setAssignedTo] = useState(USER_ID);
+  const [companyId, setCompanyId] = useState("");
+  const [contactId, setContactId] = useState("");
+
+  const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    async function loadOptions() {
+      const { data: companyRows, error: companyError } = await supabase
+        .from("companies")
+        .select("id, name")
+        .order("name", { ascending: true });
+
+      if (companyError) {
+        setErrorMessage(companyError.message);
+        return;
+      }
+
+      setCompanies(companyRows ?? []);
+
+      const { data: contactRows, error: contactError } = await supabase
+        .from("contacts")
+        .select("id, first_name, last_name")
+        .order("first_name", { ascending: true });
+
+      if (contactError) {
+        setErrorMessage(contactError.message);
+        return;
+      }
+
+      setContacts(contactRows ?? []);
+
+      const { data: profileRows, error: profileError } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .order("full_name", { ascending: true });
+
+      if (profileError) {
+        setErrorMessage(profileError.message);
+        return;
+      }
+
+      setProfiles(profileRows ?? []);
+    }
+
+    loadOptions();
+  }, []);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    setSaving(true);
+    setErrorMessage("");
+
+    const { error } = await supabase.from("tasks").insert({
+      workspace_id: WORKSPACE_ID,
+      title,
+      description: description || null,
+      due_date: dueDate || null,
+      priority,
+      status,
+      assigned_to: assignedTo || null,
+      company_id: companyId || null,
+      contact_id: contactId || null,
+      created_by: USER_ID,
+      updated_by: USER_ID,
+    });
+
+    setSaving(false);
+
+    if (error) {
+      setErrorMessage(error.message);
+      return;
+    }
+
+    router.push("/tasks");
+    router.refresh();
+  }
+
+  return (
+    <main
+      style={{
+        minHeight: "100vh",
+        backgroundColor: "#111",
+        color: "white",
+        padding: "40px",
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
+      <Link href="/tasks" style={{ color: "white" }}>
+        ← Back to Tasks
+      </Link>
+
+      <h1 style={{ marginTop: "32px" }}>Add Task</h1>
+
+      <p style={{ color: "#aaa", marginBottom: "32px" }}>
+        Create a new task inside Sell It.
+      </p>
+
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "18px",
+          maxWidth: "600px",
+        }}
+      >
+        <label>
+          Title
+          <input
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            required
+            style={inputStyle}
+          />
+        </label>
+
+        <label>
+          Description
+          <textarea
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            rows={5}
+            style={inputStyle}
+          />
+        </label>
+
+        <label>
+          Due Date
+          <input
+            type="date"
+            value={dueDate}
+            onChange={(event) => setDueDate(event.target.value)}
+            style={inputStyle}
+          />
+        </label>
+
+        <label>
+          Priority
+          <select
+            value={priority}
+            onChange={(event) => setPriority(event.target.value)}
+            style={inputStyle}
+          >
+            <option value="Low">Low</option>
+            <option value="Normal">Normal</option>
+            <option value="High">High</option>
+            <option value="Urgent">Urgent</option>
+          </select>
+        </label>
+
+        <label>
+          Status
+          <select
+            value={status}
+            onChange={(event) => setStatus(event.target.value)}
+            style={inputStyle}
+          >
+            <option value="Open">Open</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </label>
+
+        <label>
+          Assigned To
+          <select
+            value={assignedTo}
+            onChange={(event) => setAssignedTo(event.target.value)}
+            style={inputStyle}
+          >
+            <option value="">Unassigned</option>
+
+            {profiles.map((profile) => (
+              <option key={profile.id} value={profile.id}>
+                {profile.full_name || profile.email || profile.id}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Related Company
+          <select
+            value={companyId}
+            onChange={(event) => setCompanyId(event.target.value)}
+            style={inputStyle}
+          >
+            <option value="">No company selected</option>
+
+            {companies.map((company) => (
+              <option key={company.id} value={company.id}>
+                {company.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Related Contact
+          <select
+            value={contactId}
+            onChange={(event) => setContactId(event.target.value)}
+            style={inputStyle}
+          >
+            <option value="">No contact selected</option>
+
+            {contacts.map((contact) => (
+              <option key={contact.id} value={contact.id}>
+                {contact.first_name} {contact.last_name || ""}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {errorMessage && (
+          <p style={{ color: "red" }}>Error: {errorMessage}</p>
+        )}
+
+        <button
+          type="submit"
+          disabled={saving}
+          style={{
+            padding: "12px",
+            cursor: "pointer",
+            fontWeight: "bold",
+            borderRadius: "6px",
+            border: "none",
+            backgroundColor: "white",
+            color: "black",
+            fontSize: "16px",
+          }}
+        >
+          {saving ? "Saving..." : "Save Task"}
+        </button>
+      </form>
+    </main>
+  );
+}
