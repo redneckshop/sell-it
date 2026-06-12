@@ -53,20 +53,43 @@ export default async function Home() {
         <h2>{fullName}</h2>
       </div>
 
-      <Link
-        href="/companies"
+      <div
         style={{
+          display: "flex",
+          gap: "12px",
           marginTop: "32px",
-          backgroundColor: "white",
-          color: "black",
-          padding: "12px 20px",
-          borderRadius: "6px",
-          textDecoration: "none",
-          fontWeight: "bold",
+          flexWrap: "wrap",
+          justifyContent: "center",
         }}
       >
-        Open Companies
-      </Link>
+        <Link
+          href="/companies"
+          style={{
+            backgroundColor: "white",
+            color: "black",
+            padding: "12px 20px",
+            borderRadius: "6px",
+            textDecoration: "none",
+            fontWeight: "bold",
+          }}
+        >
+          Open Companies
+        </Link>
+
+        <Link
+          href="/contacts"
+          style={{
+            backgroundColor: "white",
+            color: "black",
+            padding: "12px 20px",
+            borderRadius: "6px",
+            textDecoration: "none",
+            fontWeight: "bold",
+          }}
+        >
+          Open Contacts
+        </Link>
+      </div>
 
       {error && <p style={{ color: "red" }}>{error.message}</p>}
     </main>
