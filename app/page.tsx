@@ -1,62 +1,74 @@
-import { supabase } from "../lib/supabase";
+import Link from "next/link";
+import { supabase } from "./lib/supabase";
 
-type Company = {
-  id: string;
-  name: string;
-  website: string | null;
-  phone: string | null;
-  email: string | null;
-  created_at: string | null;
-};
+export default async function Home() {
+  const { data: profiles, error } = await supabase
+    .from("profiles")
+    .select(`
+      full_name,
+      email,
+      workspaces (
+        name
+      )
+    `)
+    .limit(1);
 
-export default async function CompaniesPage() {
-  const { data, error } = await supabase
-    .from("companies")
-    .select("id, name, website, phone, email, created_at")
-    .order("created_at", { ascending: false });
-
-  const companies: Company[] = data ?? [];
+  const profile = profiles?.[0];
+  const workspaceName = profile?.workspaces?.name ?? "No workspace found";
+  const fullName = profile?.full_name ?? "No profile found";
 
   return (
     <main
       style={{
         minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
         backgroundColor: "#111",
         color: "white",
-        padding: "40px",
+        textAlign: "center",
+        padding: "24px",
         fontFamily: "Arial, sans-serif",
       }}
     >
-      <h1>Companies</h1>
+      <h1>SELL IT</h1>
 
-      <p style={{ color: "#aaa", marginBottom: "32px" }}>
-        Companies connected to this Sell It workspace.
+      <p>
+        AI-first sales operating system for capturing leads, conversations,
+        posts, screenshots, and follow-ups.
       </p>
 
-      {error && (
-        <p style={{ color: "red" }}>Database error: {error.message}</p>
-      )}
+      <div style={{ marginTop: "32px" }}>
+        <p style={{ marginBottom: "8px", color: "#aaa" }}>
+          Connected Workspace:
+        </p>
+        <h2>{workspaceName}</h2>
+      </div>
 
-      {!error && companies.length === 0 && <p>No companies found.</p>}
+      <div style={{ marginTop: "24px" }}>
+        <p style={{ marginBottom: "8px", color: "#aaa" }}>
+          Logged In As:
+        </p>
+        <h2>{fullName}</h2>
+      </div>
 
-      {companies.map((company) => (
-        <div
-          key={company.id}
-          style={{
-            border: "1px solid #333",
-            padding: "16px",
-            marginBottom: "12px",
-            borderRadius: "8px",
-            backgroundColor: "#1a1a1a",
-          }}
-        >
-          <h2 style={{ marginTop: 0 }}>{company.name}</h2>
+      <Link
+        href="/companies"
+        style={{
+          marginTop: "32px",
+          backgroundColor: "white",
+          color: "black",
+          padding: "12px 20px",
+          borderRadius: "6px",
+          textDecoration: "none",
+          fontWeight: "bold",
+        }}
+      >
+        Open Companies
+      </Link>
 
-          {company.website && <p>Website: {company.website}</p>}
-          {company.phone && <p>Phone: {company.phone}</p>}
-          {company.email && <p>Email: {company.email}</p>}
-        </div>
-      ))}
+      {error && <p style={{ color: "red" }}>{error.message}</p>}
     </main>
   );
 }
