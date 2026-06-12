@@ -17,7 +17,7 @@ export default async function Home() {
   const workspaceName = profile?.workspaces?.name ?? "No workspace found";
   const fullName = profile?.full_name ?? "No profile found";
 
-  const features = [
+    const features = [
     {
       title: "Companies",
       description: "Manage businesses, prospects, and customer organizations.",
@@ -32,6 +32,11 @@ export default async function Home() {
       title: "Tasks",
       description: "Track follow-ups, assignments, due dates, and priorities.",
       href: "/tasks",
+    },
+    {
+      title: "Activities",
+      description: "Record calls, messages, meetings, notes, outcomes, and follow-ups.",
+      href: "/activities",
     },
   ];
 

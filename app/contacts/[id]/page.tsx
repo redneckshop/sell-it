@@ -19,9 +19,17 @@ type Contact = {
 type Task = {
   id: string;
   title: string;
-  due_date: string | null;
-  priority: string;
   status: string;
+  priority: string;
+};
+
+type Activity = {
+  id: string;
+  activity_type: string;
+  activity_date: string;
+  subject: string;
+  outcome: string | null;
+  follow_up_needed: boolean;
 };
 
 type PageProps = {
@@ -52,13 +60,20 @@ export default async function ContactDetailPage({ params }: PageProps) {
     .eq("id", id)
     .single();
 
-  const { data: taskRows, error: tasksError } = await supabase
+  const { data: taskRows } = await supabase
     .from("tasks")
-    .select("id, title, due_date, priority, status")
+    .select("id, title, status, priority")
     .eq("contact_id", id)
     .order("created_at", { ascending: false });
 
+  const { data: activityRows } = await supabase
+    .from("activities")
+    .select("id, activity_type, activity_date, subject, outcome, follow_up_needed")
+    .eq("contact_id", id)
+    .order("activity_date", { ascending: false });
+
   const tasks: Task[] = taskRows ?? [];
+  const activities: Activity[] = activityRows ?? [];
 
   return (
     <main
@@ -71,50 +86,46 @@ export default async function ContactDetailPage({ params }: PageProps) {
       }}
     >
       <div
-  style={{
-    display: "flex",
-    gap: "12px",
-    marginBottom: "32px",
-    flexWrap: "wrap",
-  }}
->
-  <Link
-    href="/"
-    style={{
-      color: "black",
-      backgroundColor: "white",
-      padding: "10px 14px",
-      borderRadius: "6px",
-      textDecoration: "none",
-      fontWeight: "bold",
-    }}
-  >
-    Home
-  </Link>
+        style={{
+          display: "flex",
+          gap: "12px",
+          marginBottom: "32px",
+          flexWrap: "wrap",
+        }}
+      >
+        <Link
+          href="/"
+          style={{
+            color: "black",
+            backgroundColor: "white",
+            padding: "10px 14px",
+            borderRadius: "6px",
+            textDecoration: "none",
+            fontWeight: "bold",
+          }}
+        >
+          Home
+        </Link>
 
-  <Link
-    href="/contacts"
-    style={{
-      color: "black",
-      backgroundColor: "white",
-      padding: "10px 14px",
-      borderRadius: "6px",
-      textDecoration: "none",
-      fontWeight: "bold",
-    }}
-  >
-    Back to Contacts
-  </Link>
-</div>
+        <Link
+          href="/contacts"
+          style={{
+            color: "black",
+            backgroundColor: "white",
+            padding: "10px 14px",
+            borderRadius: "6px",
+            textDecoration: "none",
+            fontWeight: "bold",
+          }}
+        >
+          Back to Contacts
+        </Link>
+      </div>
 
-      {error && (
-        <p style={{ color: "red", marginTop: "32px" }}>
-          Database error: {error.message}
-        </p>
-      )}
+      {error && <p style={{ color: "red" }}>Database error: {error.message}</p>}
 
       {contact && (
-        <section style={{ marginTop: "32px" }}>
+        <>
           <h1>
             {contact.first_name} {contact.last_name || ""}
           </h1>
@@ -125,11 +136,20 @@ export default async function ContactDetailPage({ params }: PageProps) {
               padding: "20px",
               borderRadius: "8px",
               backgroundColor: "#1a1a1a",
-              maxWidth: "600px",
+              maxWidth: "650px",
+              marginBottom: "40px",
             }}
           >
             <p>
               <strong>Title:</strong> {contact.title || "Not provided"}
+            </p>
+
+            <p>
+              <strong>Email:</strong> {contact.email || "Not provided"}
+            </p>
+
+            <p>
+              <strong>Phone:</strong> {contact.phone || "Not provided"}
             </p>
 
             <p>
@@ -147,14 +167,6 @@ export default async function ContactDetailPage({ params }: PageProps) {
             </p>
 
             <p>
-              <strong>Email:</strong> {contact.email || "Not provided"}
-            </p>
-
-            <p>
-              <strong>Phone:</strong> {contact.phone || "Not provided"}
-            </p>
-
-            <p>
               <strong>Created:</strong>{" "}
               {contact.created_at
                 ? new Date(contact.created_at).toLocaleString()
@@ -162,42 +174,70 @@ export default async function ContactDetailPage({ params }: PageProps) {
             </p>
           </div>
 
-          <section style={{ marginTop: "40px", maxWidth: "700px" }}>
-            <h2>Related Tasks</h2>
+          <h2>Related Tasks</h2>
 
-            {tasksError && (
-              <p style={{ color: "red" }}>
-                Tasks error: {tasksError.message}
+          {tasks.length === 0 && <p>No tasks linked to this contact.</p>}
+
+          {tasks.map((task) => (
+            <Link
+              key={task.id}
+              href={`/tasks/${task.id}`}
+              style={{
+                display: "block",
+                border: "1px solid #333",
+                padding: "16px",
+                marginBottom: "12px",
+                borderRadius: "8px",
+                backgroundColor: "#1a1a1a",
+                color: "white",
+                textDecoration: "none",
+                maxWidth: "750px",
+              }}
+            >
+              <h3 style={{ marginTop: 0 }}>{task.title}</h3>
+              <p>Status: {task.status}</p>
+              <p>Priority: {task.priority}</p>
+            </Link>
+          ))}
+
+          <h2 style={{ marginTop: "40px" }}>Related Activities</h2>
+
+          {activities.length === 0 && (
+            <p>No activities linked to this contact.</p>
+          )}
+
+          {activities.map((activity) => (
+            <Link
+              key={activity.id}
+              href={`/activities/${activity.id}`}
+              style={{
+                display: "block",
+                border: "1px solid #333",
+                padding: "16px",
+                marginBottom: "12px",
+                borderRadius: "8px",
+                backgroundColor: "#1a1a1a",
+                color: "white",
+                textDecoration: "none",
+                maxWidth: "750px",
+              }}
+            >
+              <h3 style={{ marginTop: 0 }}>{activity.subject}</h3>
+
+              <p>Type: {activity.activity_type}</p>
+
+              <p>
+                Date: {new Date(activity.activity_date).toLocaleString()}
               </p>
-            )}
 
-            {!tasksError && tasks.length === 0 && (
-              <p>No tasks linked to this contact yet.</p>
-            )}
+              {activity.outcome && <p>Outcome: {activity.outcome}</p>}
 
-            {tasks.map((task) => (
-              <Link
-                key={task.id}
-                href={`/tasks/${task.id}`}
-                style={{
-                  display: "block",
-                  border: "1px solid #333",
-                  padding: "16px",
-                  marginBottom: "12px",
-                  borderRadius: "8px",
-                  backgroundColor: "#1a1a1a",
-                  color: "white",
-                  textDecoration: "none",
-                }}
-              >
-                <h3 style={{ marginTop: 0 }}>{task.title}</h3>
-                <p>Status: {task.status}</p>
-                <p>Priority: {task.priority}</p>
-                {task.due_date && <p>Due: {task.due_date}</p>}
-              </Link>
-            ))}
-          </section>
-        </section>
+              {activity.follow_up_needed && (
+                <p style={{ fontWeight: "bold" }}>Follow Up Needed</p>
+              )}
+            </Link>
+          ))}
+        </>
       )}
     </main>
   );
