@@ -12,7 +12,10 @@ export default function Home() {
       }}
     >
       <h1>SELL IT</h1>
-      <p>Buy. Sell. Trade. Local.</p>
+<p>
+  AI-first sales operating system for capturing leads,
+  conversations, posts, screenshots, and follow-ups.
+</p>
     </main>
   );
 }
