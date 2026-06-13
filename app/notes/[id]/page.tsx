@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
+import AttachmentsSection from "../../components/AttachmentsSection";
 
 type Note = {
   id: string;
+  workspace_id: string;
   title: string;
   body: string | null;
   source: string | null;
@@ -37,6 +39,7 @@ export default async function NoteDetailPage({ params }: PageProps) {
     .from("notes")
     .select(`
       id,
+      workspace_id,
       title,
       body,
       source,
@@ -124,6 +127,7 @@ export default async function NoteDetailPage({ params }: PageProps) {
               borderRadius: "8px",
               backgroundColor: "#1a1a1a",
               maxWidth: "850px",
+              marginBottom: "40px",
             }}
           >
             <p>
@@ -207,6 +211,12 @@ export default async function NoteDetailPage({ params }: PageProps) {
                 : "Not available"}
             </p>
           </div>
+
+          <AttachmentsSection
+            workspaceId={note.workspace_id}
+            relationColumn="related_note_id"
+            relationId={note.id}
+          />
         </section>
       )}
     </main>
