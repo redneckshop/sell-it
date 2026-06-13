@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
+import AttachmentsSection from "../../components/AttachmentsSection";
 
 type Activity = {
   id: string;
+  workspace_id: string;
   activity_type: string;
   activity_date: string;
   subject: string;
@@ -42,6 +44,7 @@ export default async function ActivityDetailPage({ params }: PageProps) {
     .from("activities")
     .select(`
       id,
+      workspace_id,
       activity_type,
       activity_date,
       subject,
@@ -134,6 +137,7 @@ export default async function ActivityDetailPage({ params }: PageProps) {
               borderRadius: "8px",
               backgroundColor: "#1a1a1a",
               maxWidth: "750px",
+              marginBottom: "40px",
             }}
           >
             <p>
@@ -220,6 +224,12 @@ export default async function ActivityDetailPage({ params }: PageProps) {
                 : "Not available"}
             </p>
           </div>
+
+          <AttachmentsSection
+            workspaceId={activity.workspace_id}
+            relationColumn="related_activity_id"
+            relationId={activity.id}
+          />
         </section>
       )}
     </main>
