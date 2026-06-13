@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
+import AttachmentsSection from "../../components/AttachmentsSection";
 
 type Task = {
   id: string;
+  workspace_id: string;
   title: string;
   description: string | null;
   due_date: string | null;
@@ -41,6 +43,7 @@ export default async function TaskDetailPage({ params }: PageProps) {
     .from("tasks")
     .select(`
       id,
+      workspace_id,
       title,
       description,
       due_date,
@@ -79,41 +82,41 @@ export default async function TaskDetailPage({ params }: PageProps) {
       }}
     >
       <div
-  style={{
-    display: "flex",
-    gap: "12px",
-    marginBottom: "32px",
-    flexWrap: "wrap",
-  }}
->
-  <Link
-    href="/"
-    style={{
-      color: "black",
-      backgroundColor: "white",
-      padding: "10px 14px",
-      borderRadius: "6px",
-      textDecoration: "none",
-      fontWeight: "bold",
-    }}
-  >
-    Home
-  </Link>
+        style={{
+          display: "flex",
+          gap: "12px",
+          marginBottom: "32px",
+          flexWrap: "wrap",
+        }}
+      >
+        <Link
+          href="/"
+          style={{
+            color: "black",
+            backgroundColor: "white",
+            padding: "10px 14px",
+            borderRadius: "6px",
+            textDecoration: "none",
+            fontWeight: "bold",
+          }}
+        >
+          Home
+        </Link>
 
-  <Link
-    href="/tasks"
-    style={{
-      color: "black",
-      backgroundColor: "white",
-      padding: "10px 14px",
-      borderRadius: "6px",
-      textDecoration: "none",
-      fontWeight: "bold",
-    }}
-  >
-    Back to Tasks
-  </Link>
-</div>
+        <Link
+          href="/tasks"
+          style={{
+            color: "black",
+            backgroundColor: "white",
+            padding: "10px 14px",
+            borderRadius: "6px",
+            textDecoration: "none",
+            fontWeight: "bold",
+          }}
+        >
+          Back to Tasks
+        </Link>
+      </div>
 
       {error && (
         <p style={{ color: "red", marginTop: "32px" }}>
@@ -132,6 +135,7 @@ export default async function TaskDetailPage({ params }: PageProps) {
               borderRadius: "8px",
               backgroundColor: "#1a1a1a",
               maxWidth: "700px",
+              marginBottom: "40px",
             }}
           >
             <p>
@@ -196,6 +200,12 @@ export default async function TaskDetailPage({ params }: PageProps) {
                 : "Not available"}
             </p>
           </div>
+
+          <AttachmentsSection
+            workspaceId={task.workspace_id}
+            relationColumn="related_task_id"
+            relationId={task.id}
+          />
         </section>
       )}
     </main>
