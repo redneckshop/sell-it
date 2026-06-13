@@ -26,6 +26,8 @@ export default function NewCompanyPage() {
   const [website, setWebsite] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [operatingRegions, setOperatingRegions] = useState("");
+  const [assetsEquipment, setAssetsEquipment] = useState("");
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -41,6 +43,8 @@ export default function NewCompanyPage() {
       website: website || null,
       phone: phone || null,
       email: email || null,
+      operating_regions: operatingRegions || null,
+      assets_equipment: assetsEquipment || null,
       created_by: USER_ID,
       updated_by: USER_ID,
     });
@@ -78,7 +82,7 @@ export default function NewCompanyPage() {
           display: "flex",
           flexDirection: "column",
           gap: "18px",
-          maxWidth: "500px",
+          maxWidth: "600px",
         }}
       >
         <label>
@@ -115,6 +119,28 @@ export default function NewCompanyPage() {
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
+            style={inputStyle}
+          />
+        </label>
+
+        <label>
+          Operating Regions
+          <textarea
+            value={operatingRegions}
+            onChange={(event) => setOperatingRegions(event.target.value)}
+            placeholder="Example: Dickinson, North Dakota; Sparks, Nevada; Northern Idaho"
+            rows={4}
+            style={inputStyle}
+          />
+        </label>
+
+        <label>
+          Assets / Equipment
+          <textarea
+            value={assetsEquipment}
+            onChange={(event) => setAssetsEquipment(event.target.value)}
+            placeholder="Example: End dumps, belly dumps, side dumps, lowboys"
+            rows={4}
             style={inputStyle}
           />
         </label>
