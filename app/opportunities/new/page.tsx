@@ -43,6 +43,8 @@ export default function NewOpportunityPage() {
   const [companyId, setCompanyId] = useState("");
   const [primaryContactId, setPrimaryContactId] = useState("");
   const [opportunityType, setOpportunityType] = useState("Alpha Tester");
+  const [opportunityTypeOtherDescription, setOpportunityTypeOtherDescription] =
+    useState("");
   const [stage, setStage] = useState("New Lead");
   const [leadTemperature, setLeadTemperature] = useState("Warm");
   const [estimatedDriverCount, setEstimatedDriverCount] = useState("");
@@ -96,6 +98,10 @@ export default function NewOpportunityPage() {
       company_id: companyId,
       primary_contact_id: primaryContactId || null,
       opportunity_type: opportunityType,
+      opportunity_type_other_description:
+        opportunityType === "Other"
+          ? opportunityTypeOtherDescription || null
+          : null,
       stage,
       lead_temperature: leadTemperature,
       estimated_driver_count: estimatedDriverCount
@@ -124,7 +130,8 @@ export default function NewOpportunityPage() {
 
   const filteredContacts = companyId
     ? contacts.filter(
-        (contact) => contact.company_id === companyId || contact.company_id === null
+        (contact) =>
+          contact.company_id === companyId || contact.company_id === null
       )
     : contacts;
 
@@ -243,7 +250,13 @@ export default function NewOpportunityPage() {
           Opportunity Type
           <select
             value={opportunityType}
-            onChange={(event) => setOpportunityType(event.target.value)}
+            onChange={(event) => {
+              setOpportunityType(event.target.value);
+
+              if (event.target.value !== "Other") {
+                setOpportunityTypeOtherDescription("");
+              }
+            }}
             style={inputStyle}
           >
             <option value="Alpha Tester">Alpha Tester</option>
@@ -255,6 +268,21 @@ export default function NewOpportunityPage() {
             <option value="Other">Other</option>
           </select>
         </label>
+
+        {opportunityType === "Other" && (
+          <label>
+            Other Type Description
+            <textarea
+              value={opportunityTypeOtherDescription}
+              onChange={(event) =>
+                setOpportunityTypeOtherDescription(event.target.value)
+              }
+              rows={4}
+              placeholder="Explain what kind of opportunity this is."
+              style={inputStyle}
+            />
+          </label>
+        )}
 
         <label>
           Stage
