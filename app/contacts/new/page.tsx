@@ -36,6 +36,7 @@ export default function NewContactPage() {
   const [companyId, setCompanyId] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [notes, setNotes] = useState("");
 
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -72,6 +73,7 @@ export default function NewContactPage() {
       title: title || null,
       email: email || null,
       phone: phone || null,
+      notes: notes || null,
       created_by: USER_ID,
       updated_by: USER_ID,
     });
@@ -97,14 +99,26 @@ export default function NewContactPage() {
         fontFamily: "Arial, sans-serif",
       }}
     >
-      <Link href="/contacts" style={{ color: "white" }}>
-        ← Back to Contacts
+      <Link
+        href="/contacts"
+        style={{
+          color: "black",
+          backgroundColor: "white",
+          padding: "10px 14px",
+          borderRadius: "6px",
+          textDecoration: "none",
+          fontWeight: "bold",
+          display: "inline-block",
+          marginBottom: "32px",
+        }}
+      >
+        Back to Contacts
       </Link>
 
-      <h1 style={{ marginTop: "32px" }}>Add Contact</h1>
+      <h1>Add Contact</h1>
 
       <p style={{ color: "#aaa", marginBottom: "32px" }}>
-        Create a new contact inside Sell It.
+        Create a new person connected to a company or sales follow-up.
       </p>
 
       <form
@@ -113,7 +127,7 @@ export default function NewContactPage() {
           display: "flex",
           flexDirection: "column",
           gap: "18px",
-          maxWidth: "500px",
+          maxWidth: "600px",
         }}
       >
         <label>
@@ -140,6 +154,7 @@ export default function NewContactPage() {
           <input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
+            placeholder="Owner, dispatcher, truck boss, estimator, etc."
             style={inputStyle}
           />
         </label>
@@ -152,7 +167,6 @@ export default function NewContactPage() {
             style={inputStyle}
           >
             <option value="">No company selected</option>
-
             {companies.map((company) => (
               <option key={company.id} value={company.id}>
                 {company.name}
@@ -176,6 +190,17 @@ export default function NewContactPage() {
           <input
             value={phone}
             onChange={(event) => setPhone(event.target.value)}
+            style={inputStyle}
+          />
+        </label>
+
+        <label>
+          Contact Notes
+          <textarea
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+            placeholder="Example: Mike is the owner but said I need to talk to Frank. Frank is the truck boss and is available Thursdays."
+            rows={5}
             style={inputStyle}
           />
         </label>
