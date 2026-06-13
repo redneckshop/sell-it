@@ -26,6 +26,24 @@ type Opportunity = {
   } | null;
 };
 
+type Note = {
+  id: string;
+  title: string;
+  body: string | null;
+  source: string | null;
+  tags: string | null;
+  created_at: string | null;
+  company: {
+    id: string;
+    name: string;
+  } | null;
+  contact: {
+    id: string;
+    first_name: string;
+    last_name: string | null;
+  } | null;
+};
+
 type PageProps = {
   params: Promise<{
     id: string;
@@ -63,6 +81,30 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
     `)
     .eq("id", id)
     .single();
+
+  const { data: noteRows } = await supabase
+    .from("notes")
+    .select(`
+      id,
+      title,
+      body,
+      source,
+      tags,
+      created_at,
+      company:companies!notes_company_id_fkey (
+        id,
+        name
+      ),
+      contact:contacts!notes_contact_id_fkey (
+        id,
+        first_name,
+        last_name
+      )
+    `)
+    .eq("opportunity_id", id)
+    .order("created_at", { ascending: false });
+
+  const relatedNotes: Note[] = noteRows ?? [];
 
   return (
     <main
@@ -128,6 +170,7 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
               borderRadius: "8px",
               backgroundColor: "#1a1a1a",
               maxWidth: "800px",
+              marginBottom: "40px",
             }}
           >
             <p>
@@ -217,6 +260,56 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
                 : "Not available"}
             </p>
           </div>
+
+          <h2>Related Notes</h2>
+
+          {relatedNotes.length === 0 && (
+            <p>No notes linked to this opportunity.</p>
+          )}
+
+          {relatedNotes.map((note) => (
+            <Link
+              key={note.id}
+              href={`/notes/${note.id}`}
+              style={{
+                display: "block",
+                border: "1px solid #333",
+                padding: "16px",
+                marginBottom: "12px",
+                borderRadius: "8px",
+                backgroundColor: "#1a1a1a",
+                color: "white",
+                textDecoration: "none",
+                maxWidth: "750px",
+              }}
+            >
+              <h3 style={{ marginTop: 0 }}>{note.title}</h3>
+
+              {note.body && (
+                <p style={{ color: "#aaa" }}>
+                  {note.body.length > 160
+                    ? `${note.body.slice(0, 160)}...`
+                    : note.body}
+                </p>
+              )}
+
+              {note.company && <p>Company: {note.company.name}</p>}
+
+              {note.contact && (
+                <p>
+                  Contact: {note.contact.first_name}{" "}
+                  {note.contact.last_name || ""}
+                </p>
+              )}
+
+              {note.source && <p>Source: {note.source}</p>}
+              {note.tags && <p>Tags: {note.tags}</p>}
+
+              {note.created_at && (
+                <p>Created: {new Date(note.created_at).toLocaleString()}</p>
+              )}
+            </Link>
+          ))}
         </section>
       )}
     </main>

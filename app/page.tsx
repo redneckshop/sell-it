@@ -149,6 +149,10 @@ export default async function Home() {
       title: "+ Opportunity",
       href: "/opportunities/new",
     },
+    {
+      title: "+ Note",
+      href: "/notes/new",
+    },
   ];
 
   const features = [
@@ -179,6 +183,12 @@ export default async function Home() {
         "Manage the sales pipeline, stages, hot leads, and expected value.",
       href: "/opportunities",
     },
+    {
+      title: "Notes",
+      description:
+        "Capture written notes connected to companies, contacts, and opportunities.",
+      href: "/notes",
+    },
   ];
 
   return (
@@ -202,7 +212,7 @@ export default async function Home() {
 
           <p style={{ color: "#aaa", fontSize: "18px", lineHeight: "1.5" }}>
             Command center for sales follow-ups, leads, contacts, tasks,
-            opportunities, and activity.
+            opportunities, notes, and activity.
           </p>
         </div>
 
