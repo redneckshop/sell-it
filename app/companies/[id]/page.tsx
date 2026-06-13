@@ -35,6 +35,22 @@ type Activity = {
   follow_up_needed: boolean;
 };
 
+type Opportunity = {
+  id: string;
+  name: string;
+  opportunity_type: string;
+  stage: string;
+  lead_temperature: string;
+  estimated_monthly_value: number | null;
+  expected_close_date: string | null;
+  next_step: string | null;
+  primary_contact: {
+    id: string;
+    first_name: string;
+    last_name: string | null;
+  } | null;
+};
+
 type PageProps = {
   params: Promise<{
     id: string;
@@ -68,9 +84,30 @@ export default async function CompanyDetailPage({ params }: PageProps) {
     .eq("company_id", id)
     .order("activity_date", { ascending: false });
 
+  const { data: opportunityRows } = await supabase
+    .from("opportunities")
+    .select(`
+      id,
+      name,
+      opportunity_type,
+      stage,
+      lead_temperature,
+      estimated_monthly_value,
+      expected_close_date,
+      next_step,
+      primary_contact:contacts!opportunities_primary_contact_id_fkey (
+        id,
+        first_name,
+        last_name
+      )
+    `)
+    .eq("company_id", id)
+    .order("created_at", { ascending: false });
+
   const contacts: Contact[] = contactRows ?? [];
   const tasks: Task[] = taskRows ?? [];
   const activities: Activity[] = activityRows ?? [];
+  const opportunities: Opportunity[] = opportunityRows ?? [];
 
   return (
     <main
@@ -155,7 +192,59 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             </p>
           </div>
 
-          <h2>Related Contacts</h2>
+          <h2>Related Opportunities</h2>
+
+          {opportunities.length === 0 && (
+            <p>No opportunities linked to this company.</p>
+          )}
+
+          {opportunities.map((opportunity) => (
+            <Link
+              key={opportunity.id}
+              href={`/opportunities/${opportunity.id}`}
+              style={{
+                display: "block",
+                border: "1px solid #333",
+                padding: "16px",
+                marginBottom: "12px",
+                borderRadius: "8px",
+                backgroundColor: "#1a1a1a",
+                color: "white",
+                textDecoration: "none",
+                maxWidth: "750px",
+              }}
+            >
+              <h3 style={{ marginTop: 0 }}>{opportunity.name}</h3>
+
+              <p>Type: {opportunity.opportunity_type}</p>
+              <p>Stage: {opportunity.stage}</p>
+              <p>Lead Temperature: {opportunity.lead_temperature}</p>
+
+              {opportunity.primary_contact && (
+                <p>
+                  Primary Contact: {opportunity.primary_contact.first_name}{" "}
+                  {opportunity.primary_contact.last_name || ""}
+                </p>
+              )}
+
+              {opportunity.estimated_monthly_value !== null && (
+                <p>
+                  Estimated Monthly Value: $
+                  {Number(
+                    opportunity.estimated_monthly_value
+                  ).toLocaleString()}
+                </p>
+              )}
+
+              {opportunity.expected_close_date && (
+                <p>Expected Close Date: {opportunity.expected_close_date}</p>
+              )}
+
+              {opportunity.next_step && <p>Next Step: {opportunity.next_step}</p>}
+            </Link>
+          ))}
+
+          <h2 style={{ marginTop: "40px" }}>Related Contacts</h2>
 
           {contacts.length === 0 && <p>No contacts linked to this company.</p>}
 

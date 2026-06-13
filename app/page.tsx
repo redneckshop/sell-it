@@ -18,10 +18,16 @@ type Task = {
   due_date: string | null;
 };
 
-type Company = {
+type HotOpportunity = {
   id: string;
   name: string;
-  lead_temperature: string | null;
+  stage: string;
+  lead_temperature: string;
+  estimated_monthly_value: number | null;
+  companies: {
+    id: string;
+    name: string;
+  } | null;
 };
 
 type Activity = {
@@ -94,14 +100,25 @@ export default async function Home() {
     (task) => task.due_date && task.due_date < today
   );
 
-  const { data: hotLeadRows, error: hotLeadError } = await supabase
-    .from("companies")
-    .select("id, name, lead_temperature")
-    .eq("lead_temperature", "Hot")
-    .order("name", { ascending: true })
-    .limit(5);
+  const { data: hotOpportunityRows, error: hotOpportunityError } =
+    await supabase
+      .from("opportunities")
+      .select(`
+        id,
+        name,
+        stage,
+        lead_temperature,
+        estimated_monthly_value,
+        companies (
+          id,
+          name
+        )
+      `)
+      .eq("lead_temperature", "Hot")
+      .order("created_at", { ascending: false })
+      .limit(5);
 
-  const hotLeads: Company[] = hotLeadRows ?? [];
+  const hotOpportunities: HotOpportunity[] = hotOpportunityRows ?? [];
 
   const { data: activityRows, error: activityError } = await supabase
     .from("activities")
@@ -128,6 +145,10 @@ export default async function Home() {
       title: "+ Activity",
       href: "/activities/new",
     },
+    {
+      title: "+ Opportunity",
+      href: "/opportunities/new",
+    },
   ];
 
   const features = [
@@ -152,6 +173,12 @@ export default async function Home() {
         "Record calls, messages, meetings, notes, outcomes, and follow-ups.",
       href: "/activities",
     },
+    {
+      title: "Opportunities",
+      description:
+        "Manage the sales pipeline, stages, hot leads, and expected value.",
+      href: "/opportunities",
+    },
   ];
 
   return (
@@ -174,7 +201,8 @@ export default async function Home() {
           <h1 style={{ fontSize: "48px", marginBottom: "12px" }}>SELL IT</h1>
 
           <p style={{ color: "#aaa", fontSize: "18px", lineHeight: "1.5" }}>
-            Command center for sales follow-ups, leads, contacts, tasks, and activity.
+            Command center for sales follow-ups, leads, contacts, tasks,
+            opportunities, and activity.
           </p>
         </div>
 
@@ -265,17 +293,17 @@ export default async function Home() {
             <p style={{ color: "#aaa", marginTop: 0 }}>Hot Leads</p>
 
             <h2 style={{ fontSize: "42px", margin: "8px 0" }}>
-              {hotLeads.length}
+              {hotOpportunities.length}
             </h2>
 
-            {hotLeads.length === 0 && (
-              <p style={{ color: "#aaa" }}>No hot leads yet.</p>
+            {hotOpportunities.length === 0 && (
+              <p style={{ color: "#aaa" }}>No hot opportunities yet.</p>
             )}
 
-            {hotLeads.map((company) => (
+            {hotOpportunities.map((opportunity) => (
               <Link
-                key={company.id}
-                href={`/companies/${company.id}`}
+                key={opportunity.id}
+                href={`/opportunities/${opportunity.id}`}
                 style={{
                   display: "block",
                   color: "white",
@@ -283,7 +311,10 @@ export default async function Home() {
                   marginBottom: "8px",
                 }}
               >
-                {company.name}
+                {opportunity.name}
+                {opportunity.companies?.name
+                  ? ` — ${opportunity.companies.name}`
+                  : ""}
               </Link>
             ))}
           </div>
@@ -392,9 +423,9 @@ export default async function Home() {
           </p>
         )}
 
-        {hotLeadError && (
+        {hotOpportunityError && (
           <p style={{ color: "red", marginTop: "32px" }}>
-            Hot lead error: {hotLeadError.message}
+            Hot opportunity error: {hotOpportunityError.message}
           </p>
         )}
 
