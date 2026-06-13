@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
+import AttachmentsSection from "../../components/AttachmentsSection";
 
 type Contact = {
   id: string;
+  workspace_id: string;
   first_name: string;
   last_name: string | null;
   email: string | null;
   phone: string | null;
   title: string | null;
+  notes: string | null;
   company_id: string | null;
   created_at: string | null;
   companies: {
@@ -77,11 +80,13 @@ export default async function ContactDetailPage({ params }: PageProps) {
     .from("contacts")
     .select(`
       id,
+      workspace_id,
       first_name,
       last_name,
       email,
       phone,
       title,
+      notes,
       company_id,
       created_at,
       companies (
@@ -241,6 +246,11 @@ export default async function ContactDetailPage({ params }: PageProps) {
             </p>
 
             <p>
+              <strong>Contact Notes:</strong>{" "}
+              {contact.notes || "Not provided"}
+            </p>
+
+            <p>
               <strong>Created:</strong>{" "}
               {contact.created_at
                 ? new Date(contact.created_at).toLocaleString()
@@ -248,7 +258,13 @@ export default async function ContactDetailPage({ params }: PageProps) {
             </p>
           </div>
 
-          <h2>Related Opportunities</h2>
+          <AttachmentsSection
+            workspaceId={contact.workspace_id}
+            relationColumn="related_contact_id"
+            relationId={contact.id}
+          />
+
+          <h2 style={{ marginTop: "40px" }}>Related Opportunities</h2>
 
           {opportunities.length === 0 && (
             <p>No opportunities linked to this contact.</p>
