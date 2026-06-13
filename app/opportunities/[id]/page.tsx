@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
+import AttachmentsSection from "../../components/AttachmentsSection";
 
 type Opportunity = {
   id: string;
+  workspace_id: string;
   name: string;
   opportunity_type: string;
+  opportunity_type_other_description: string | null;
   stage: string;
   lead_temperature: string;
   estimated_driver_count: number | null;
@@ -57,8 +60,10 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
     .from("opportunities")
     .select(`
       id,
+      workspace_id,
       name,
       opportunity_type,
+      opportunity_type_other_description,
       stage,
       lead_temperature,
       estimated_driver_count,
@@ -207,6 +212,19 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
               {opportunity.opportunity_type}
             </p>
 
+            {opportunity.opportunity_type === "Other" && (
+              <>
+                <p>
+                  <strong>Other Type Description:</strong>
+                </p>
+
+                <p style={{ whiteSpace: "pre-wrap" }}>
+                  {opportunity.opportunity_type_other_description ||
+                    "No other type description provided."}
+                </p>
+              </>
+            )}
+
             <p>
               <strong>Stage:</strong> {opportunity.stage}
             </p>
@@ -261,7 +279,13 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
             </p>
           </div>
 
-          <h2>Related Notes</h2>
+          <AttachmentsSection
+            workspaceId={opportunity.workspace_id}
+            relationColumn="related_opportunity_id"
+            relationId={opportunity.id}
+          />
+
+          <h2 style={{ marginTop: "40px" }}>Related Notes</h2>
 
           {relatedNotes.length === 0 && (
             <p>No notes linked to this opportunity.</p>
