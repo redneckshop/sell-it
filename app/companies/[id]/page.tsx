@@ -1,12 +1,16 @@
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
+import AttachmentsSection from "../../components/AttachmentsSection";
 
 type Company = {
   id: string;
+  workspace_id: string;
   name: string;
   website: string | null;
   phone: string | null;
   email: string | null;
+  operating_regions: string | null;
+  assets_equipment: string | null;
   created_at: string | null;
 };
 
@@ -80,7 +84,9 @@ export default async function CompanyDetailPage({ params }: PageProps) {
 
   const { data: company, error } = await supabase
     .from("companies")
-    .select("id, name, website, phone, email, created_at")
+    .select(
+      "id, workspace_id, name, website, phone, email, operating_regions, assets_equipment, created_at"
+    )
     .eq("id", id)
     .single();
 
@@ -226,6 +232,16 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             </p>
 
             <p>
+              <strong>Operating Regions:</strong>{" "}
+              {company.operating_regions || "Not provided"}
+            </p>
+
+            <p>
+              <strong>Assets / Equipment:</strong>{" "}
+              {company.assets_equipment || "Not provided"}
+            </p>
+
+            <p>
               <strong>Created:</strong>{" "}
               {company.created_at
                 ? new Date(company.created_at).toLocaleString()
@@ -233,7 +249,13 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             </p>
           </div>
 
-          <h2>Related Opportunities</h2>
+          <AttachmentsSection
+            workspaceId={company.workspace_id}
+            relationColumn="related_company_id"
+            relationId={company.id}
+          />
+
+          <h2 style={{ marginTop: "40px" }}>Related Opportunities</h2>
 
           {opportunities.length === 0 && (
             <p>No opportunities linked to this company.</p>
