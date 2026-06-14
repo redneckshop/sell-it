@@ -19,6 +19,12 @@ type Contact = {
   last_name: string | null;
 };
 
+type Opportunity = {
+  id: string;
+  name: string;
+  company_id: string | null;
+};
+
 type Profile = {
   id: string;
   full_name: string | null;
@@ -35,6 +41,7 @@ const inputStyle: CSSProperties = {
   border: "1px solid #555",
   borderRadius: "6px",
   fontSize: "16px",
+  boxSizing: "border-box",
 };
 
 export default function NewTaskPage() {
@@ -42,6 +49,7 @@ export default function NewTaskPage() {
 
   const [companies, setCompanies] = useState<Company[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
 
   const [title, setTitle] = useState("");
@@ -52,6 +60,7 @@ export default function NewTaskPage() {
   const [assignedTo, setAssignedTo] = useState(USER_ID);
   const [companyId, setCompanyId] = useState("");
   const [contactId, setContactId] = useState("");
+  const [opportunityId, setOpportunityId] = useState("");
 
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -81,6 +90,18 @@ export default function NewTaskPage() {
       }
 
       setContacts(contactRows ?? []);
+
+      const { data: opportunityRows, error: opportunityError } = await supabase
+        .from("opportunities")
+        .select("id, name, company_id")
+        .order("name", { ascending: true });
+
+      if (opportunityError) {
+        setErrorMessage(opportunityError.message);
+        return;
+      }
+
+      setOpportunities(opportunityRows ?? []);
 
       const { data: profileRows, error: profileError } = await supabase
         .from("profiles")
@@ -114,6 +135,7 @@ export default function NewTaskPage() {
       assigned_to: assignedTo || null,
       company_id: companyId || null,
       contact_id: contactId || null,
+      opportunity_id: opportunityId || null,
       created_by: USER_ID,
       updated_by: USER_ID,
     });
@@ -129,6 +151,13 @@ export default function NewTaskPage() {
     router.refresh();
   }
 
+  const filteredOpportunities = companyId
+    ? opportunities.filter(
+        (opportunity) =>
+          opportunity.company_id === companyId || opportunity.company_id === null
+      )
+    : opportunities;
+
   return (
     <main
       style={{
@@ -139,14 +168,47 @@ export default function NewTaskPage() {
         fontFamily: "Arial, sans-serif",
       }}
     >
-      <Link href="/tasks" style={{ color: "white" }}>
-        ← Back to Tasks
-      </Link>
+      <div
+        style={{
+          display: "flex",
+          gap: "12px",
+          marginBottom: "32px",
+          flexWrap: "wrap",
+        }}
+      >
+        <Link
+          href="/"
+          style={{
+            color: "black",
+            backgroundColor: "white",
+            padding: "10px 14px",
+            borderRadius: "6px",
+            textDecoration: "none",
+            fontWeight: "bold",
+          }}
+        >
+          Home
+        </Link>
 
-      <h1 style={{ marginTop: "32px" }}>Add Task</h1>
+        <Link
+          href="/tasks"
+          style={{
+            color: "black",
+            backgroundColor: "white",
+            padding: "10px 14px",
+            borderRadius: "6px",
+            textDecoration: "none",
+            fontWeight: "bold",
+          }}
+        >
+          Back to Tasks
+        </Link>
+      </div>
+
+      <h1>Add Task</h1>
 
       <p style={{ color: "#aaa", marginBottom: "32px" }}>
-        Create a new task inside Sell It.
+        Create a follow-up task connected to a company, contact, or opportunity.
       </p>
 
       <form
@@ -155,7 +217,7 @@ export default function NewTaskPage() {
           display: "flex",
           flexDirection: "column",
           gap: "18px",
-          maxWidth: "600px",
+          maxWidth: "650px",
         }}
       >
         <label>
@@ -164,6 +226,7 @@ export default function NewTaskPage() {
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             required
+            placeholder="Example: Follow up with dispatcher"
             style={inputStyle}
           />
         </label>
@@ -173,7 +236,8 @@ export default function NewTaskPage() {
           <textarea
             value={description}
             onChange={(event) => setDescription(event.target.value)}
-            rows={5}
+            rows={4}
+            placeholder="Task details..."
             style={inputStyle}
           />
         </label>
@@ -237,7 +301,10 @@ export default function NewTaskPage() {
           Related Company
           <select
             value={companyId}
-            onChange={(event) => setCompanyId(event.target.value)}
+            onChange={(event) => {
+              setCompanyId(event.target.value);
+              setOpportunityId("");
+            }}
             style={inputStyle}
           >
             <option value="">No company selected</option>
@@ -262,6 +329,23 @@ export default function NewTaskPage() {
             {contacts.map((contact) => (
               <option key={contact.id} value={contact.id}>
                 {contact.first_name} {contact.last_name || ""}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Related Opportunity
+          <select
+            value={opportunityId}
+            onChange={(event) => setOpportunityId(event.target.value)}
+            style={inputStyle}
+          >
+            <option value="">No opportunity selected</option>
+
+            {filteredOpportunities.map((opportunity) => (
+              <option key={opportunity.id} value={opportunity.id}>
+                {opportunity.name}
               </option>
             ))}
           </select>

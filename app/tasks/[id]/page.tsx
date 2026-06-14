@@ -13,6 +13,7 @@ type Task = {
   assigned_to: string | null;
   company_id: string | null;
   contact_id: string | null;
+  opportunity_id: string | null;
   created_at: string | null;
   companies: {
     id: string;
@@ -22,6 +23,10 @@ type Task = {
     id: string;
     first_name: string;
     last_name: string | null;
+  } | null;
+  opportunities: {
+    id: string;
+    name: string;
   } | null;
   assigned_profile: {
     id: string;
@@ -52,6 +57,7 @@ export default async function TaskDetailPage({ params }: PageProps) {
       assigned_to,
       company_id,
       contact_id,
+      opportunity_id,
       created_at,
       companies (
         id,
@@ -61,6 +67,10 @@ export default async function TaskDetailPage({ params }: PageProps) {
         id,
         first_name,
         last_name
+      ),
+      opportunities (
+        id,
+        name
       ),
       assigned_profile:profiles!tasks_assigned_to_fkey (
         id,
@@ -179,6 +189,20 @@ export default async function TaskDetailPage({ params }: PageProps) {
                   style={{ color: "white" }}
                 >
                   {task.contacts.first_name} {task.contacts.last_name || ""}
+                </Link>
+              ) : (
+                "Not linked"
+              )}
+            </p>
+
+            <p>
+              <strong>Related Opportunity:</strong>{" "}
+              {task.opportunities ? (
+                <Link
+                  href={`/opportunities/${task.opportunities.id}`}
+                  style={{ color: "white" }}
+                >
+                  {task.opportunities.name}
                 </Link>
               ) : (
                 "Not linked"
