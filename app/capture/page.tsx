@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type CSSProperties, type FormEvent } from "react";
+import {
+  useEffect,
+  useState,
+  type CSSProperties,
+  type DragEvent,
+  type FormEvent,
+} from "react";
 import { supabase } from "../lib/supabase";
 
 const WORKSPACE_ID = "ba491d9b-3b36-426d-b98a-f05b0bf271ed";
@@ -10,10 +16,15 @@ const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 type CaptureResult = {
   company: string | null;
   contact: string | null;
+  contacts: string[];
+  phone: string | null;
+  location: string | null;
+  fleet_size: string | null;
   opportunity: string | null;
   task: string | null;
   activity: string | null;
   pain_points: string[];
+  notes: string | null;
   summary: string;
   confidence: "Low" | "Medium" | "High";
 };
@@ -21,10 +32,12 @@ type CaptureResult = {
 type SavedRecordLinks = {
   companyId?: string;
   contactId?: string;
+  contactIds?: string[];
   opportunityId?: string;
   taskId?: string;
   activityId?: string;
   painPointIds?: string[];
+  screenshotAttached?: boolean;
 };
 
 const inputStyle: CSSProperties = {
@@ -67,6 +80,18 @@ const cardStyle: CSSProperties = {
   marginBottom: "16px",
 };
 
+const dropZoneStyle: CSSProperties = {
+  border: "2px dashed #555",
+  borderRadius: "10px",
+  padding: "24px",
+  backgroundColor: "#181818",
+  textAlign: "center",
+  marginTop: "12px",
+  marginBottom: "16px",
+};
+
+const allowedImageTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+
 function splitContactName(fullName: string) {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
 
@@ -90,11 +115,48 @@ function splitContactName(fullName: string) {
   };
 }
 
+function dedupeStrings(values: string[]) {
+  const seen = new Set<string>();
+  const cleaned: string[] = [];
+
+  for (const value of values) {
+    const cleanValue = String(value || "").trim();
+
+    if (!cleanValue) continue;
+
+    const key = cleanValue.toLowerCase();
+
+    if (seen.has(key)) continue;
+
+    seen.add(key);
+    cleaned.push(cleanValue);
+  }
+
+  return cleaned;
+}
+
 function parsePainPoints(value: string) {
-  return value
-    .split(/,|\n/)
-    .map((item) => item.trim())
-    .filter(Boolean);
+  return dedupeStrings(
+    value
+      .split(/,|\n/)
+      .map((item) => item.trim())
+      .filter(Boolean)
+  );
+}
+
+function parseContacts(value: string, primaryContact: string) {
+  return dedupeStrings([
+    primaryContact,
+    ...value
+      .split(/,|\n/)
+      .map((item) => item.trim())
+      .filter(Boolean),
+  ]);
+}
+
+function parseFleetSize(value: string) {
+  const match = value.match(/\d+/);
+  return match ? Number(match[0]) : null;
 }
 
 function normalizeOpportunityType(value: string) {
@@ -138,6 +200,10 @@ function normalizeActivityType(value: string) {
   if (lower.includes("website")) return "Website Research";
   if (lower.includes("facebook comment")) return "Facebook Comment";
   if (lower.includes("facebook message")) return "Facebook Message";
+  if (lower.includes("facebook discussion")) return "Facebook Comment";
+  if (lower.includes("facebook")) return "Facebook Comment";
+  if (lower.includes("screenshot")) return "Website Research";
+  if (lower.includes("research")) return "Website Research";
   if (lower.includes("note")) return "Note";
 
   return "Other";
@@ -183,17 +249,37 @@ function getNowForActivity() {
   return new Date().toISOString();
 }
 
+function fileToDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Could not read screenshot file."));
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function CapturePage() {
   const [inputText, setInputText] = useState("");
   const [result, setResult] = useState<CaptureResult | null>(null);
   const [rawText, setRawText] = useState("");
 
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [screenshotPreviewUrl, setScreenshotPreviewUrl] = useState("");
+  const [screenshotDataUrl, setScreenshotDataUrl] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
+
   const [reviewCompany, setReviewCompany] = useState("");
   const [reviewContact, setReviewContact] = useState("");
+  const [reviewContacts, setReviewContacts] = useState("");
+  const [reviewPhone, setReviewPhone] = useState("");
+  const [reviewLocation, setReviewLocation] = useState("");
+  const [reviewFleetSize, setReviewFleetSize] = useState("");
   const [reviewOpportunity, setReviewOpportunity] = useState("");
   const [reviewTask, setReviewTask] = useState("");
   const [reviewActivity, setReviewActivity] = useState("");
   const [reviewPainPoints, setReviewPainPoints] = useState("");
+  const [reviewNotes, setReviewNotes] = useState("");
   const [reviewSummary, setReviewSummary] = useState("");
 
   const [errorMessage, setErrorMessage] = useState("");
@@ -202,6 +288,68 @@ export default function CapturePage() {
 
   const [analyzing, setAnalyzing] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (screenshotPreviewUrl) {
+        URL.revokeObjectURL(screenshotPreviewUrl);
+      }
+    };
+  }, [screenshotPreviewUrl]);
+
+  async function handleScreenshotFile(file: File | null) {
+    setErrorMessage("");
+    setSaveMessage("");
+    setSavedLinks(null);
+
+    if (!file) {
+      setScreenshotFile(null);
+      setScreenshotPreviewUrl("");
+      setScreenshotDataUrl("");
+      return;
+    }
+
+    if (!allowedImageTypes.includes(file.type)) {
+      setErrorMessage("Screenshot must be a PNG, JPG, JPEG, or WEBP image.");
+      return;
+    }
+
+    const maxSizeBytes = 8 * 1024 * 1024;
+
+    if (file.size > maxSizeBytes) {
+      setErrorMessage("Screenshot is too large. Use an image under 8 MB.");
+      return;
+    }
+
+    if (screenshotPreviewUrl) {
+      URL.revokeObjectURL(screenshotPreviewUrl);
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    const dataUrl = await fileToDataUrl(file);
+
+    setScreenshotFile(file);
+    setScreenshotPreviewUrl(previewUrl);
+    setScreenshotDataUrl(dataUrl);
+  }
+
+  async function handleDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setIsDragging(false);
+
+    const file = event.dataTransfer.files?.[0] ?? null;
+    await handleScreenshotFile(file);
+  }
+
+  function clearScreenshot() {
+    if (screenshotPreviewUrl) {
+      URL.revokeObjectURL(screenshotPreviewUrl);
+    }
+
+    setScreenshotFile(null);
+    setScreenshotPreviewUrl("");
+    setScreenshotDataUrl("");
+  }
 
   async function handleAnalyze(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -221,6 +369,8 @@ export default function CapturePage() {
         },
         body: JSON.stringify({
           text: inputText,
+          imageDataUrl: screenshotDataUrl,
+          imageFileName: screenshotFile?.name || "",
         }),
       });
 
@@ -238,12 +388,22 @@ export default function CapturePage() {
       setRawText(data.raw_text || "");
 
       if (aiResult) {
+        const allContacts = dedupeStrings([
+          aiResult.contact || "",
+          ...(aiResult.contacts || []),
+        ]);
+
         setReviewCompany(aiResult.company || "");
-        setReviewContact(aiResult.contact || "");
+        setReviewContact(aiResult.contact || allContacts[0] || "");
+        setReviewContacts(allContacts.join("\n"));
+        setReviewPhone(aiResult.phone || "");
+        setReviewLocation(aiResult.location || "");
+        setReviewFleetSize(aiResult.fleet_size || "");
         setReviewOpportunity(aiResult.opportunity || "");
         setReviewTask(aiResult.task || "");
         setReviewActivity(aiResult.activity || "");
         setReviewPainPoints((aiResult.pain_points || []).join(", "));
+        setReviewNotes(aiResult.notes || "");
         setReviewSummary(aiResult.summary || "");
       }
 
@@ -264,7 +424,7 @@ export default function CapturePage() {
 
     const { data: existingCompany, error: findError } = await supabase
       .from("companies")
-      .select("id, name")
+      .select("id, name, phone")
       .ilike("name", cleanName)
       .limit(1)
       .maybeSingle();
@@ -272,6 +432,16 @@ export default function CapturePage() {
     if (findError) throw new Error(`Company lookup failed: ${findError.message}`);
 
     if (existingCompany?.id) {
+      if (reviewPhone && !existingCompany.phone) {
+        await supabase
+          .from("companies")
+          .update({
+            phone: reviewPhone,
+            updated_by: USER_ID,
+          })
+          .eq("id", existingCompany.id);
+      }
+
       return existingCompany.id as string;
     }
 
@@ -280,6 +450,7 @@ export default function CapturePage() {
       .insert({
         workspace_id: WORKSPACE_ID,
         name: cleanName,
+        phone: reviewPhone || null,
         created_by: USER_ID,
         updated_by: USER_ID,
       })
@@ -291,7 +462,11 @@ export default function CapturePage() {
     return newCompany.id as string;
   }
 
-  async function findOrCreateContact(contactName: string, companyId: string | null) {
+  async function findOrCreateContact(
+    contactName: string,
+    companyId: string | null,
+    phoneForThisContact: string
+  ) {
     const cleanName = contactName.trim();
 
     if (!cleanName) return null;
@@ -302,7 +477,7 @@ export default function CapturePage() {
 
     let query = supabase
       .from("contacts")
-      .select("id, first_name, last_name, company_id")
+      .select("id, first_name, last_name, company_id, phone")
       .ilike("first_name", firstName)
       .limit(10);
 
@@ -320,6 +495,23 @@ export default function CapturePage() {
     });
 
     if (matchingContact?.id) {
+      const updatePayload: Record<string, string> = {
+        updated_by: USER_ID,
+      };
+
+      if (phoneForThisContact && !matchingContact.phone) {
+        updatePayload.phone = phoneForThisContact;
+      }
+
+      if (companyId && !matchingContact.company_id) {
+        updatePayload.company_id = companyId;
+      }
+
+      await supabase
+        .from("contacts")
+        .update(updatePayload)
+        .eq("id", matchingContact.id);
+
       return matchingContact.id as string;
     }
 
@@ -330,7 +522,16 @@ export default function CapturePage() {
         first_name: firstName,
         last_name: lastName || null,
         company_id: companyId,
-        notes: reviewSummary || inputText || null,
+        phone: phoneForThisContact || null,
+        notes:
+          `Created from AI Capture.\n\n${reviewNotes || ""}\n\n${
+            reviewSummary || ""
+          }\n\nLocation: ${reviewLocation || "Not found"}\nFleet Size: ${
+            reviewFleetSize || "Not found"
+          }\nAll Contacts Mentioned:\n${parseContacts(
+            reviewContacts,
+            reviewContact
+          ).join("\n")}`.trim() || null,
         created_by: USER_ID,
         updated_by: USER_ID,
       })
@@ -340,6 +541,31 @@ export default function CapturePage() {
     if (insertError) throw new Error(`Contact save failed: ${insertError.message}`);
 
     return newContact.id as string;
+  }
+
+  async function saveAllContacts(companyId: string | null) {
+    const contactNames = parseContacts(reviewContacts, reviewContact);
+    const contactIds: string[] = [];
+
+    for (let index = 0; index < contactNames.length; index += 1) {
+      const contactName = contactNames[index];
+      const phoneForThisContact =
+        contactName.toLowerCase() === reviewContact.trim().toLowerCase()
+          ? reviewPhone
+          : "";
+
+      const contactId = await findOrCreateContact(
+        contactName,
+        companyId,
+        phoneForThisContact
+      );
+
+      if (contactId) {
+        contactIds.push(contactId);
+      }
+    }
+
+    return contactIds;
   }
 
   async function findOrCreatePainPoint(painPointName: string) {
@@ -385,7 +611,7 @@ export default function CapturePage() {
   async function findOrCreateOpportunity(
     opportunityValue: string,
     companyId: string | null,
-    contactId: string | null
+    primaryContactId: string | null
   ) {
     const cleanOpportunity = opportunityValue.trim();
 
@@ -419,14 +645,23 @@ export default function CapturePage() {
         workspace_id: WORKSPACE_ID,
         name: opportunityName,
         company_id: companyId,
-        primary_contact_id: contactId,
+        primary_contact_id: primaryContactId,
         opportunity_type: opportunityType,
         opportunity_type_other_description:
           opportunityType === "Other" ? cleanOpportunity : null,
         stage: normalizeOpportunityStage(cleanOpportunity),
         lead_temperature: "Warm",
+        estimated_driver_count: reviewFleetSize
+          ? parseFleetSize(reviewFleetSize)
+          : null,
         next_step: reviewTask || null,
-        notes: reviewSummary || inputText || null,
+        notes:
+          `${reviewNotes || ""}\n\n${reviewSummary || ""}\n\nLocation: ${
+            reviewLocation || "Not found"
+          }\nFleet Size: ${reviewFleetSize || "Not found"}\nContacts Mentioned:\n${parseContacts(
+            reviewContacts,
+            reviewContact
+          ).join("\n")}`.trim() || null,
         created_by: USER_ID,
         updated_by: USER_ID,
       })
@@ -443,7 +678,7 @@ export default function CapturePage() {
   async function findOrCreateTask(
     taskValue: string,
     companyId: string | null,
-    contactId: string | null,
+    primaryContactId: string | null,
     opportunityId: string | null
   ) {
     const cleanTask = taskValue.trim();
@@ -467,7 +702,7 @@ export default function CapturePage() {
     }
 
     const matchingTask = (existingTasks || []).find((task) => {
-      const contactMatches = !contactId || task.contact_id === contactId;
+      const contactMatches = !primaryContactId || task.contact_id === primaryContactId;
       const opportunityMatches =
         !opportunityId || task.opportunity_id === opportunityId;
 
@@ -483,13 +718,20 @@ export default function CapturePage() {
       .insert({
         workspace_id: WORKSPACE_ID,
         title: cleanTask,
-        description: `Created from AI Capture.\n\n${reviewSummary || ""}\n\nOriginal text:\n${inputText}`,
+        description: `Created from AI Capture.\n\n${
+          reviewSummary || ""
+        }\n\nNotes:\n${reviewNotes || ""}\n\nContacts Mentioned:\n${parseContacts(
+          reviewContacts,
+          reviewContact
+        ).join("\n")}\n\nOriginal text:\n${
+          inputText || "[Screenshot capture only]"
+        }`,
         due_date: null,
         priority: "Normal",
         status: "Open",
         assigned_to: USER_ID,
         company_id: companyId,
-        contact_id: contactId,
+        contact_id: primaryContactId,
         opportunity_id: opportunityId,
         created_by: USER_ID,
         updated_by: USER_ID,
@@ -507,11 +749,11 @@ export default function CapturePage() {
   async function createActivity(
     activityValue: string,
     companyId: string | null,
-    contactId: string | null,
+    primaryContactId: string | null,
     taskId: string | null,
     opportunityId: string | null
   ) {
-    const cleanActivity = activityValue.trim() || "AI Capture Note";
+    const cleanActivity = activityValue.trim() || "AI Capture Screenshot Review";
 
     const subjectParts = [];
 
@@ -528,12 +770,20 @@ export default function CapturePage() {
         activity_type: normalizeActivityType(cleanActivity),
         activity_date: getNowForActivity(),
         subject,
-        summary: reviewSummary || null,
+        summary:
+          `${reviewSummary || ""}\n\nNotes:\n${reviewNotes || ""}\n\nContacts Mentioned:\n${parseContacts(
+            reviewContacts,
+            reviewContact
+          ).join("\n")}\n\nLocation: ${
+            reviewLocation || "Not found"
+          }\nFleet Size: ${reviewFleetSize || "Not found"}\nPhone: ${
+            reviewPhone || "Not found"
+          }`.trim() || null,
         raw_notes: inputText || null,
         outcome: normalizeActivityOutcome(reviewOpportunity, reviewTask),
         follow_up_needed: Boolean(reviewTask),
         company_id: companyId,
-        contact_id: contactId,
+        contact_id: primaryContactId,
         task_id: taskId,
         opportunity_id: opportunityId,
         created_by: USER_ID,
@@ -549,10 +799,58 @@ export default function CapturePage() {
     return newActivity.id as string;
   }
 
+  async function uploadScreenshotAttachment(activityId: string) {
+    if (!screenshotFile) return false;
+
+    const safeFileName = screenshotFile.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+
+    const storagePath = `${WORKSPACE_ID}/related_activity_id/${activityId}/${Date.now()}-${safeFileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("sell-it-attachments")
+      .upload(storagePath, screenshotFile);
+
+    if (uploadError) {
+      throw new Error(`Screenshot upload failed: ${uploadError.message}`);
+    }
+
+    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+      .from("sell-it-attachments")
+      .createSignedUrl(storagePath, 60 * 60 * 24 * 7);
+
+    if (signedUrlError) {
+      throw new Error(
+        `Screenshot uploaded, but signed link failed: ${signedUrlError.message}`
+      );
+    }
+
+    const { error: insertError } = await supabase.from("attachments").insert({
+      workspace_id: WORKSPACE_ID,
+      related_activity_id: activityId,
+      file_name: screenshotFile.name,
+      file_type: "Screenshot",
+      file_url: signedUrlData.signedUrl,
+      storage_path: storagePath,
+      file_path: storagePath,
+      description: `Original screenshot used for AI Capture.\n\n${
+        reviewSummary || ""
+      }`,
+      uploaded_by: null,
+    });
+
+    if (insertError) {
+      throw new Error(
+        `Screenshot uploaded, but attachment record failed: ${insertError.message}`
+      );
+    }
+
+    return true;
+  }
+
   async function linkPainPointRelations(
     painPointId: string,
     companyId: string | null,
-    contactId: string | null,
+    contactIds: string[],
     activityId: string | null
   ) {
     if (companyId) {
@@ -567,7 +865,7 @@ export default function CapturePage() {
       );
     }
 
-    if (contactId) {
+    for (const contactId of contactIds) {
       await supabase.from("pain_point_contacts").upsert(
         {
           workspace_id: WORKSPACE_ID,
@@ -600,25 +898,35 @@ export default function CapturePage() {
 
     try {
       const companyId = await findOrCreateCompany(reviewCompany);
-      const contactId = await findOrCreateContact(reviewContact, companyId);
+      const contactIds = await saveAllContacts(companyId);
+      const primaryContactId = contactIds[0] || null;
+
       const opportunityId = await findOrCreateOpportunity(
         reviewOpportunity,
         companyId,
-        contactId
+        primaryContactId
       );
+
       const taskId = await findOrCreateTask(
         reviewTask,
         companyId,
-        contactId,
+        primaryContactId,
         opportunityId
       );
+
       const activityId = await createActivity(
         reviewActivity,
         companyId,
-        contactId,
+        primaryContactId,
         taskId,
         opportunityId
       );
+
+      let screenshotAttached = false;
+
+      if (activityId) {
+        screenshotAttached = await uploadScreenshotAttachment(activityId);
+      }
 
       const painPointNames = parsePainPoints(reviewPainPoints);
       const painPointIds: string[] = [];
@@ -631,7 +939,7 @@ export default function CapturePage() {
           await linkPainPointRelations(
             painPointId,
             companyId,
-            contactId,
+            contactIds,
             activityId
           );
         }
@@ -639,11 +947,13 @@ export default function CapturePage() {
 
       setSavedLinks({
         companyId: companyId || undefined,
-        contactId: contactId || undefined,
+        contactId: primaryContactId || undefined,
+        contactIds,
         opportunityId: opportunityId || undefined,
         taskId: taskId || undefined,
         activityId: activityId || undefined,
         painPointIds,
+        screenshotAttached,
       });
 
       setSaveMessage("Reviewed AI Capture result saved to Sell It.");
@@ -681,9 +991,9 @@ export default function CapturePage() {
       <h1>AI Capture</h1>
 
       <p style={{ color: "#aaa", marginBottom: "32px", maxWidth: "900px" }}>
-        Paste raw notes, call summaries, messages, meeting notes, or copied text.
-        Sell It will analyze the text and return structured CRM information.
-        Version 2 lets you review, edit, and save the result.
+        Paste text, upload a screenshot, or do both. Sell It will analyze the
+        information and return editable CRM fields. Nothing is saved until you
+        review and click Save Reviewed Result.
       </p>
 
       <form
@@ -698,12 +1008,73 @@ export default function CapturePage() {
           <textarea
             value={inputText}
             onChange={(event) => setInputText(event.target.value)}
-            rows={12}
-            required
+            rows={8}
             placeholder={`Example:\nCalled ABC Trucking.\nTalked to Joe Smith.\n35 trucks.\nNeed more trucks.\nInterested in alpha testing.\nCall him next Friday.`}
             style={inputStyle}
           />
         </label>
+
+        <div
+          onDragOver={(event) => {
+            event.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={handleDrop}
+          style={{
+            ...dropZoneStyle,
+            borderColor: isDragging ? "white" : "#555",
+          }}
+        >
+          <h2 style={{ marginTop: 0 }}>Upload Screenshot</h2>
+
+          <p style={{ color: "#aaa" }}>
+            Drag and drop a PNG, JPG, JPEG, or WEBP screenshot here, or use the
+            file picker below.
+          </p>
+
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/jpg,image/webp"
+            onChange={(event) =>
+              handleScreenshotFile(event.target.files?.[0] ?? null)
+            }
+            style={{
+              width: "100%",
+              padding: "10px",
+              backgroundColor: "white",
+              color: "black",
+              borderRadius: "6px",
+            }}
+          />
+        </div>
+
+        {screenshotPreviewUrl && (
+          <div style={cardStyle}>
+            <h3 style={{ marginTop: 0 }}>Screenshot Preview</h3>
+
+            <p>
+              <strong>File:</strong> {screenshotFile?.name}
+            </p>
+
+            <img
+              src={screenshotPreviewUrl}
+              alt="Screenshot preview"
+              style={{
+                maxWidth: "100%",
+                maxHeight: "450px",
+                borderRadius: "8px",
+                border: "1px solid #333",
+                display: "block",
+                marginBottom: "12px",
+              }}
+            />
+
+            <button type="button" onClick={clearScreenshot} style={buttonStyle}>
+              Remove Screenshot
+            </button>
+          </div>
+        )}
 
         <button
           type="submit"
@@ -739,21 +1110,62 @@ export default function CapturePage() {
 
           <div style={cardStyle}>
             <label>
-              Company
+              Company / Community
               <input
                 value={reviewCompany}
                 onChange={(event) => setReviewCompany(event.target.value)}
-                placeholder="Company name"
+                placeholder="Company, group, community, or organization name"
                 style={inputStyle}
               />
             </label>
 
             <label>
-              Contact
+              Primary Contact
               <input
                 value={reviewContact}
                 onChange={(event) => setReviewContact(event.target.value)}
-                placeholder="Contact name"
+                placeholder="Primary contact name"
+                style={inputStyle}
+              />
+            </label>
+
+            <label>
+              All Contacts Found
+              <textarea
+                value={reviewContacts}
+                onChange={(event) => setReviewContacts(event.target.value)}
+                rows={5}
+                placeholder={`One contact per line.\nExample:\nMike Johnson\nSarah Miller\nTom Reed`}
+                style={inputStyle}
+              />
+            </label>
+
+            <label>
+              Phone
+              <input
+                value={reviewPhone}
+                onChange={(event) => setReviewPhone(event.target.value)}
+                placeholder="Phone number for primary contact if known"
+                style={inputStyle}
+              />
+            </label>
+
+            <label>
+              Location
+              <input
+                value={reviewLocation}
+                onChange={(event) => setReviewLocation(event.target.value)}
+                placeholder="City, state, region"
+                style={inputStyle}
+              />
+            </label>
+
+            <label>
+              Fleet Size
+              <input
+                value={reviewFleetSize}
+                onChange={(event) => setReviewFleetSize(event.target.value)}
+                placeholder="Example: 45 trucks"
                 style={inputStyle}
               />
             </label>
@@ -800,6 +1212,17 @@ export default function CapturePage() {
             </label>
 
             <label>
+              Notes
+              <textarea
+                value={reviewNotes}
+                onChange={(event) => setReviewNotes(event.target.value)}
+                rows={4}
+                placeholder="Extra details from the screenshot"
+                style={inputStyle}
+              />
+            </label>
+
+            <label>
               Summary
               <textarea
                 value={reviewSummary}
@@ -839,26 +1262,30 @@ export default function CapturePage() {
 
             {savedLinks?.companyId && (
               <p>
-                Company:{" "}
+                Company / Community:{" "}
                 <Link
                   href={`/companies/${savedLinks.companyId}`}
                   style={{ color: "#8ab4ff" }}
                 >
-                  Open company
+                  Open company/community
                 </Link>
               </p>
             )}
 
             {savedLinks?.contactId && (
               <p>
-                Contact:{" "}
+                Primary Contact:{" "}
                 <Link
                   href={`/contacts/${savedLinks.contactId}`}
                   style={{ color: "#8ab4ff" }}
                 >
-                  Open contact
+                  Open primary contact
                 </Link>
               </p>
+            )}
+
+            {savedLinks?.contactIds && savedLinks.contactIds.length > 0 && (
+              <p>Contacts Saved/Linked: {savedLinks.contactIds.length}</p>
             )}
 
             {savedLinks?.opportunityId && (
@@ -898,10 +1325,13 @@ export default function CapturePage() {
             )}
 
             {savedLinks?.painPointIds && savedLinks.painPointIds.length > 0 && (
-              <p>
-                Pain Points Saved/Linked: {savedLinks.painPointIds.length}
-              </p>
+              <p>Pain Points Saved/Linked: {savedLinks.painPointIds.length}</p>
             )}
+
+            <p>
+              Screenshot Attached:{" "}
+              {savedLinks?.screenshotAttached ? "Yes" : "No screenshot attached"}
+            </p>
           </div>
         </section>
       )}
