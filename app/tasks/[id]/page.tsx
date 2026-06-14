@@ -15,6 +15,7 @@ type Task = {
   contact_id: string | null;
   opportunity_id: string | null;
   created_at: string | null;
+  updated_at: string | null;
   companies: {
     id: string;
     name: string;
@@ -59,6 +60,7 @@ export default async function TaskDetailPage({ params }: PageProps) {
       contact_id,
       opportunity_id,
       created_at,
+      updated_at,
       companies (
         id,
         name
@@ -126,6 +128,22 @@ export default async function TaskDetailPage({ params }: PageProps) {
         >
           Back to Tasks
         </Link>
+
+        {task && (
+          <Link
+            href={`/tasks/${task.id}/edit`}
+            style={{
+              color: "black",
+              backgroundColor: "white",
+              padding: "10px 14px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+            }}
+          >
+            Edit Task
+          </Link>
+        )}
       </div>
 
       {error && (
@@ -221,6 +239,13 @@ export default async function TaskDetailPage({ params }: PageProps) {
               <strong>Created:</strong>{" "}
               {task.created_at
                 ? new Date(task.created_at).toLocaleString()
+                : "Not available"}
+            </p>
+
+            <p>
+              <strong>Last Updated:</strong>{" "}
+              {task.updated_at
+                ? new Date(task.updated_at).toLocaleString()
                 : "Not available"}
             </p>
           </div>
