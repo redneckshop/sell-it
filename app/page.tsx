@@ -255,6 +255,7 @@ export default async function Home() {
     { title: "Posts", href: "/posts" },
     { title: "Pain Points", href: "/pain-points" },
     { title: "Capture", href: "/capture" },
+    { title: "Import", href: "/import" },
     { title: "Assistant", href: "/assistant" },
   ];
 
