@@ -14,6 +14,7 @@ type Activity = {
   follow_up_needed: boolean;
   company_id: string | null;
   contact_id: string | null;
+  opportunity_id: string | null;
   task_id: string | null;
   created_at: string | null;
   companies: {
@@ -24,6 +25,10 @@ type Activity = {
     id: string;
     first_name: string;
     last_name: string | null;
+  } | null;
+  opportunities: {
+    id: string;
+    name: string;
   } | null;
   tasks: {
     id: string;
@@ -54,6 +59,7 @@ export default async function ActivityDetailPage({ params }: PageProps) {
       follow_up_needed,
       company_id,
       contact_id,
+      opportunity_id,
       task_id,
       created_at,
       companies (
@@ -64,6 +70,10 @@ export default async function ActivityDetailPage({ params }: PageProps) {
         id,
         first_name,
         last_name
+      ),
+      opportunities (
+        id,
+        name
       ),
       tasks (
         id,
@@ -181,6 +191,20 @@ export default async function ActivityDetailPage({ params }: PageProps) {
                 >
                   {activity.contacts.first_name}{" "}
                   {activity.contacts.last_name || ""}
+                </Link>
+              ) : (
+                "Not linked"
+              )}
+            </p>
+
+            <p>
+              <strong>Related Opportunity:</strong>{" "}
+              {activity.opportunities ? (
+                <Link
+                  href={`/opportunities/${activity.opportunities.id}`}
+                  style={{ color: "white" }}
+                >
+                  {activity.opportunities.name}
                 </Link>
               ) : (
                 "Not linked"

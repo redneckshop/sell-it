@@ -24,6 +24,12 @@ type Task = {
   title: string;
 };
 
+type Opportunity = {
+  id: string;
+  name: string;
+  company_id: string | null;
+};
+
 const inputStyle: CSSProperties = {
   display: "block",
   width: "100%",
@@ -34,6 +40,7 @@ const inputStyle: CSSProperties = {
   border: "1px solid #555",
   borderRadius: "6px",
   fontSize: "16px",
+  boxSizing: "border-box",
 };
 
 function getCurrentDateTimeLocal() {
@@ -48,6 +55,7 @@ export default function NewActivityPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
 
   const [activityType, setActivityType] = useState("Note");
   const [activityDate, setActivityDate] = useState(getCurrentDateTimeLocal());
@@ -60,6 +68,7 @@ export default function NewActivityPage() {
   const [companyId, setCompanyId] = useState("");
   const [contactId, setContactId] = useState("");
   const [taskId, setTaskId] = useState("");
+  const [opportunityId, setOpportunityId] = useState("");
 
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -101,6 +110,18 @@ export default function NewActivityPage() {
       }
 
       setTasks(taskRows ?? []);
+
+      const { data: opportunityRows, error: opportunityError } = await supabase
+        .from("opportunities")
+        .select("id, name, company_id")
+        .order("name", { ascending: true });
+
+      if (opportunityError) {
+        setErrorMessage(opportunityError.message);
+        return;
+      }
+
+      setOpportunities(opportunityRows ?? []);
     }
 
     loadOptions();
@@ -124,6 +145,7 @@ export default function NewActivityPage() {
       company_id: companyId || null,
       contact_id: contactId || null,
       task_id: taskId || null,
+      opportunity_id: opportunityId || null,
       created_by: USER_ID,
       updated_by: USER_ID,
     });
@@ -139,6 +161,13 @@ export default function NewActivityPage() {
     router.refresh();
   }
 
+  const filteredOpportunities = companyId
+    ? opportunities.filter(
+        (opportunity) =>
+          opportunity.company_id === companyId || opportunity.company_id === null
+      )
+    : opportunities;
+
   return (
     <main
       style={{
@@ -149,14 +178,47 @@ export default function NewActivityPage() {
         fontFamily: "Arial, sans-serif",
       }}
     >
-      <Link href="/activities" style={{ color: "white" }}>
-        ← Back to Activities
-      </Link>
+      <div
+        style={{
+          display: "flex",
+          gap: "12px",
+          marginBottom: "32px",
+          flexWrap: "wrap",
+        }}
+      >
+        <Link
+          href="/"
+          style={{
+            color: "black",
+            backgroundColor: "white",
+            padding: "10px 14px",
+            borderRadius: "6px",
+            textDecoration: "none",
+            fontWeight: "bold",
+          }}
+        >
+          Home
+        </Link>
 
-      <h1 style={{ marginTop: "32px" }}>Add Activity</h1>
+        <Link
+          href="/activities"
+          style={{
+            color: "black",
+            backgroundColor: "white",
+            padding: "10px 14px",
+            borderRadius: "6px",
+            textDecoration: "none",
+            fontWeight: "bold",
+          }}
+        >
+          Back to Activities
+        </Link>
+      </div>
+
+      <h1>Add Activity</h1>
 
       <p style={{ color: "#aaa", marginBottom: "32px" }}>
-        Record a sales conversation, note, message, call, meeting, or research item.
+        Record a call, message, meeting, note, transcript, or follow-up activity.
       </p>
 
       <form
@@ -165,9 +227,20 @@ export default function NewActivityPage() {
           display: "flex",
           flexDirection: "column",
           gap: "18px",
-          maxWidth: "650px",
+          maxWidth: "700px",
         }}
       >
+        <label>
+          Subject
+          <input
+            value={subject}
+            onChange={(event) => setSubject(event.target.value)}
+            required
+            placeholder="Example: Intro call with dispatcher"
+            style={inputStyle}
+          />
+        </label>
+
         <label>
           Activity Type
           <select
@@ -201,33 +274,74 @@ export default function NewActivityPage() {
         </label>
 
         <label>
-          Subject
-          <input
-            value={subject}
-            onChange={(event) => setSubject(event.target.value)}
-            required
+          Related Company
+          <select
+            value={companyId}
+            onChange={(event) => {
+              setCompanyId(event.target.value);
+              setOpportunityId("");
+            }}
             style={inputStyle}
-          />
+          >
+            <option value="">No company selected</option>
+
+            {companies.map((company) => (
+              <option key={company.id} value={company.id}>
+                {company.name}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label>
-          Summary
-          <textarea
-            value={summary}
-            onChange={(event) => setSummary(event.target.value)}
-            rows={4}
+          Related Contact
+          <select
+            value={contactId}
+            onChange={(event) => setContactId(event.target.value)}
             style={inputStyle}
-          />
+          >
+            <option value="">No contact selected</option>
+
+            {contacts.map((contact) => (
+              <option key={contact.id} value={contact.id}>
+                {contact.first_name} {contact.last_name || ""}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label>
-          Raw Notes
-          <textarea
-            value={rawNotes}
-            onChange={(event) => setRawNotes(event.target.value)}
-            rows={6}
+          Related Opportunity
+          <select
+            value={opportunityId}
+            onChange={(event) => setOpportunityId(event.target.value)}
             style={inputStyle}
-          />
+          >
+            <option value="">No opportunity selected</option>
+
+            {filteredOpportunities.map((opportunity) => (
+              <option key={opportunity.id} value={opportunity.id}>
+                {opportunity.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Related Task
+          <select
+            value={taskId}
+            onChange={(event) => setTaskId(event.target.value)}
+            style={inputStyle}
+          >
+            <option value="">No task selected</option>
+
+            {tasks.map((task) => (
+              <option key={task.id} value={task.id}>
+                {task.title}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label>
@@ -267,54 +381,25 @@ export default function NewActivityPage() {
         </label>
 
         <label>
-          Related Company
-          <select
-            value={companyId}
-            onChange={(event) => setCompanyId(event.target.value)}
+          Summary
+          <textarea
+            value={summary}
+            onChange={(event) => setSummary(event.target.value)}
+            rows={4}
+            placeholder="Short summary of what happened."
             style={inputStyle}
-          >
-            <option value="">No company selected</option>
-
-            {companies.map((company) => (
-              <option key={company.id} value={company.id}>
-                {company.name}
-              </option>
-            ))}
-          </select>
+          />
         </label>
 
         <label>
-          Related Contact
-          <select
-            value={contactId}
-            onChange={(event) => setContactId(event.target.value)}
+          Raw Notes
+          <textarea
+            value={rawNotes}
+            onChange={(event) => setRawNotes(event.target.value)}
+            rows={6}
+            placeholder="Raw notes, transcript text, copied message, or call details."
             style={inputStyle}
-          >
-            <option value="">No contact selected</option>
-
-            {contacts.map((contact) => (
-              <option key={contact.id} value={contact.id}>
-                {contact.first_name} {contact.last_name || ""}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label>
-          Related Task
-          <select
-            value={taskId}
-            onChange={(event) => setTaskId(event.target.value)}
-            style={inputStyle}
-          >
-            <option value="">No task selected</option>
-
-            {tasks.map((task) => (
-              <option key={task.id} value={task.id}>
-                {task.title}
-              </option>
-            ))}
-          </select>
+          />
         </label>
 
         {errorMessage && (
