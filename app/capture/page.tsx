@@ -37,7 +37,7 @@ type SavedRecordLinks = {
   taskId?: string;
   activityId?: string;
   painPointIds?: string[];
-  screenshotAttached?: boolean;
+  sourceFileAttached?: boolean;
 };
 
 const inputStyle: CSSProperties = {
@@ -90,23 +90,17 @@ const dropZoneStyle: CSSProperties = {
   marginBottom: "16px",
 };
 
-const allowedImageTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+const imageTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
 
 function splitContactName(fullName: string) {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
 
   if (parts.length === 0) {
-    return {
-      firstName: "",
-      lastName: "",
-    };
+    return { firstName: "", lastName: "" };
   }
 
   if (parts.length === 1) {
-    return {
-      firstName: parts[0],
-      lastName: "",
-    };
+    return { firstName: parts[0], lastName: "" };
   }
 
   return {
@@ -159,6 +153,63 @@ function parseFleetSize(value: string) {
   return match ? Number(match[0]) : null;
 }
 
+function getFileExtension(fileName: string) {
+  const parts = fileName.toLowerCase().split(".");
+  return parts.length > 1 ? parts[parts.length - 1] : "";
+}
+
+function isImageFile(file: File) {
+  return imageTypes.includes(file.type);
+}
+
+function isReadableTextFile(file: File) {
+  const extension = getFileExtension(file.name);
+
+  if (file.type.startsWith("text/")) return true;
+
+  return [
+    "txt",
+    "csv",
+    "tsv",
+    "json",
+    "md",
+    "log",
+    "xml",
+    "html",
+    "htm",
+  ].includes(extension);
+}
+
+function getAttachmentFileType(file: File) {
+  const extension = getFileExtension(file.name);
+
+  if (isImageFile(file)) return "Screenshot";
+  if (extension === "pdf") return "PDF";
+
+  if (["csv", "tsv"].includes(extension)) return "CSV";
+
+  if (["doc", "docx", "txt", "md", "rtf"].includes(extension)) {
+    return "Document";
+  }
+
+  if (["xls", "xlsx"].includes(extension)) {
+    return "Spreadsheet";
+  }
+
+  if (["mp3", "wav", "m4a"].includes(extension)) {
+    return "Audio";
+  }
+
+  return "Other";
+}
+
+function formatFileSize(size: number) {
+  if (size < 1024) return `${size} bytes`;
+  if (size < 1024 * 1024) return `${Math.round(size / 1024)} KB`;
+
+  return `${(size / 1024 / 1024).toFixed(2)} MB`;
+}
+
 function normalizeOpportunityType(value: string) {
   const lower = value.toLowerCase();
 
@@ -206,6 +257,8 @@ function normalizeActivityType(value: string) {
   if (lower.includes("screenshot")) return "Website Research";
   if (lower.includes("research")) return "Website Research";
   if (lower.includes("note")) return "Note";
+  if (lower.includes("file")) return "Note";
+  if (lower.includes("csv")) return "Note";
 
   return "Other";
 }
@@ -259,7 +312,7 @@ function fileToDataUrl(file: File) {
     const reader = new FileReader();
 
     reader.onload = () => resolve(String(reader.result || ""));
-    reader.onerror = () => reject(new Error("Could not read screenshot file."));
+    reader.onerror = () => reject(new Error("Could not read source file."));
     reader.readAsDataURL(file);
   });
 }
@@ -269,9 +322,11 @@ export default function CapturePage() {
   const [result, setResult] = useState<CaptureResult | null>(null);
   const [rawText, setRawText] = useState("");
 
-  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
-  const [screenshotPreviewUrl, setScreenshotPreviewUrl] = useState("");
-  const [screenshotDataUrl, setScreenshotDataUrl] = useState("");
+  const [sourceFile, setSourceFile] = useState<File | null>(null);
+  const [sourceFilePreviewUrl, setSourceFilePreviewUrl] = useState("");
+  const [sourceFileImageDataUrl, setSourceFileImageDataUrl] = useState("");
+  const [sourceFileText, setSourceFileText] = useState("");
+  const [sourceFileReadMessage, setSourceFileReadMessage] = useState("");
   const [isDragging, setIsDragging] = useState(false);
 
   const [reviewCompany, setReviewCompany] = useState("");
@@ -296,34 +351,24 @@ export default function CapturePage() {
 
   useEffect(() => {
     return () => {
-      if (screenshotPreviewUrl) {
-        URL.revokeObjectURL(screenshotPreviewUrl);
+      if (sourceFilePreviewUrl) {
+        URL.revokeObjectURL(sourceFilePreviewUrl);
       }
     };
-  }, [screenshotPreviewUrl]);
+  }, [sourceFilePreviewUrl]);
 
   useEffect(() => {
     async function handleClipboardPaste(event: ClipboardEvent) {
       const items = event.clipboardData?.items;
 
-      if (!items || items.length === 0) {
-        return;
-      }
+      if (!items || items.length === 0) return;
 
       for (const item of Array.from(items)) {
-        if (item.kind !== "file") {
-          continue;
-        }
+        if (item.kind !== "file") continue;
 
         const file = item.getAsFile();
 
-        if (!file) {
-          continue;
-        }
-
-        if (!allowedImageTypes.includes(file.type)) {
-          continue;
-        }
+        if (!file || !isImageFile(file)) continue;
 
         event.preventDefault();
 
@@ -337,12 +382,10 @@ export default function CapturePage() {
         const pastedFile = new File(
           [file],
           `pasted-screenshot-${Date.now()}.${extension}`,
-          {
-            type: file.type,
-          }
+          { type: file.type }
         );
 
-        await handleScreenshotFile(pastedFile);
+        await handleSourceFile(pastedFile);
         break;
       }
     }
@@ -356,40 +399,124 @@ export default function CapturePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function handleScreenshotFile(file: File | null) {
+  useEffect(() => {
+    function isFileDrag(event: globalThis.DragEvent) {
+      return Array.from(event.dataTransfer?.types || []).includes("Files");
+    }
+
+    function handleWindowDragOver(event: globalThis.DragEvent) {
+      if (!isFileDrag(event)) return;
+
+      event.preventDefault();
+      setIsDragging(true);
+
+      if (event.dataTransfer) {
+        event.dataTransfer.dropEffect = "copy";
+      }
+    }
+
+    function handleWindowDragLeave(event: globalThis.DragEvent) {
+      if (event.clientX <= 0 || event.clientY <= 0) {
+        setIsDragging(false);
+      }
+    }
+
+    async function handleWindowDrop(event: globalThis.DragEvent) {
+      if (!isFileDrag(event)) return;
+
+      event.preventDefault();
+      setIsDragging(false);
+
+      const file = event.dataTransfer?.files?.[0] ?? null;
+
+      if (!file) return;
+
+      await handleSourceFile(file);
+    }
+
+    window.addEventListener("dragover", handleWindowDragOver);
+    window.addEventListener("dragleave", handleWindowDragLeave);
+    window.addEventListener("drop", handleWindowDrop);
+
+    return () => {
+      window.removeEventListener("dragover", handleWindowDragOver);
+      window.removeEventListener("dragleave", handleWindowDragLeave);
+      window.removeEventListener("drop", handleWindowDrop);
+    };
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleSourceFile(file: File | null) {
     setErrorMessage("");
     setSaveMessage("");
     setSavedLinks(null);
+    setSourceFileReadMessage("");
+    setSourceFileText("");
+    setSourceFileImageDataUrl("");
 
     if (!file) {
-      setScreenshotFile(null);
-      setScreenshotPreviewUrl("");
-      setScreenshotDataUrl("");
+      setSourceFile(null);
+      setSourceFilePreviewUrl("");
+      setSourceFileImageDataUrl("");
+      setSourceFileText("");
+      setSourceFileReadMessage("");
       return;
     }
 
-    if (!allowedImageTypes.includes(file.type)) {
-      setErrorMessage("Screenshot must be a PNG, JPG, JPEG, or WEBP image.");
-      return;
-    }
-
-    const maxSizeBytes = 8 * 1024 * 1024;
+    const maxSizeBytes = 25 * 1024 * 1024;
 
     if (file.size > maxSizeBytes) {
-      setErrorMessage("Screenshot is too large. Use an image under 8 MB.");
+      setErrorMessage("File is too large. Use a file under 25 MB.");
       return;
     }
 
-    if (screenshotPreviewUrl) {
-      URL.revokeObjectURL(screenshotPreviewUrl);
+    if (sourceFilePreviewUrl) {
+      URL.revokeObjectURL(sourceFilePreviewUrl);
     }
 
-    const previewUrl = URL.createObjectURL(file);
-    const dataUrl = await fileToDataUrl(file);
+    setSourceFile(file);
 
-    setScreenshotFile(file);
-    setScreenshotPreviewUrl(previewUrl);
-    setScreenshotDataUrl(dataUrl);
+    if (isImageFile(file)) {
+      const previewUrl = URL.createObjectURL(file);
+      const dataUrl = await fileToDataUrl(file);
+
+      setSourceFilePreviewUrl(previewUrl);
+      setSourceFileImageDataUrl(dataUrl);
+      setSourceFileReadMessage("Image ready for AI vision analysis.");
+      return;
+    }
+
+    setSourceFilePreviewUrl("");
+    setSourceFileImageDataUrl("");
+
+    if (isReadableTextFile(file)) {
+      try {
+        const text = await file.text();
+        const maxTextCharacters = 30000;
+        const trimmedText =
+          text.length > maxTextCharacters
+            ? `${text.slice(
+                0,
+                maxTextCharacters
+              )}\n\n[File text was longer than ${maxTextCharacters} characters and was trimmed for AI analysis.]`
+            : text;
+
+        setSourceFileText(trimmedText);
+        setSourceFileReadMessage("Text/CSV file content ready for AI analysis.");
+      } catch {
+        setSourceFileText("");
+        setSourceFileReadMessage(
+          "File uploaded for attachment, but text could not be read."
+        );
+      }
+
+      return;
+    }
+
+    setSourceFileReadMessage(
+      "File ready to attach. AI reading for this file type will be added later."
+    );
   }
 
   async function handleDrop(event: DragEvent<HTMLDivElement>) {
@@ -397,17 +524,19 @@ export default function CapturePage() {
     setIsDragging(false);
 
     const file = event.dataTransfer.files?.[0] ?? null;
-    await handleScreenshotFile(file);
+    await handleSourceFile(file);
   }
 
-  function clearScreenshot() {
-    if (screenshotPreviewUrl) {
-      URL.revokeObjectURL(screenshotPreviewUrl);
+  function clearSourceFile() {
+    if (sourceFilePreviewUrl) {
+      URL.revokeObjectURL(sourceFilePreviewUrl);
     }
 
-    setScreenshotFile(null);
-    setScreenshotPreviewUrl("");
-    setScreenshotDataUrl("");
+    setSourceFile(null);
+    setSourceFilePreviewUrl("");
+    setSourceFileImageDataUrl("");
+    setSourceFileText("");
+    setSourceFileReadMessage("");
   }
 
   async function handleAnalyze(event: FormEvent<HTMLFormElement>) {
@@ -420,6 +549,23 @@ export default function CapturePage() {
     setSaveMessage("");
     setSavedLinks(null);
 
+    const combinedText = [
+      inputText.trim(),
+      sourceFileText
+        ? `Source file content from ${sourceFile?.name || "uploaded file"}:\n${sourceFileText}`
+        : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
+    if (!combinedText && !sourceFileImageDataUrl) {
+      setErrorMessage(
+        "Paste text, upload an image/screenshot, or upload a readable text/CSV file before analyzing. Other file types can be attached after you add notes or a summary."
+      );
+      setAnalyzing(false);
+      return;
+    }
+
     try {
       const response = await fetch("/api/capture/analyze", {
         method: "POST",
@@ -427,9 +573,9 @@ export default function CapturePage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          text: inputText,
-          imageDataUrl: screenshotDataUrl,
-          imageFileName: screenshotFile?.name || "",
+          text: combinedText,
+          imageDataUrl: sourceFileImageDataUrl,
+          imageFileName: sourceFile?.name || "",
         }),
       });
 
@@ -783,7 +929,7 @@ export default function CapturePage() {
           reviewContacts,
           reviewContact
         ).join("\n")}\n\nOriginal text:\n${
-          inputText || "[Screenshot capture only]"
+          inputText || sourceFileText || "[Uploaded file capture]"
         }`,
         due_date: null,
         priority: "Normal",
@@ -812,7 +958,7 @@ export default function CapturePage() {
     taskId: string | null,
     opportunityId: string | null
   ) {
-    const cleanActivity = activityValue.trim() || "AI Capture Screenshot Review";
+    const cleanActivity = activityValue.trim() || "AI Capture File Review";
 
     const subjectParts = [];
 
@@ -837,8 +983,8 @@ export default function CapturePage() {
             reviewLocation || "Not found"
           }\nFleet Size: ${reviewFleetSize || "Not found"}\nPhone: ${
             reviewPhone || "Not found"
-          }`.trim() || null,
-        raw_notes: inputText || null,
+          }\nSource File: ${sourceFile?.name || "No source file"}`.trim() || null,
+        raw_notes: inputText || sourceFileText || null,
         outcome: normalizeActivityOutcome(reviewOpportunity, reviewTask),
         follow_up_needed: Boolean(reviewTask),
         company_id: companyId,
@@ -858,19 +1004,19 @@ export default function CapturePage() {
     return newActivity.id as string;
   }
 
-  async function uploadScreenshotAttachment(activityId: string) {
-    if (!screenshotFile) return false;
+  async function uploadSourceFileAttachment(activityId: string) {
+    if (!sourceFile) return false;
 
-    const safeFileName = screenshotFile.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+    const safeFileName = sourceFile.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
 
     const storagePath = `${WORKSPACE_ID}/related_activity_id/${activityId}/${Date.now()}-${safeFileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from("sell-it-attachments")
-      .upload(storagePath, screenshotFile);
+      .upload(storagePath, sourceFile);
 
     if (uploadError) {
-      throw new Error(`Screenshot upload failed: ${uploadError.message}`);
+      throw new Error(`Source file upload failed: ${uploadError.message}`);
     }
 
     const { data: signedUrlData, error: signedUrlError } = await supabase.storage
@@ -879,19 +1025,19 @@ export default function CapturePage() {
 
     if (signedUrlError) {
       throw new Error(
-        `Screenshot uploaded, but signed link failed: ${signedUrlError.message}`
+        `Source file uploaded, but signed link failed: ${signedUrlError.message}`
       );
     }
 
     const { error: insertError } = await supabase.from("attachments").insert({
       workspace_id: WORKSPACE_ID,
       related_activity_id: activityId,
-      file_name: screenshotFile.name,
-      file_type: "Screenshot",
+      file_name: sourceFile.name,
+      file_type: getAttachmentFileType(sourceFile),
       file_url: signedUrlData.signedUrl,
       storage_path: storagePath,
       file_path: storagePath,
-      description: `Original screenshot used for AI Capture.\n\n${
+      description: `Original source file used for AI Capture.\n\n${
         reviewSummary || ""
       }`,
       uploaded_by: null,
@@ -899,7 +1045,7 @@ export default function CapturePage() {
 
     if (insertError) {
       throw new Error(
-        `Screenshot uploaded, but attachment record failed: ${insertError.message}`
+        `Source file uploaded, but attachment record failed: ${insertError.message}`
       );
     }
 
@@ -981,10 +1127,10 @@ export default function CapturePage() {
         opportunityId
       );
 
-      let screenshotAttached = false;
+      let sourceFileAttached = false;
 
       if (activityId) {
-        screenshotAttached = await uploadScreenshotAttachment(activityId);
+        sourceFileAttached = await uploadSourceFileAttachment(activityId);
       }
 
       const painPointNames = parsePainPoints(reviewPainPoints);
@@ -1012,7 +1158,7 @@ export default function CapturePage() {
         taskId: taskId || undefined,
         activityId: activityId || undefined,
         painPointIds,
-        screenshotAttached,
+        sourceFileAttached,
       });
 
       setSaveMessage("Reviewed AI Capture result saved to Sell It.");
@@ -1050,9 +1196,10 @@ export default function CapturePage() {
       <h1>AI Capture</h1>
 
       <p style={{ color: "#aaa", marginBottom: "32px", maxWidth: "900px" }}>
-        Paste text, upload a screenshot, or do both. Sell It will analyze the
-        information and return editable CRM fields. Nothing is saved until you
-        review and click Save Reviewed Result.
+        Paste text, upload any source file, drag and drop a file, paste a
+        screenshot, or combine them. Images and text/CSV files can be analyzed
+        now. Other file types can be attached to the saved activity as source
+        evidence.
       </p>
 
       <form
@@ -1085,18 +1232,17 @@ export default function CapturePage() {
             borderColor: isDragging ? "white" : "#555",
           }}
         >
-          <h2 style={{ marginTop: 0 }}>Upload Screenshot</h2>
+          <h2 style={{ marginTop: 0 }}>Upload Source File</h2>
 
           <p style={{ color: "#aaa" }}>
-            Drag and drop a PNG, JPG, JPEG, or WEBP screenshot here, use the file
+            Drag and drop any source file anywhere on this page, use the file
             picker below, or press Ctrl + V to paste a copied screenshot.
           </p>
 
           <input
             type="file"
-            accept="image/png,image/jpeg,image/jpg,image/webp"
             onChange={(event) =>
-              handleScreenshotFile(event.target.files?.[0] ?? null)
+              handleSourceFile(event.target.files?.[0] ?? null)
             }
             style={{
               width: "100%",
@@ -1108,29 +1254,69 @@ export default function CapturePage() {
           />
         </div>
 
-        {screenshotPreviewUrl && (
+        {sourceFile && (
           <div style={cardStyle}>
-            <h3 style={{ marginTop: 0 }}>Screenshot Preview</h3>
+            <h3 style={{ marginTop: 0 }}>Source File Ready</h3>
 
             <p>
-              <strong>File:</strong> {screenshotFile?.name}
+              <strong>File:</strong> {sourceFile.name}
             </p>
 
-            <img
-              src={screenshotPreviewUrl}
-              alt="Screenshot preview"
-              style={{
-                maxWidth: "100%",
-                maxHeight: "450px",
-                borderRadius: "8px",
-                border: "1px solid #333",
-                display: "block",
-                marginBottom: "12px",
-              }}
-            />
+            <p>
+              <strong>Type:</strong>{" "}
+              {sourceFile.type || getFileExtension(sourceFile.name) || "Unknown"}
+            </p>
 
-            <button type="button" onClick={clearScreenshot} style={buttonStyle}>
-              Remove Screenshot
+            <p>
+              <strong>Size:</strong> {formatFileSize(sourceFile.size)}
+            </p>
+
+            {sourceFileReadMessage && <p>{sourceFileReadMessage}</p>}
+
+            {sourceFilePreviewUrl && (
+              <img
+                src={sourceFilePreviewUrl}
+                alt="Source file preview"
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "450px",
+                  borderRadius: "8px",
+                  border: "1px solid #333",
+                  display: "block",
+                  marginBottom: "12px",
+                }}
+              />
+            )}
+
+            {sourceFileText && (
+              <div
+                style={{
+                  border: "1px solid #333",
+                  borderRadius: "8px",
+                  padding: "12px",
+                  backgroundColor: "#111",
+                  maxHeight: "220px",
+                  overflow: "auto",
+                  marginBottom: "12px",
+                }}
+              >
+                <p style={{ marginTop: 0 }}>
+                  <strong>Readable file preview:</strong>
+                </p>
+                <pre
+                  style={{
+                    whiteSpace: "pre-wrap",
+                    fontFamily: "Arial, sans-serif",
+                    margin: 0,
+                  }}
+                >
+                  {sourceFileText.slice(0, 3000)}
+                </pre>
+              </div>
+            )}
+
+            <button type="button" onClick={clearSourceFile} style={buttonStyle}>
+              Remove Source File
             </button>
           </div>
         )}
@@ -1276,7 +1462,7 @@ export default function CapturePage() {
                 value={reviewNotes}
                 onChange={(event) => setReviewNotes(event.target.value)}
                 rows={4}
-                placeholder="Extra details from the screenshot"
+                placeholder="Extra details from the source"
                 style={inputStyle}
               />
             </label>
@@ -1388,8 +1574,8 @@ export default function CapturePage() {
             )}
 
             <p>
-              Screenshot Attached:{" "}
-              {savedLinks?.screenshotAttached ? "Yes" : "No screenshot attached"}
+              Source File Attached:{" "}
+              {savedLinks?.sourceFileAttached ? "Yes" : "No source file attached"}
             </p>
           </div>
         </section>
