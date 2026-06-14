@@ -197,6 +197,22 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
             Edit Opportunity
           </Link>
         )}
+
+        {opportunity && (
+          <Link
+            href={`/opportunities/${opportunity.id}/delete`}
+            style={{
+              color: "black",
+              backgroundColor: "#ffdddd",
+              padding: "10px 14px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+            }}
+          >
+            Delete Opportunity
+          </Link>
+        )}
       </div>
 
       {error && (
