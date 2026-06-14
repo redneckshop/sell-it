@@ -42,6 +42,10 @@ type SmartCaptureResponse = {
     | "single_lead"
     | "conversation"
     | "screenshot"
+    | "pdf_document"
+    | "scanned_document"
+    | "contract"
+    | "carrier_packet"
     | "csv_or_table"
     | "multi_record_list"
     | "unknown";
@@ -132,6 +136,10 @@ function cleanSourceType(value: unknown): SmartCaptureResponse["source_type"] {
     value === "single_lead" ||
     value === "conversation" ||
     value === "screenshot" ||
+    value === "pdf_document" ||
+    value === "scanned_document" ||
+    value === "contract" ||
+    value === "carrier_packet" ||
     value === "csv_or_table" ||
     value === "multi_record_list" ||
     value === "unknown"
@@ -311,6 +319,22 @@ function cleanSmartResponse(parsed: any): SmartCaptureResponse {
   };
 }
 
+function isAllowedFileDataUrl(fileDataUrl: string) {
+  return (
+    fileDataUrl.startsWith("data:application/pdf;base64,") ||
+    fileDataUrl.startsWith("data:text/") ||
+    fileDataUrl.startsWith("data:application/json") ||
+    fileDataUrl.startsWith("data:application/vnd.ms-excel") ||
+    fileDataUrl.startsWith(
+      "data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    ) ||
+    fileDataUrl.startsWith("data:application/msword") ||
+    fileDataUrl.startsWith(
+      "data:application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+  );
+}
+
 export async function POST(request: Request) {
   try {
     const apiKey = process.env.OPENAI_API_KEY;
@@ -329,11 +353,17 @@ export async function POST(request: Request) {
 
     const inputText = String(body.text || "").trim();
     const imageDataUrl = String(body.imageDataUrl || "").trim();
-    const imageFileName = String(body.imageFileName || "").trim();
 
-    if (!inputText && !imageDataUrl) {
+    const fileDataUrl = String(body.fileDataUrl || "").trim();
+    const fileName = String(body.fileName || "").trim();
+    const fileMimeType = String(body.fileMimeType || "").trim();
+
+    if (!inputText && !imageDataUrl && !fileDataUrl) {
       return NextResponse.json(
-        { error: "Paste text, upload a readable file, or upload a screenshot before analyzing." },
+        {
+          error:
+            "Paste text, upload a readable file, upload a PDF, or upload a screenshot before analyzing.",
+        },
         { status: 400 }
       );
     }
@@ -343,6 +373,16 @@ export async function POST(request: Request) {
         {
           error:
             "Screenshot must be a PNG, JPG, JPEG, or WEBP image data URL.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (fileDataUrl && !isAllowedFileDataUrl(fileDataUrl)) {
+      return NextResponse.json(
+        {
+          error:
+            "This file type cannot be sent directly to AI yet. PDF, CSV/text, JSON, XLS/XLSX, DOC/DOCX are supported first.",
         },
         { status: 400 }
       );
@@ -362,6 +402,12 @@ The user may provide:
 - copied tables
 - messy prospect lists
 - mixed company/contact files
+- PDF documents
+- scanned PDFs
+- carrier packets
+- trucking agreements
+- broker/carrier documents
+- tax/contact pages inside contracts
 
 Your job is to extract structured CRM information.
 
@@ -372,7 +418,7 @@ Do not include explanations outside JSON.
 Use this JSON shape exactly:
 
 {
-  "source_type": "single_lead" | "conversation" | "screenshot" | "csv_or_table" | "multi_record_list" | "unknown",
+  "source_type": "single_lead" | "conversation" | "screenshot" | "pdf_document" | "scanned_document" | "contract" | "carrier_packet" | "csv_or_table" | "multi_record_list" | "unknown",
   "result": {
     "company": string or null,
     "contact": string or null,
@@ -410,10 +456,22 @@ Use this JSON shape exactly:
   ]
 }
 
+Rules for PDFs and scanned documents:
+- Focus on CRM/business extraction, not legal advice.
+- Extract company names, carrier names, contacts, phone numbers, emails, addresses, MC numbers, USDOT numbers, Federal Tax IDs, payment/contact details, equipment/capacity, lanes, and useful notes.
+- If the PDF appears to be a carrier packet, use source_type "carrier_packet".
+- If the PDF appears to be a contract/agreement, use source_type "contract".
+- If it is visibly scanned/image-based, use source_type "scanned_document".
+- Put the main extracted company/contact into result.
+- Put each clear company/contact/carrier/person into multi_records when useful.
+- Do not invent missing information.
+- Preserve identifiers like MC#, USDOT#, Federal Tax ID, phone, email, and address in notes/summary.
+- If multiple contacts are present, include all of them in contacts.
+
 Rules for result:
 - result is the best single summary of the whole capture.
 - Keep result compatible with the normal AI Capture review screen.
-- If the source is one lead, one screenshot, one post, or one conversation, result should hold the main CRM extraction.
+- If the source is one lead, one screenshot, one post, one PDF, or one conversation, result should hold the main CRM extraction.
 - If the source is a CSV/table/list with many rows, result should summarize the whole file.
 
 Rules for multi_records:
@@ -458,6 +516,8 @@ Examples of pain point names:
 - Contractor Communication
 - Fleet Upgrade
 - Equipment Availability
+- Carrier Packet Review
+- Contract Review Needed
 `;
 
     const userContent: any[] = [
@@ -469,8 +529,11 @@ Analyze this Sell It capture.
 Pasted text or readable file content:
 ${inputText || "[No pasted text provided]"}
 
-Source image/file name:
-${imageFileName || "[No image filename provided]"}
+Source file name:
+${fileName || "[No filename provided]"}
+
+Source file MIME type:
+${fileMimeType || "[No MIME type provided]"}
 `,
       },
     ];
@@ -479,6 +542,14 @@ ${imageFileName || "[No image filename provided]"}
       userContent.push({
         type: "input_image",
         image_url: imageDataUrl,
+      });
+    }
+
+    if (fileDataUrl) {
+      userContent.push({
+        type: "input_file",
+        filename: fileName || "source-file",
+        file_data: fileDataUrl,
       });
     }
 

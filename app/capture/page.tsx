@@ -199,6 +199,20 @@ function isImageFile(file: File) {
   return imageTypes.includes(file.type);
 }
 
+function isPdfFile(file: File) {
+  return file.type === "application/pdf" || getFileExtension(file.name) === "pdf";
+}
+
+function isOfficeFile(file: File) {
+  const extension = getFileExtension(file.name);
+
+  return ["doc", "docx", "xls", "xlsx"].includes(extension);
+}
+
+function isDirectAiFile(file: File) {
+  return isPdfFile(file) || isOfficeFile(file);
+}
+
 function isReadableTextFile(file: File) {
   const extension = getFileExtension(file.name);
 
@@ -295,6 +309,9 @@ function normalizeActivityType(value: string) {
   if (lower.includes("file")) return "Note";
   if (lower.includes("csv")) return "Note";
   if (lower.includes("import")) return "Note";
+  if (lower.includes("pdf")) return "Note";
+  if (lower.includes("contract")) return "Meeting";
+  if (lower.includes("carrier packet")) return "Note";
 
   return "Other";
 }
@@ -314,7 +331,9 @@ function normalizeActivityOutcome(opportunityValue: string, taskValue: string) {
     combined.includes("beta") ||
     combined.includes("demo") ||
     combined.includes("sale") ||
-    combined.includes("equipment")
+    combined.includes("equipment") ||
+    combined.includes("contract") ||
+    combined.includes("carrier")
   ) {
     return "Interested";
   }
@@ -335,6 +354,8 @@ function guessPainPointCategory(name: string) {
   if (lower.includes("communication")) return "Communication";
   if (lower.includes("equipment") || lower.includes("unit")) return "Equipment";
   if (lower.includes("fleet")) return "Fleet";
+  if (lower.includes("contract")) return "Contract";
+  if (lower.includes("carrier")) return "Carrier";
 
   return "Operations";
 }
@@ -355,7 +376,7 @@ function fileToDataUrl(file: File) {
 
 function buildMultiRecordNotes(record: MultiCaptureRecord) {
   return [
-    "Created from AI Capture V4 smart multi-record extraction.",
+    "Created from AI Capture V5 smart document/file extraction.",
     "",
     record.summary ? `Summary: ${record.summary}` : "",
     record.notes ? `Notes: ${record.notes}` : "",
@@ -383,6 +404,7 @@ export default function CapturePage() {
   const [sourceFile, setSourceFile] = useState<File | null>(null);
   const [sourceFilePreviewUrl, setSourceFilePreviewUrl] = useState("");
   const [sourceFileImageDataUrl, setSourceFileImageDataUrl] = useState("");
+  const [sourceFileDataUrl, setSourceFileDataUrl] = useState("");
   const [sourceFileText, setSourceFileText] = useState("");
   const [sourceFileReadMessage, setSourceFileReadMessage] = useState("");
   const [isDragging, setIsDragging] = useState(false);
@@ -518,20 +540,22 @@ export default function CapturePage() {
     setSourceFileReadMessage("");
     setSourceFileText("");
     setSourceFileImageDataUrl("");
+    setSourceFileDataUrl("");
 
     if (!file) {
       setSourceFile(null);
       setSourceFilePreviewUrl("");
       setSourceFileImageDataUrl("");
+      setSourceFileDataUrl("");
       setSourceFileText("");
       setSourceFileReadMessage("");
       return;
     }
 
-    const maxSizeBytes = 25 * 1024 * 1024;
+    const maxSizeBytes = 20 * 1024 * 1024;
 
     if (file.size > maxSizeBytes) {
-      setErrorMessage("File is too large. Use a file under 25 MB.");
+      setErrorMessage("File is too large. Use a file under 20 MB.");
       return;
     }
 
@@ -553,6 +577,26 @@ export default function CapturePage() {
 
     setSourceFilePreviewUrl("");
     setSourceFileImageDataUrl("");
+
+    if (isDirectAiFile(file)) {
+      try {
+        const dataUrl = await fileToDataUrl(file);
+
+        setSourceFileDataUrl(dataUrl);
+        setSourceFileReadMessage(
+          isPdfFile(file)
+            ? "PDF ready for AI document analysis. Scanned pages may be read by vision."
+            : "Document ready for AI file analysis."
+        );
+      } catch {
+        setSourceFileDataUrl("");
+        setSourceFileReadMessage(
+          "File selected, but it could not be prepared for AI analysis."
+        );
+      }
+
+      return;
+    }
 
     if (isReadableTextFile(file)) {
       try {
@@ -600,6 +644,7 @@ export default function CapturePage() {
     setSourceFile(null);
     setSourceFilePreviewUrl("");
     setSourceFileImageDataUrl("");
+    setSourceFileDataUrl("");
     setSourceFileText("");
     setSourceFileReadMessage("");
   }
@@ -627,9 +672,9 @@ export default function CapturePage() {
       .filter(Boolean)
       .join("\n\n");
 
-    if (!combinedText && !sourceFileImageDataUrl) {
+    if (!combinedText && !sourceFileImageDataUrl && !sourceFileDataUrl) {
       setErrorMessage(
-        "Paste text, upload an image/screenshot, or upload a readable text/CSV file before analyzing. Other file types can be attached after you add notes or a summary."
+        "Paste text, upload an image/screenshot, upload a PDF/document, or upload a readable text/CSV file before analyzing. Other file types can still be attached after you add notes or a summary."
       );
       setAnalyzing(false);
       return;
@@ -644,7 +689,9 @@ export default function CapturePage() {
         body: JSON.stringify({
           text: combinedText,
           imageDataUrl: sourceFileImageDataUrl,
-          imageFileName: sourceFile?.name || "",
+          fileDataUrl: sourceFileDataUrl,
+          fileName: sourceFile?.name || "",
+          fileMimeType: sourceFile?.type || getFileExtension(sourceFile?.name || ""),
         }),
       });
 
@@ -1157,7 +1204,7 @@ export default function CapturePage() {
           sourceFile?.name || "Source File"
         }`,
         summary:
-          `Imported ${records.length} selected records from AI Capture V4.\n\nSource Type: ${
+          `Imported ${records.length} selected records from AI Capture V5.\n\nSource Type: ${
             sourceType || "Unknown"
           }\nSource File: ${
             sourceFile?.name || "No source file"
@@ -1463,9 +1510,9 @@ export default function CapturePage() {
 
       <p style={{ color: "#aaa", marginBottom: "32px", maxWidth: "900px" }}>
         Paste text, upload any source file, drag and drop a file, paste a
-        screenshot, or combine them. Images and text/CSV files can be analyzed
-        now. AI Capture V4 can extract one lead or multiple company/contact
-        records from messy files.
+        screenshot, or combine them. Images, text/CSV files, PDFs, and common
+        documents can be analyzed. AI Capture V5 can extract one lead, multiple
+        records, or carrier/contact information from scanned documents.
       </p>
 
       <form
@@ -1503,6 +1550,12 @@ export default function CapturePage() {
           <p style={{ color: "#aaa" }}>
             Drag and drop any source file anywhere on this page, use the file
             picker below, or press Ctrl + V to paste a copied screenshot.
+          </p>
+
+          <p style={{ color: "#aaa" }}>
+            V5 supports screenshots, CSV/text, PDF, DOC/DOCX, and XLS/XLSX for
+            AI analysis. Unsupported files can still be attached as source
+            evidence.
           </p>
 
           <input
@@ -1552,6 +1605,28 @@ export default function CapturePage() {
                   marginBottom: "12px",
                 }}
               />
+            )}
+
+            {isPdfFile(sourceFile) && (
+              <div
+                style={{
+                  border: "1px solid #333",
+                  borderRadius: "8px",
+                  padding: "12px",
+                  backgroundColor: "#111",
+                  marginBottom: "12px",
+                }}
+              >
+                <p style={{ marginTop: 0 }}>
+                  <strong>PDF Document:</strong> ready for scanned document /
+                  carrier packet extraction.
+                </p>
+
+                <p style={{ color: "#aaa" }}>
+                  After analysis, review the extracted company/contact fields
+                  before saving.
+                </p>
+              </div>
             )}
 
             {sourceFileText && (
@@ -1612,7 +1687,7 @@ export default function CapturePage() {
 
       {multiRecords.length > 0 && (
         <section style={{ maxWidth: "1100px", marginBottom: "40px" }}>
-          <h2>AI Capture V4 — Multi-Record Review</h2>
+          <h2>AI Capture V5 — Multi-Record Review</h2>
 
           <p style={{ color: "#aaa" }}>
             Source Type: {sourceType || "Unknown"} | Records Found:{" "}
@@ -1620,8 +1695,9 @@ export default function CapturePage() {
           </p>
 
           <p style={{ color: "#aaa" }}>
-            Use this section for CSV files, tables, messy contact lists, and
-            multi-company files. Select only the records you want to save.
+            Use this section for CSV files, tables, messy contact lists,
+            carrier packets, PDFs, scanned documents, and multi-company files.
+            Select only the records you want to save.
           </p>
 
           <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
@@ -1902,9 +1978,9 @@ export default function CapturePage() {
           <h2>Single-Record Review</h2>
 
           <p style={{ color: "#aaa" }}>
-            Use this section when the source is one lead, one conversation, or
-            one screenshot. For CSV/list imports, use the multi-record review
-            section above.
+            Use this section when the source is one lead, one conversation, one
+            screenshot, or one scanned document. For CSV/list imports, use the
+            multi-record review section above.
           </p>
 
           <div style={cardStyle}>
