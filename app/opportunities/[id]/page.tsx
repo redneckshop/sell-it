@@ -18,6 +18,7 @@ type Opportunity = {
   company_id: string;
   primary_contact_id: string | null;
   created_at: string | null;
+  updated_at: string | null;
   companies: {
     id: string;
     name: string;
@@ -74,6 +75,7 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
       company_id,
       primary_contact_id,
       created_at,
+      updated_at,
       companies (
         id,
         name
@@ -156,6 +158,22 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
         >
           Back to Opportunities
         </Link>
+
+        {opportunity && (
+          <Link
+            href={`/opportunities/${opportunity.id}/edit`}
+            style={{
+              color: "black",
+              backgroundColor: "white",
+              padding: "10px 14px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+            }}
+          >
+            Edit Opportunity
+          </Link>
+        )}
       </div>
 
       {error && (
@@ -275,6 +293,13 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
               <strong>Created:</strong>{" "}
               {opportunity.created_at
                 ? new Date(opportunity.created_at).toLocaleString()
+                : "Not available"}
+            </p>
+
+            <p>
+              <strong>Last Updated:</strong>{" "}
+              {opportunity.updated_at
+                ? new Date(opportunity.updated_at).toLocaleString()
                 : "Not available"}
             </p>
           </div>
