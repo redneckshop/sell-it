@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { supabase } from "./lib/supabase";
 import HomeSearch from "./components/HomeSearch";
 
@@ -16,12 +17,6 @@ type Task = {
   status: string | null;
   priority: string | null;
   due_date: string | null;
-};
-
-type HotCompany = {
-  id: string;
-  name: string;
-  lead_temperature: string;
 };
 
 type HotOpportunity = {
@@ -44,30 +39,103 @@ type Activity = {
   outcome: string | null;
 };
 
+type Note = {
+  id: string;
+  title: string;
+  body: string | null;
+  source: string | null;
+  tags: string | null;
+  created_at: string | null;
+};
+
 function getTodayString() {
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   return now.toISOString().slice(0, 10);
 }
 
-function cardStyle() {
+function getDateOnly(value: string | null) {
+  if (!value) {
+    return "";
+  }
+
+  return value.slice(0, 10);
+}
+
+function formatDate(value: string | null) {
+  if (!value) {
+    return "No date";
+  }
+
+  return new Date(value).toLocaleDateString();
+}
+
+function formatDateTime(value: string | null) {
+  if (!value) {
+    return "No date";
+  }
+
+  return new Date(value).toLocaleString();
+}
+
+function cardStyle(): CSSProperties {
   return {
     border: "1px solid #333",
-    borderRadius: "12px",
-    padding: "20px",
+    borderRadius: "10px",
+    padding: "14px",
     backgroundColor: "#1a1a1a",
   };
 }
 
-function buttonStyle() {
+function widgetStyle(): CSSProperties {
   return {
-    display: "inline-block",
+    ...cardStyle(),
+    minHeight: "205px",
+  };
+}
+
+function scrollAreaStyle(): CSSProperties {
+  return {
+    maxHeight: "116px",
+    overflowY: "auto",
+    paddingRight: "6px",
+  };
+}
+
+function buttonStyle(): CSSProperties {
+  return {
+    display: "block",
     backgroundColor: "white",
     color: "black",
-    padding: "10px 14px",
+    padding: "10px 12px",
     borderRadius: "6px",
     textDecoration: "none",
     fontWeight: "bold",
+    textAlign: "center",
+  };
+}
+
+function sidebarLinkStyle(): CSSProperties {
+  return {
+    display: "block",
+    color: "white",
+    textDecoration: "none",
+    padding: "10px 12px",
+    borderRadius: "6px",
+    backgroundColor: "#1a1a1a",
+    border: "1px solid #333",
+    marginBottom: "8px",
+    fontWeight: "bold",
+  };
+}
+
+function listLinkStyle(): CSSProperties {
+  return {
+    display: "block",
+    color: "white",
+    textDecoration: "none",
+    marginBottom: "10px",
+    lineHeight: "1.35",
   };
 }
 
@@ -89,6 +157,19 @@ export default async function Home() {
   const workspaceName = profile?.workspaces?.name ?? "No workspace found";
   const fullName = profile?.full_name ?? "No profile found";
 
+  const { count: companyCount, error: companyCountError } = await supabase
+    .from("companies")
+    .select("id", { count: "exact", head: true });
+
+  const { count: contactCount, error: contactCountError } = await supabase
+    .from("contacts")
+    .select("id", { count: "exact", head: true });
+
+  const { count: opportunityCount, error: opportunityCountError } =
+    await supabase
+      .from("opportunities")
+      .select("id", { count: "exact", head: true });
+
   const { data: taskRows, error: taskError } = await supabase
     .from("tasks")
     .select("id, title, status, priority, due_date")
@@ -100,20 +181,14 @@ export default async function Home() {
     (task) => task.status !== "Completed" && task.status !== "Cancelled"
   );
 
-  const tasksDueToday = openTasks.filter((task) => task.due_date === today);
-
-  const overdueTasks = openTasks.filter(
-    (task) => task.due_date && task.due_date < today
+  const tasksDueToday = openTasks.filter(
+    (task) => getDateOnly(task.due_date) === today
   );
 
-  const { data: hotCompanyRows, error: hotCompanyError } = await supabase
-    .from("companies")
-    .select("id, name, lead_temperature")
-    .eq("lead_temperature", "Hot")
-    .order("created_at", { ascending: false })
-    .limit(5);
-
-  const hotCompanies: HotCompany[] = hotCompanyRows ?? [];
+  const overdueTasks = openTasks.filter((task) => {
+    const taskDate = getDateOnly(task.due_date);
+    return taskDate !== "" && taskDate < today;
+  });
 
   const { data: hotOpportunityRows, error: hotOpportunityError } =
     await supabase
@@ -130,82 +205,43 @@ export default async function Home() {
         )
       `)
       .eq("lead_temperature", "Hot")
-      .order("created_at", { ascending: false })
-      .limit(5);
+      .order("updated_at", { ascending: false })
+      .limit(10);
 
   const hotOpportunities: HotOpportunity[] = hotOpportunityRows ?? [];
-
-  const hotLeadCount = hotCompanies.length + hotOpportunities.length;
 
   const { data: activityRows, error: activityError } = await supabase
     .from("activities")
     .select("id, activity_type, activity_date, subject, outcome")
     .order("activity_date", { ascending: false })
-    .limit(5);
+    .limit(10);
 
   const recentActivities: Activity[] = activityRows ?? [];
 
-  const quickAdds = [
-    {
-      title: "+ Company",
-      href: "/companies/new",
-    },
-    {
-      title: "+ Contact",
-      href: "/contacts/new",
-    },
-    {
-      title: "+ Task",
-      href: "/tasks/new",
-    },
-    {
-      title: "+ Activity",
-      href: "/activities/new",
-    },
-    {
-      title: "+ Opportunity",
-      href: "/opportunities/new",
-    },
-    {
-      title: "+ Note",
-      href: "/notes/new",
-    },
+  const { data: noteRows, error: noteError } = await supabase
+    .from("notes")
+    .select("id, title, body, source, tags, created_at")
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  const recentNotes: Note[] = noteRows ?? [];
+
+  const navigationLinks = [
+    { title: "Companies", href: "/companies" },
+    { title: "Contacts", href: "/contacts" },
+    { title: "Opportunities", href: "/opportunities" },
+    { title: "Tasks", href: "/tasks" },
+    { title: "Activities", href: "/activities" },
+    { title: "Notes", href: "/notes" },
   ];
 
-  const features = [
-    {
-      title: "Companies",
-      description: "Manage businesses, prospects, and customer organizations.",
-      href: "/companies",
-    },
-    {
-      title: "Contacts",
-      description: "Manage people connected to companies and sales follow-ups.",
-      href: "/contacts",
-    },
-    {
-      title: "Tasks",
-      description: "Track follow-ups, assignments, due dates, and priorities.",
-      href: "/tasks",
-    },
-    {
-      title: "Activities",
-      description:
-        "Record calls, messages, meetings, notes, outcomes, and follow-ups.",
-      href: "/activities",
-    },
-    {
-      title: "Opportunities",
-      description:
-        "Manage the sales pipeline, stages, hot leads, and expected value.",
-      href: "/opportunities",
-    },
-    {
-      title: "Notes",
-      description:
-        "Capture written notes connected to companies, contacts, and opportunities.",
-      href: "/notes",
-    },
+  const quickAdds = [
+    { title: "+ Company", href: "/companies/new" },
+    { title: "+ Contact", href: "/contacts/new" },
+    { title: "+ Opportunity", href: "/opportunities/new" },
+    { title: "+ Task", href: "/tasks/new" },
+    { title: "+ Activity", href: "/activities/new" },
+    { title: "+ Note", href: "/notes/new" },
   ];
 
   return (
@@ -214,275 +250,430 @@ export default async function Home() {
         minHeight: "100vh",
         backgroundColor: "#111",
         color: "white",
-        padding: "40px",
         fontFamily: "Arial, sans-serif",
       }}
     >
-      <section
+      <div
         style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
+          display: "flex",
+          alignItems: "flex-start",
+          gap: "20px",
+          padding: "24px",
         }}
       >
-        <div style={{ marginBottom: "36px" }}>
-          <h1 style={{ fontSize: "48px", marginBottom: "12px" }}>SELL IT</h1>
-
-          <p style={{ color: "#aaa", fontSize: "18px", lineHeight: "1.5" }}>
-            Command center for sales follow-ups, leads, contacts, tasks,
-            opportunities, notes, and activity.
+        <aside
+          style={{
+            width: "220px",
+            flexShrink: 0,
+            position: "sticky",
+            top: "24px",
+            border: "1px solid #333",
+            borderRadius: "12px",
+            backgroundColor: "#151515",
+            padding: "16px",
+            maxHeight: "calc(100vh - 48px)",
+            overflowY: "auto",
+          }}
+        >
+          <p
+            style={{
+              color: "#aaa",
+              textTransform: "uppercase",
+              letterSpacing: "2px",
+              fontSize: "11px",
+              margin: "0 0 8px 0",
+            }}
+          >
+            Sell It
           </p>
-        </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-            gap: "16px",
-            marginBottom: "32px",
-          }}
-        >
-          <div style={cardStyle()}>
-            <p style={{ color: "#aaa", marginTop: 0 }}>Connected Workspace</p>
-            <h2 style={{ marginBottom: 0 }}>{workspaceName}</h2>
-          </div>
+          <h2 style={{ margin: "0 0 16px 0", fontSize: "24px" }}>CRM</h2>
 
-          <div style={cardStyle()}>
-            <p style={{ color: "#aaa", marginTop: 0 }}>Logged In As</p>
-            <h2 style={{ marginBottom: 0 }}>{fullName}</h2>
-          </div>
-        </div>
+          <p style={{ color: "#aaa", marginBottom: "8px", fontSize: "13px" }}>
+            Navigate
+          </p>
 
-        <h2>Dashboard</h2>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-            gap: "16px",
-            marginBottom: "32px",
-          }}
-        >
-          <div style={cardStyle()}>
-            <p style={{ color: "#aaa", marginTop: 0 }}>Tasks Due Today</p>
-
-            <h2 style={{ fontSize: "42px", margin: "8px 0" }}>
-              {tasksDueToday.length}
-            </h2>
-
-            {tasksDueToday.length === 0 && (
-              <p style={{ color: "#aaa" }}>No tasks due today.</p>
-            )}
-
-            {tasksDueToday.slice(0, 3).map((task) => (
-              <Link
-                key={task.id}
-                href={`/tasks/${task.id}`}
-                style={{
-                  display: "block",
-                  color: "white",
-                  textDecoration: "none",
-                  marginBottom: "8px",
-                }}
-              >
-                {task.title}
-              </Link>
-            ))}
-          </div>
-
-          <div style={cardStyle()}>
-            <p style={{ color: "#aaa", marginTop: 0 }}>Overdue Tasks</p>
-
-            <h2 style={{ fontSize: "42px", margin: "8px 0" }}>
-              {overdueTasks.length}
-            </h2>
-
-            {overdueTasks.length === 0 && (
-              <p style={{ color: "#aaa" }}>No overdue tasks.</p>
-            )}
-
-            {overdueTasks.slice(0, 3).map((task) => (
-              <Link
-                key={task.id}
-                href={`/tasks/${task.id}`}
-                style={{
-                  display: "block",
-                  color: "white",
-                  textDecoration: "none",
-                  marginBottom: "8px",
-                }}
-              >
-                {task.title}
-              </Link>
-            ))}
-          </div>
-
-          <div style={cardStyle()}>
-            <p style={{ color: "#aaa", marginTop: 0 }}>Hot Leads</p>
-
-            <h2 style={{ fontSize: "42px", margin: "8px 0" }}>
-              {hotLeadCount}
-            </h2>
-
-            {hotLeadCount === 0 && (
-              <p style={{ color: "#aaa" }}>No hot leads yet.</p>
-            )}
-
-            {hotCompanies.map((company) => (
-              <Link
-                key={`company-${company.id}`}
-                href={`/companies/${company.id}`}
-                style={{
-                  display: "block",
-                  color: "white",
-                  textDecoration: "none",
-                  marginBottom: "8px",
-                }}
-              >
-                {company.name} — Company
-              </Link>
-            ))}
-
-            {hotOpportunities.map((opportunity) => (
-              <Link
-                key={`opportunity-${opportunity.id}`}
-                href={`/opportunities/${opportunity.id}`}
-                style={{
-                  display: "block",
-                  color: "white",
-                  textDecoration: "none",
-                  marginBottom: "8px",
-                }}
-              >
-                {opportunity.name}
-                {opportunity.companies?.name
-                  ? ` — ${opportunity.companies.name}`
-                  : ""}
-              </Link>
-            ))}
-          </div>
-
-          <div style={cardStyle()}>
-            <p style={{ color: "#aaa", marginTop: 0 }}>Recent Activity</p>
-
-            <h2 style={{ fontSize: "42px", margin: "8px 0" }}>
-              {recentActivities.length}
-            </h2>
-
-            {recentActivities.length === 0 && (
-              <p style={{ color: "#aaa" }}>No activity yet.</p>
-            )}
-
-            {recentActivities.slice(0, 3).map((activity) => (
-              <Link
-                key={activity.id}
-                href={`/activities/${activity.id}`}
-                style={{
-                  display: "block",
-                  color: "white",
-                  textDecoration: "none",
-                  marginBottom: "8px",
-                }}
-              >
-                {activity.subject}
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        <HomeSearch />
-
-        <h2>Quick Add</h2>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            gap: "16px",
-            marginBottom: "32px",
-          }}
-        >
-          {quickAdds.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              style={{
-                ...buttonStyle(),
-                textAlign: "center",
-                fontSize: "18px",
-                padding: "18px",
-              }}
-            >
+          {navigationLinks.map((item) => (
+            <Link key={item.href} href={item.href} style={sidebarLinkStyle()}>
               {item.title}
             </Link>
           ))}
-        </div>
 
-        <h2>Navigation</h2>
+          <p
+            style={{
+              color: "#aaa",
+              margin: "18px 0 8px 0",
+              fontSize: "13px",
+            }}
+          >
+            Quick Add
+          </p>
 
-        <div
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {quickAdds.map((item) => (
+              <Link key={item.href} href={item.href} style={buttonStyle()}>
+                {item.title}
+              </Link>
+            ))}
+          </div>
+        </aside>
+
+        <section
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-            gap: "16px",
+            flex: 1,
+            minWidth: 0,
+            maxWidth: "1250px",
           }}
         >
-          {features.map((feature) => (
-            <Link
-              key={feature.href}
-              href={feature.href}
+          <div style={{ marginBottom: "20px" }}>
+            <p
               style={{
-                display: "block",
-                border: "1px solid #333",
-                borderRadius: "10px",
-                padding: "24px",
-                backgroundColor: "#1a1a1a",
+                color: "#aaa",
+                textTransform: "uppercase",
+                letterSpacing: "2px",
+                marginBottom: "6px",
+                fontSize: "13px",
+              }}
+            >
+              Business Command Center
+            </p>
+
+            <h1 style={{ fontSize: "42px", margin: "0 0 8px 0" }}>SELL IT</h1>
+
+            <p style={{ color: "#aaa", fontSize: "16px", lineHeight: "1.4" }}>
+              Sales follow-ups, leads, contacts, tasks, opportunities, notes,
+              and daily activity in one place.
+            </p>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gap: "12px",
+              marginBottom: "20px",
+            }}
+          >
+            <div style={cardStyle()}>
+              <p style={{ color: "#aaa", margin: "0 0 6px 0" }}>
+                Connected Workspace
+              </p>
+              <strong>{workspaceName}</strong>
+            </div>
+
+            <div style={cardStyle()}>
+              <p style={{ color: "#aaa", margin: "0 0 6px 0" }}>
+                Logged In As
+              </p>
+              <strong>{fullName}</strong>
+            </div>
+          </div>
+
+          <h2 style={{ margin: "0 0 10px 0" }}>Snapshot</h2>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+              gap: "12px",
+              marginBottom: "20px",
+            }}
+          >
+            <Link
+              href="/companies"
+              style={{
+                ...cardStyle(),
                 color: "white",
                 textDecoration: "none",
               }}
             >
-              <h3 style={{ marginTop: 0, fontSize: "24px" }}>
-                {feature.title}
-              </h3>
+              <p style={{ color: "#aaa", margin: "0 0 8px 0" }}>Companies</p>
+              <h2 style={{ fontSize: "34px", margin: 0 }}>
+                {companyCount ?? 0}
+              </h2>
+            </Link>
 
-              <p style={{ color: "#aaa", lineHeight: "1.5" }}>
-                {feature.description}
+            <Link
+              href="/contacts"
+              style={{
+                ...cardStyle(),
+                color: "white",
+                textDecoration: "none",
+              }}
+            >
+              <p style={{ color: "#aaa", margin: "0 0 8px 0" }}>Contacts</p>
+              <h2 style={{ fontSize: "34px", margin: 0 }}>
+                {contactCount ?? 0}
+              </h2>
+            </Link>
+
+            <Link
+              href="/opportunities"
+              style={{
+                ...cardStyle(),
+                color: "white",
+                textDecoration: "none",
+              }}
+            >
+              <p style={{ color: "#aaa", margin: "0 0 8px 0" }}>
+                Opportunities
+              </p>
+              <h2 style={{ fontSize: "34px", margin: 0 }}>
+                {opportunityCount ?? 0}
+              </h2>
+            </Link>
+
+            <Link
+              href="/tasks"
+              style={{
+                ...cardStyle(),
+                color: "white",
+                textDecoration: "none",
+              }}
+            >
+              <p style={{ color: "#aaa", margin: "0 0 8px 0" }}>Open Tasks</p>
+              <h2 style={{ fontSize: "34px", margin: 0 }}>
+                {openTasks.length}
+              </h2>
+            </Link>
+          </div>
+
+          <h2 style={{ margin: "0 0 10px 0" }}>Dashboard</h2>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gap: "12px",
+              marginBottom: "20px",
+            }}
+          >
+            <div style={widgetStyle()}>
+              <p style={{ color: "#aaa", margin: "0 0 6px 0" }}>
+                Tasks Due Today
               </p>
 
-              <div style={buttonStyle()}>Open {feature.title}</div>
-            </Link>
-          ))}
-        </div>
+              <h2 style={{ fontSize: "32px", margin: "0 0 8px 0" }}>
+                {tasksDueToday.length}
+              </h2>
 
-        {profileError && (
-          <p style={{ color: "red", marginTop: "32px" }}>
-            Profile error: {profileError.message}
-          </p>
-        )}
+              <div style={scrollAreaStyle()}>
+                {tasksDueToday.length === 0 && (
+                  <p style={{ color: "#aaa", marginTop: 0 }}>
+                    No tasks due today.
+                  </p>
+                )}
 
-        {taskError && (
-          <p style={{ color: "red", marginTop: "32px" }}>
-            Task error: {taskError.message}
-          </p>
-        )}
+                {tasksDueToday.map((task) => (
+                  <Link
+                    key={task.id}
+                    href={`/tasks/${task.id}`}
+                    style={listLinkStyle()}
+                  >
+                    <strong>{task.title}</strong>
+                    <br />
+                    <span style={{ color: "#aaa" }}>
+                      {task.priority || "No priority"} -{" "}
+                      {task.status || "No status"}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
 
-        {hotCompanyError && (
-          <p style={{ color: "red", marginTop: "32px" }}>
-            Hot company error: {hotCompanyError.message}
-          </p>
-        )}
+            <div style={widgetStyle()}>
+              <p style={{ color: "#aaa", margin: "0 0 6px 0" }}>
+                Overdue Tasks
+              </p>
 
-        {hotOpportunityError && (
-          <p style={{ color: "red", marginTop: "32px" }}>
-            Hot opportunity error: {hotOpportunityError.message}
-          </p>
-        )}
+              <h2 style={{ fontSize: "32px", margin: "0 0 8px 0" }}>
+                {overdueTasks.length}
+              </h2>
 
-        {activityError && (
-          <p style={{ color: "red", marginTop: "32px" }}>
-            Activity error: {activityError.message}
-          </p>
-        )}
-      </section>
+              <div style={scrollAreaStyle()}>
+                {overdueTasks.length === 0 && (
+                  <p style={{ color: "#aaa", marginTop: 0 }}>
+                    No overdue tasks.
+                  </p>
+                )}
+
+                {overdueTasks.map((task) => (
+                  <Link
+                    key={task.id}
+                    href={`/tasks/${task.id}`}
+                    style={listLinkStyle()}
+                  >
+                    <strong>{task.title}</strong>
+                    <br />
+                    <span style={{ color: "#aaa" }}>
+                      Due {formatDate(task.due_date)} -{" "}
+                      {task.priority || "No priority"}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            <div style={widgetStyle()}>
+              <p style={{ color: "#aaa", margin: "0 0 6px 0" }}>
+                Hot Opportunities
+              </p>
+
+              <h2 style={{ fontSize: "32px", margin: "0 0 8px 0" }}>
+                {hotOpportunities.length}
+              </h2>
+
+              <div style={scrollAreaStyle()}>
+                {hotOpportunities.length === 0 && (
+                  <p style={{ color: "#aaa", marginTop: 0 }}>
+                    No hot opportunities yet.
+                  </p>
+                )}
+
+                {hotOpportunities.map((opportunity) => (
+                  <Link
+                    key={opportunity.id}
+                    href={`/opportunities/${opportunity.id}`}
+                    style={listLinkStyle()}
+                  >
+                    <strong>{opportunity.name}</strong>
+                    <br />
+                    <span style={{ color: "#aaa" }}>
+                      {opportunity.companies?.name || "No company"} -{" "}
+                      {opportunity.stage}
+                      {opportunity.estimated_monthly_value !== null
+                        ? ` - $${Number(
+                            opportunity.estimated_monthly_value
+                          ).toLocaleString()}/mo`
+                        : ""}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            <div style={widgetStyle()}>
+              <p style={{ color: "#aaa", margin: "0 0 6px 0" }}>
+                Recent Activities
+              </p>
+
+              <h2 style={{ fontSize: "32px", margin: "0 0 8px 0" }}>
+                {recentActivities.length}
+              </h2>
+
+              <div style={scrollAreaStyle()}>
+                {recentActivities.length === 0 && (
+                  <p style={{ color: "#aaa", marginTop: 0 }}>
+                    No recent activities yet.
+                  </p>
+                )}
+
+                {recentActivities.map((activity) => (
+                  <Link
+                    key={activity.id}
+                    href={`/activities/${activity.id}`}
+                    style={listLinkStyle()}
+                  >
+                    <strong>{activity.subject}</strong>
+                    <br />
+                    <span style={{ color: "#aaa" }}>
+                      {activity.activity_type} -{" "}
+                      {activity.outcome || "No outcome"} -{" "}
+                      {formatDateTime(activity.activity_date)}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            <div style={widgetStyle()}>
+              <p style={{ color: "#aaa", margin: "0 0 6px 0" }}>
+                Recent Notes
+              </p>
+
+              <h2 style={{ fontSize: "32px", margin: "0 0 8px 0" }}>
+                {recentNotes.length}
+              </h2>
+
+              <div style={scrollAreaStyle()}>
+                {recentNotes.length === 0 && (
+                  <p style={{ color: "#aaa", marginTop: 0 }}>
+                    No recent notes yet.
+                  </p>
+                )}
+
+                {recentNotes.map((note) => (
+                  <Link
+                    key={note.id}
+                    href={`/notes/${note.id}`}
+                    style={listLinkStyle()}
+                  >
+                    <strong>{note.title}</strong>
+                    <br />
+                    <span style={{ color: "#aaa" }}>
+                      {note.body
+                        ? note.body.length > 70
+                          ? `${note.body.slice(0, 70)}...`
+                          : note.body
+                        : "No note body"}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <HomeSearch />
+
+          {profileError && (
+            <p style={{ color: "red", marginTop: "32px" }}>
+              Profile error: {profileError.message}
+            </p>
+          )}
+
+          {companyCountError && (
+            <p style={{ color: "red", marginTop: "32px" }}>
+              Company count error: {companyCountError.message}
+            </p>
+          )}
+
+          {contactCountError && (
+            <p style={{ color: "red", marginTop: "32px" }}>
+              Contact count error: {contactCountError.message}
+            </p>
+          )}
+
+          {opportunityCountError && (
+            <p style={{ color: "red", marginTop: "32px" }}>
+              Opportunity count error: {opportunityCountError.message}
+            </p>
+          )}
+
+          {taskError && (
+            <p style={{ color: "red", marginTop: "32px" }}>
+              Task error: {taskError.message}
+            </p>
+          )}
+
+          {hotOpportunityError && (
+            <p style={{ color: "red", marginTop: "32px" }}>
+              Hot opportunity error: {hotOpportunityError.message}
+            </p>
+          )}
+
+          {activityError && (
+            <p style={{ color: "red", marginTop: "32px" }}>
+              Activity error: {activityError.message}
+            </p>
+          )}
+
+          {noteError && (
+            <p style={{ color: "red", marginTop: "32px" }}>
+              Note error: {noteError.message}
+            </p>
+          )}
+        </section>
+      </div>
     </main>
   );
 }
