@@ -234,6 +234,7 @@ export default async function Home() {
     { title: "Activities", href: "/activities" },
     { title: "Notes", href: "/notes" },
     { title: "Communities", href: "/communities" },
+    { title: "Posts", href: "/posts" },
   ];
 
   const quickAdds = [
@@ -244,6 +245,7 @@ export default async function Home() {
     { title: "+ Activity", href: "/activities/new" },
     { title: "+ Note", href: "/notes/new" },
     { title: "+ Community", href: "/communities/new" },
+    { title: "+ Post", href: "/posts/new" },
   ];
 
   return (

@@ -20,6 +20,21 @@ type Community = {
   updated_at: string | null;
 };
 
+type RelatedPost = {
+  id: string;
+  title: string;
+  platform: string | null;
+  post_type: string | null;
+  post_date: string | null;
+  comment_count: number | null;
+  reaction_count: number | null;
+  share_count: number | null;
+  follow_up_needed: boolean | null;
+  pain_points_found: string | null;
+  leads_found: string | null;
+  created_at: string | null;
+};
+
 type PageProps = {
   params: Promise<{
     id: string;
@@ -36,6 +51,16 @@ export default async function CommunityDetailPage({ params }: PageProps) {
     )
     .eq("id", id)
     .single();
+
+  const { data: relatedPostRows, error: relatedPostsError } = await supabase
+    .from("posts")
+    .select(
+      "id, title, platform, post_type, post_date, comment_count, reaction_count, share_count, follow_up_needed, pain_points_found, leads_found, created_at"
+    )
+    .eq("community_id", id)
+    .order("created_at", { ascending: false });
+
+  const relatedPosts = (relatedPostRows ?? []) as RelatedPost[];
 
   return (
     <main
@@ -81,6 +106,20 @@ export default async function CommunityDetailPage({ params }: PageProps) {
           }}
         >
           Back to Communities
+        </Link>
+
+        <Link
+          href="/posts/new"
+          style={{
+            color: "black",
+            backgroundColor: "white",
+            padding: "10px 14px",
+            borderRadius: "6px",
+            textDecoration: "none",
+            fontWeight: "bold",
+          }}
+        >
+          Add Post
         </Link>
       </div>
 
@@ -191,6 +230,91 @@ export default async function CommunityDetailPage({ params }: PageProps) {
                 : "Not available"}
             </p>
           </div>
+
+          <section style={{ maxWidth: "900px" }}>
+            <h2>Related Posts</h2>
+
+            <p style={{ color: "#aaa", marginBottom: "20px" }}>
+              Posts tracked from this community.
+            </p>
+
+            {relatedPostsError && (
+              <p style={{ color: "red" }}>
+                Related posts error: {relatedPostsError.message}
+              </p>
+            )}
+
+            {relatedPosts.length === 0 && (
+              <p style={{ color: "#aaa" }}>
+                No posts have been linked to this community yet.
+              </p>
+            )}
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+                gap: "16px",
+              }}
+            >
+              {relatedPosts.map((post) => (
+                <Link
+                  key={post.id}
+                  href={`/posts/${post.id}`}
+                  style={{
+                    display: "block",
+                    border: "1px solid #333",
+                    padding: "18px",
+                    borderRadius: "10px",
+                    backgroundColor: "#1a1a1a",
+                    color: "white",
+                    textDecoration: "none",
+                  }}
+                >
+                  <h3 style={{ marginTop: 0 }}>{post.title}</h3>
+
+                  {post.platform && (
+                    <p>
+                      <strong>Platform:</strong> {post.platform}
+                    </p>
+                  )}
+
+                  {post.post_type && (
+                    <p>
+                      <strong>Type:</strong> {post.post_type}
+                    </p>
+                  )}
+
+                  {post.post_date && (
+                    <p>
+                      <strong>Post Date:</strong> {post.post_date}
+                    </p>
+                  )}
+
+                  <p>
+                    <strong>Comments:</strong> {post.comment_count ?? 0}{" "}
+                    <strong>Reactions:</strong> {post.reaction_count ?? 0}{" "}
+                    <strong>Shares:</strong> {post.share_count ?? 0}
+                  </p>
+
+                  {post.follow_up_needed && (
+                    <p style={{ color: "#ffcc66", fontWeight: "bold" }}>
+                      Follow-up needed
+                    </p>
+                  )}
+
+                  {post.pain_points_found && (
+                    <p style={{ color: "#ccc" }}>
+                      <strong>Pain Points:</strong>{" "}
+                      {post.pain_points_found.length > 140
+                        ? `${post.pain_points_found.slice(0, 140)}...`
+                        : post.pain_points_found}
+                    </p>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </section>
         </section>
       )}
     </main>
