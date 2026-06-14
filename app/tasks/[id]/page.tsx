@@ -181,6 +181,22 @@ export default async function TaskDetailPage({ params }: PageProps) {
             Edit Task
           </Link>
         )}
+
+        {task && (
+          <Link
+            href={`/tasks/${task.id}/delete`}
+            style={{
+              color: "black",
+              backgroundColor: "#ffdddd",
+              padding: "10px 14px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+            }}
+          >
+            Delete Task
+          </Link>
+        )}
       </div>
 
       {error && (

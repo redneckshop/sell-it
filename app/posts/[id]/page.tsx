@@ -111,6 +111,22 @@ export default async function PostDetailPage({ params }: PageProps) {
           Add Post
         </Link>
 
+        {post && (
+          <Link
+            href={`/posts/${post.id}/delete`}
+            style={{
+              color: "black",
+              backgroundColor: "#ffdddd",
+              padding: "10px 14px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+            }}
+          >
+            Delete Post
+          </Link>
+        )}
+
         {post?.communities?.id && (
           <Link
             href={`/communities/${post.communities.id}`}

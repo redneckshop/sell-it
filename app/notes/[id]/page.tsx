@@ -142,6 +142,22 @@ export default async function NoteDetailPage({ params }: PageProps) {
         >
           Back to Notes
         </Link>
+
+        {note && (
+          <Link
+            href={`/notes/${note.id}/delete`}
+            style={{
+              color: "black",
+              backgroundColor: "#ffdddd",
+              padding: "10px 14px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+            }}
+          >
+            Delete Note
+          </Link>
+        )}
       </div>
 
       {error && (

@@ -183,6 +183,22 @@ export default async function ActivityDetailPage({ params }: PageProps) {
             Edit Activity
           </Link>
         )}
+
+        {activity && (
+          <Link
+            href={`/activities/${activity.id}/delete`}
+            style={{
+              color: "black",
+              backgroundColor: "#ffdddd",
+              padding: "10px 14px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+            }}
+          >
+            Delete Activity
+          </Link>
+        )}
       </div>
 
       {error && (
