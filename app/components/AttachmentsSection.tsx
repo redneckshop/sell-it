@@ -20,7 +20,8 @@ type AttachmentRelation =
   | "related_opportunity_id"
   | "related_task_id"
   | "related_activity_id"
-  | "related_note_id";
+  | "related_note_id"
+  | "related_post_id";
 
 type AttachmentsSectionProps = {
   workspaceId: string;
