@@ -222,6 +222,21 @@ export default async function ContactDetailPage({ params }: PageProps) {
         >
           Back to Contacts
         </Link>
+        {contact && (
+          <Link
+            href={`/contacts/${contact.id}/delete`}
+            style={{
+              color: "black",
+              backgroundColor: "#ffdddd",
+              padding: "10px 14px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+            }}
+          >
+            Delete Contact
+          </Link>
+        )}
       </div>
 
       {error && <p style={{ color: "red" }}>Database error: {error.message}</p>}
