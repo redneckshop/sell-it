@@ -1,6 +1,19 @@
 import Link from "next/link";
 import { supabase } from "../lib/supabase";
 
+type SupabaseRelation<T> = T | T[] | null;
+
+type RelatedCompany = {
+  id: string;
+  name: string;
+};
+
+type RelatedContact = {
+  id: string;
+  first_name: string;
+  last_name: string | null;
+};
+
 type Opportunity = {
   id: string;
   name: string;
@@ -14,16 +27,24 @@ type Opportunity = {
   company_id: string;
   primary_contact_id: string | null;
   created_at: string | null;
-  companies: {
-    id: string;
-    name: string;
-  } | null;
-  primary_contact: {
-    id: string;
-    first_name: string;
-    last_name: string | null;
-  } | null;
+  companies: SupabaseRelation<RelatedCompany>;
+  primary_contact: SupabaseRelation<RelatedContact>;
 };
+
+function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
+  if (!value) return null;
+
+  if (Array.isArray(value)) {
+    return value[0] ?? null;
+  }
+
+  return value;
+}
+
+function formatMoney(value: number | null) {
+  if (value === null || value === undefined) return "Not provided";
+  return `$${Number(value).toLocaleString()}`;
+}
 
 export default async function OpportunitiesPage() {
   const { data, error } = await supabase
@@ -53,7 +74,7 @@ export default async function OpportunitiesPage() {
     `)
     .order("created_at", { ascending: false });
 
-  const opportunities: Opportunity[] = data ?? [];
+  const opportunities = (data ?? []) as unknown as Opportunity[];
 
   return (
     <main
@@ -116,55 +137,61 @@ export default async function OpportunitiesPage() {
         <p>No opportunities found.</p>
       )}
 
-      {opportunities.map((opportunity) => (
-        <Link
-          key={opportunity.id}
-          href={`/opportunities/${opportunity.id}`}
-          style={{
-            display: "block",
-            border: "1px solid #333",
-            padding: "18px",
-            marginBottom: "12px",
-            borderRadius: "8px",
-            backgroundColor: "#1a1a1a",
-            color: "white",
-            textDecoration: "none",
-            maxWidth: "900px",
-          }}
-        >
-          <h2 style={{ marginTop: 0 }}>{opportunity.name}</h2>
+      {opportunities.map((opportunity) => {
+        const company = singleRelation(opportunity.companies);
+        const primaryContact = singleRelation(opportunity.primary_contact);
 
-          <p>Company: {opportunity.companies?.name || "Not linked"}</p>
+        return (
+          <Link
+            key={opportunity.id}
+            href={`/opportunities/${opportunity.id}`}
+            style={{
+              display: "block",
+              border: "1px solid #333",
+              padding: "18px",
+              marginBottom: "12px",
+              borderRadius: "8px",
+              backgroundColor: "#1a1a1a",
+              color: "white",
+              textDecoration: "none",
+              maxWidth: "900px",
+            }}
+          >
+            <h2 style={{ marginTop: 0 }}>{opportunity.name}</h2>
 
-          {opportunity.primary_contact && (
+            <p>Company: {company?.name || "Not linked"}</p>
+
+            {primaryContact && (
+              <p>
+                Primary Contact: {primaryContact.first_name}{" "}
+                {primaryContact.last_name || ""}
+              </p>
+            )}
+
+            <p>Type: {opportunity.opportunity_type}</p>
+            <p>Stage: {opportunity.stage}</p>
+            <p>Lead Temperature: {opportunity.lead_temperature}</p>
+
             <p>
-              Primary Contact: {opportunity.primary_contact.first_name}{" "}
-              {opportunity.primary_contact.last_name || ""}
+              Estimated Driver Count:{" "}
+              {opportunity.estimated_driver_count !== null
+                ? opportunity.estimated_driver_count
+                : "Not provided"}
             </p>
-          )}
 
-          <p>Type: {opportunity.opportunity_type}</p>
-          <p>Stage: {opportunity.stage}</p>
-          <p>Lead Temperature: {opportunity.lead_temperature}</p>
-
-          {opportunity.estimated_driver_count !== null && (
-            <p>Estimated Driver Count: {opportunity.estimated_driver_count}</p>
-          )}
-
-          {opportunity.estimated_monthly_value !== null && (
             <p>
-              Estimated Monthly Value: $
-              {Number(opportunity.estimated_monthly_value).toLocaleString()}
+              Estimated Monthly Value:{" "}
+              {formatMoney(opportunity.estimated_monthly_value)}
             </p>
-          )}
 
-          {opportunity.expected_close_date && (
-            <p>Expected Close Date: {opportunity.expected_close_date}</p>
-          )}
+            {opportunity.expected_close_date && (
+              <p>Expected Close Date: {opportunity.expected_close_date}</p>
+            )}
 
-          {opportunity.next_step && <p>Next Step: {opportunity.next_step}</p>}
-        </Link>
-      ))}
+            {opportunity.next_step && <p>Next Step: {opportunity.next_step}</p>}
+          </Link>
+        );
+      })}
     </main>
   );
 }

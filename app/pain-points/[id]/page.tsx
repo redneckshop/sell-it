@@ -8,6 +8,8 @@ import { supabase } from "../../lib/supabase";
 const WORKSPACE_ID = "ba491d9b-3b36-426d-b98a-f05b0bf271ed";
 const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
+type SupabaseRelation<T> = T | T[] | null;
+
 type PainPoint = {
   id: string;
   workspace_id: string;
@@ -43,25 +45,25 @@ type Post = {
 type LinkedCompany = {
   id: string;
   company_id: string;
-  companies: Company | null;
+  companies: SupabaseRelation<Company>;
 };
 
 type LinkedContact = {
   id: string;
   contact_id: string;
-  contacts: Contact | null;
+  contacts: SupabaseRelation<Contact>;
 };
 
 type LinkedActivity = {
   id: string;
   activity_id: string;
-  activities: Activity | null;
+  activities: SupabaseRelation<Activity>;
 };
 
 type LinkedPost = {
   id: string;
   post_id: string;
-  posts: Post | null;
+  posts: SupabaseRelation<Post>;
 };
 
 const inputStyle: CSSProperties = {
@@ -106,6 +108,26 @@ const cardStyle: CSSProperties = {
   marginBottom: "12px",
 };
 
+function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
+  if (!value) return null;
+
+  if (Array.isArray(value)) {
+    return value[0] ?? null;
+  }
+
+  return value;
+}
+
+function formatDateTime(value: string | null) {
+  if (!value) return "Not available";
+
+  try {
+    return new Date(value).toLocaleString();
+  } catch {
+    return value;
+  }
+}
+
 export default function PainPointDetailPage() {
   const params = useParams();
   const id = String(params.id);
@@ -136,7 +158,9 @@ export default function PainPointDetailPage() {
 
     const { data: painPointData, error: painPointError } = await supabase
       .from("pain_points")
-      .select("id, workspace_id, name, description, category, created_at, updated_at")
+      .select(
+        "id, workspace_id, name, description, category, created_at, updated_at"
+      )
       .eq("id", id)
       .single();
 
@@ -146,7 +170,7 @@ export default function PainPointDetailPage() {
       return;
     }
 
-    setPainPoint(painPointData as PainPoint);
+    setPainPoint(painPointData as unknown as PainPoint);
 
     const [
       companiesResult,
@@ -158,16 +182,25 @@ export default function PainPointDetailPage() {
       linkedActivitiesResult,
       linkedPostsResult,
     ] = await Promise.all([
-      supabase.from("companies").select("id, name").order("name", { ascending: true }),
+      supabase
+        .from("companies")
+        .select("id, name")
+        .order("name", { ascending: true }),
+
       supabase
         .from("contacts")
         .select("id, first_name, last_name")
         .order("first_name", { ascending: true }),
+
       supabase
         .from("activities")
         .select("id, subject, activity_date")
         .order("activity_date", { ascending: false }),
-      supabase.from("posts").select("id, title").order("created_at", { ascending: false }),
+
+      supabase
+        .from("posts")
+        .select("id, title")
+        .order("created_at", { ascending: false }),
 
       supabase
         .from("pain_point_companies")
@@ -194,15 +227,21 @@ export default function PainPointDetailPage() {
         .order("created_at", { ascending: false }),
     ]);
 
-    setCompanies((companiesResult.data ?? []) as Company[]);
-    setContacts((contactsResult.data ?? []) as Contact[]);
-    setActivities((activitiesResult.data ?? []) as Activity[]);
-    setPosts((postsResult.data ?? []) as Post[]);
+    setCompanies((companiesResult.data ?? []) as unknown as Company[]);
+    setContacts((contactsResult.data ?? []) as unknown as Contact[]);
+    setActivities((activitiesResult.data ?? []) as unknown as Activity[]);
+    setPosts((postsResult.data ?? []) as unknown as Post[]);
 
-    setLinkedCompanies((linkedCompaniesResult.data ?? []) as LinkedCompany[]);
-    setLinkedContacts((linkedContactsResult.data ?? []) as LinkedContact[]);
-    setLinkedActivities((linkedActivitiesResult.data ?? []) as LinkedActivity[]);
-    setLinkedPosts((linkedPostsResult.data ?? []) as LinkedPost[]);
+    setLinkedCompanies(
+      (linkedCompaniesResult.data ?? []) as unknown as LinkedCompany[]
+    );
+    setLinkedContacts(
+      (linkedContactsResult.data ?? []) as unknown as LinkedContact[]
+    );
+    setLinkedActivities(
+      (linkedActivitiesResult.data ?? []) as unknown as LinkedActivity[]
+    );
+    setLinkedPosts((linkedPostsResult.data ?? []) as unknown as LinkedPost[]);
 
     setLoading(false);
   }
@@ -359,7 +398,18 @@ export default function PainPointDetailPage() {
         </Link>
       </div>
 
-      {message && <p style={{ color: message.includes("failed") || message.includes("Could not") ? "red" : "#ffcc66" }}>{message}</p>}
+      {message && (
+        <p
+          style={{
+            color:
+              message.includes("failed") || message.includes("Could not")
+                ? "red"
+                : "#ffcc66",
+          }}
+        >
+          {message}
+        </p>
+      )}
 
       {!painPoint && <p style={{ color: "#aaa" }}>Pain point not found.</p>}
 
@@ -390,17 +440,12 @@ export default function PainPointDetailPage() {
             </p>
 
             <p>
-              <strong>Created:</strong>{" "}
-              {painPoint.created_at
-                ? new Date(painPoint.created_at).toLocaleString()
-                : "Not available"}
+              <strong>Created:</strong> {formatDateTime(painPoint.created_at)}
             </p>
 
             <p>
               <strong>Last Updated:</strong>{" "}
-              {painPoint.updated_at
-                ? new Date(painPoint.updated_at).toLocaleString()
-                : "Not available"}
+              {formatDateTime(painPoint.updated_at)}
             </p>
           </div>
 
@@ -430,17 +475,19 @@ export default function PainPointDetailPage() {
               <p style={{ color: "#aaa" }}>No companies linked yet.</p>
             )}
 
-            {linkedCompanies.map((link) =>
-              link.companies ? (
+            {linkedCompanies.map((linkedCompany) => {
+              const company = singleRelation(linkedCompany.companies);
+
+              return company ? (
                 <Link
-                  key={link.id}
-                  href={`/companies/${link.company_id}`}
+                  key={linkedCompany.id}
+                  href={`/companies/${linkedCompany.company_id}`}
                   style={{ ...cardStyle, display: "block" }}
                 >
-                  <strong>{link.companies.name}</strong>
+                  <strong>{company.name}</strong>
                 </Link>
-              ) : null
-            )}
+              ) : null;
+            })}
 
             <h2 style={{ marginTop: "40px" }}>Linked Contacts</h2>
 
@@ -467,19 +514,21 @@ export default function PainPointDetailPage() {
               <p style={{ color: "#aaa" }}>No contacts linked yet.</p>
             )}
 
-            {linkedContacts.map((link) =>
-              link.contacts ? (
+            {linkedContacts.map((linkedContact) => {
+              const contact = singleRelation(linkedContact.contacts);
+
+              return contact ? (
                 <Link
-                  key={link.id}
-                  href={`/contacts/${link.contact_id}`}
+                  key={linkedContact.id}
+                  href={`/contacts/${linkedContact.contact_id}`}
                   style={{ ...cardStyle, display: "block" }}
                 >
                   <strong>
-                    {link.contacts.first_name} {link.contacts.last_name || ""}
+                    {contact.first_name} {contact.last_name || ""}
                   </strong>
                 </Link>
-              ) : null
-            )}
+              ) : null;
+            })}
 
             <h2 style={{ marginTop: "40px" }}>Linked Activities</h2>
 
@@ -506,21 +555,23 @@ export default function PainPointDetailPage() {
               <p style={{ color: "#aaa" }}>No activities linked yet.</p>
             )}
 
-            {linkedActivities.map((link) =>
-              link.activities ? (
+            {linkedActivities.map((linkedActivity) => {
+              const activity = singleRelation(linkedActivity.activities);
+
+              return activity ? (
                 <Link
-                  key={link.id}
-                  href={`/activities/${link.activity_id}`}
+                  key={linkedActivity.id}
+                  href={`/activities/${linkedActivity.activity_id}`}
                   style={{ ...cardStyle, display: "block" }}
                 >
-                  <strong>{link.activities.subject}</strong>
+                  <strong>{activity.subject}</strong>
                   <br />
                   <span style={{ color: "#aaa" }}>
-                    {link.activities.activity_date || "No date"}
+                    {activity.activity_date || "No date"}
                   </span>
                 </Link>
-              ) : null
-            )}
+              ) : null;
+            })}
 
             <h2 style={{ marginTop: "40px" }}>Linked Posts</h2>
 
@@ -547,17 +598,19 @@ export default function PainPointDetailPage() {
               <p style={{ color: "#aaa" }}>No posts linked yet.</p>
             )}
 
-            {linkedPosts.map((link) =>
-              link.posts ? (
+            {linkedPosts.map((linkedPost) => {
+              const post = singleRelation(linkedPost.posts);
+
+              return post ? (
                 <Link
-                  key={link.id}
-                  href={`/posts/${link.post_id}`}
+                  key={linkedPost.id}
+                  href={`/posts/${linkedPost.post_id}`}
                   style={{ ...cardStyle, display: "block" }}
                 >
-                  <strong>{link.posts.title}</strong>
+                  <strong>{post.title}</strong>
                 </Link>
-              ) : null
-            )}
+              ) : null;
+            })}
           </section>
         </>
       )}

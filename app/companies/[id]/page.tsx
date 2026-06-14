@@ -2,6 +2,8 @@ import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import AttachmentsSection from "../../components/AttachmentsSection";
 
+type SupabaseRelation<T> = T | T[] | null;
+
 type Company = {
   id: string;
   workspace_id: string;
@@ -41,6 +43,12 @@ type Activity = {
   follow_up_needed: boolean;
 };
 
+type PrimaryContact = {
+  id: string;
+  first_name: string;
+  last_name: string | null;
+};
+
 type Opportunity = {
   id: string;
   name: string;
@@ -50,11 +58,18 @@ type Opportunity = {
   estimated_monthly_value: number | null;
   expected_close_date: string | null;
   next_step: string | null;
-  primary_contact: {
-    id: string;
-    first_name: string;
-    last_name: string | null;
-  } | null;
+  primary_contact: SupabaseRelation<PrimaryContact>;
+};
+
+type NoteContact = {
+  id: string;
+  first_name: string;
+  last_name: string | null;
+};
+
+type NoteOpportunity = {
+  id: string;
+  name: string;
 };
 
 type Note = {
@@ -64,15 +79,8 @@ type Note = {
   source: string | null;
   tags: string | null;
   created_at: string | null;
-  contact: {
-    id: string;
-    first_name: string;
-    last_name: string | null;
-  } | null;
-  opportunity: {
-    id: string;
-    name: string;
-  } | null;
+  contact: SupabaseRelation<NoteContact>;
+  opportunity: SupabaseRelation<NoteOpportunity>;
 };
 
 type PageProps = {
@@ -81,10 +89,30 @@ type PageProps = {
   }>;
 };
 
+function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
+  if (!value) return null;
+
+  if (Array.isArray(value)) {
+    return value[0] ?? null;
+  }
+
+  return value;
+}
+
+function formatDateTime(value: string | null) {
+  if (!value) return "Not available";
+
+  try {
+    return new Date(value).toLocaleString();
+  } catch {
+    return value;
+  }
+}
+
 export default async function CompanyDetailPage({ params }: PageProps) {
   const { id } = await params;
 
-  const { data: company, error } = await supabase
+  const { data: companyRow, error } = await supabase
     .from("companies")
     .select(
       "id, workspace_id, name, website, phone, email, lead_temperature, operating_regions, assets_equipment, created_at, updated_at"
@@ -152,11 +180,12 @@ export default async function CompanyDetailPage({ params }: PageProps) {
     .eq("company_id", id)
     .order("created_at", { ascending: false });
 
-  const contacts: Contact[] = contactRows ?? [];
-  const tasks: Task[] = taskRows ?? [];
-  const activities: Activity[] = activityRows ?? [];
-  const opportunities: Opportunity[] = opportunityRows ?? [];
-  const notes: Note[] = noteRows ?? [];
+  const company = companyRow as unknown as Company | null;
+  const contacts = (contactRows ?? []) as unknown as Contact[];
+  const tasks = (taskRows ?? []) as unknown as Task[];
+  const activities = (activityRows ?? []) as unknown as Activity[];
+  const opportunities = (opportunityRows ?? []) as unknown as Opportunity[];
+  const notes = (noteRows ?? []) as unknown as Note[];
 
   return (
     <main
@@ -265,17 +294,12 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             </p>
 
             <p>
-              <strong>Created:</strong>{" "}
-              {company.created_at
-                ? new Date(company.created_at).toLocaleString()
-                : "Not available"}
+              <strong>Created:</strong> {formatDateTime(company.created_at)}
             </p>
 
             <p>
               <strong>Last Updated:</strong>{" "}
-              {company.updated_at
-                ? new Date(company.updated_at).toLocaleString()
-                : "Not available"}
+              {formatDateTime(company.updated_at)}
             </p>
           </div>
 
@@ -291,101 +315,109 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             <p>No opportunities linked to this company.</p>
           )}
 
-          {opportunities.map((opportunity) => (
-            <Link
-              key={opportunity.id}
-              href={`/opportunities/${opportunity.id}`}
-              style={{
-                display: "block",
-                border: "1px solid #333",
-                padding: "16px",
-                marginBottom: "12px",
-                borderRadius: "8px",
-                backgroundColor: "#1a1a1a",
-                color: "white",
-                textDecoration: "none",
-                maxWidth: "750px",
-              }}
-            >
-              <h3 style={{ marginTop: 0 }}>{opportunity.name}</h3>
+          {opportunities.map((opportunity) => {
+            const primaryContact = singleRelation(opportunity.primary_contact);
 
-              <p>Type: {opportunity.opportunity_type}</p>
-              <p>Stage: {opportunity.stage}</p>
-              <p>Lead Temperature: {opportunity.lead_temperature}</p>
+            return (
+              <Link
+                key={opportunity.id}
+                href={`/opportunities/${opportunity.id}`}
+                style={{
+                  display: "block",
+                  border: "1px solid #333",
+                  padding: "16px",
+                  marginBottom: "12px",
+                  borderRadius: "8px",
+                  backgroundColor: "#1a1a1a",
+                  color: "white",
+                  textDecoration: "none",
+                  maxWidth: "750px",
+                }}
+              >
+                <h3 style={{ marginTop: 0 }}>{opportunity.name}</h3>
 
-              {opportunity.primary_contact && (
-                <p>
-                  Primary Contact: {opportunity.primary_contact.first_name}{" "}
-                  {opportunity.primary_contact.last_name || ""}
-                </p>
-              )}
+                <p>Type: {opportunity.opportunity_type}</p>
+                <p>Stage: {opportunity.stage}</p>
+                <p>Lead Temperature: {opportunity.lead_temperature}</p>
 
-              {opportunity.estimated_monthly_value !== null && (
-                <p>
-                  Estimated Monthly Value: $
-                  {Number(
-                    opportunity.estimated_monthly_value
-                  ).toLocaleString()}
-                </p>
-              )}
+                {primaryContact && (
+                  <p>
+                    Primary Contact: {primaryContact.first_name}{" "}
+                    {primaryContact.last_name || ""}
+                  </p>
+                )}
 
-              {opportunity.expected_close_date && (
-                <p>Expected Close Date: {opportunity.expected_close_date}</p>
-              )}
+                {opportunity.estimated_monthly_value !== null && (
+                  <p>
+                    Estimated Monthly Value: $
+                    {Number(
+                      opportunity.estimated_monthly_value
+                    ).toLocaleString()}
+                  </p>
+                )}
 
-              {opportunity.next_step && <p>Next Step: {opportunity.next_step}</p>}
-            </Link>
-          ))}
+                {opportunity.expected_close_date && (
+                  <p>Expected Close Date: {opportunity.expected_close_date}</p>
+                )}
+
+                {opportunity.next_step && (
+                  <p>Next Step: {opportunity.next_step}</p>
+                )}
+              </Link>
+            );
+          })}
 
           <h2 style={{ marginTop: "40px" }}>Related Notes</h2>
 
           {notes.length === 0 && <p>No notes linked to this company.</p>}
 
-          {notes.map((note) => (
-            <Link
-              key={note.id}
-              href={`/notes/${note.id}`}
-              style={{
-                display: "block",
-                border: "1px solid #333",
-                padding: "16px",
-                marginBottom: "12px",
-                borderRadius: "8px",
-                backgroundColor: "#1a1a1a",
-                color: "white",
-                textDecoration: "none",
-                maxWidth: "750px",
-              }}
-            >
-              <h3 style={{ marginTop: 0 }}>{note.title}</h3>
+          {notes.map((note) => {
+            const contact = singleRelation(note.contact);
+            const opportunity = singleRelation(note.opportunity);
 
-              {note.body && (
-                <p style={{ color: "#aaa" }}>
-                  {note.body.length > 160
-                    ? `${note.body.slice(0, 160)}...`
-                    : note.body}
-                </p>
-              )}
+            return (
+              <Link
+                key={note.id}
+                href={`/notes/${note.id}`}
+                style={{
+                  display: "block",
+                  border: "1px solid #333",
+                  padding: "16px",
+                  marginBottom: "12px",
+                  borderRadius: "8px",
+                  backgroundColor: "#1a1a1a",
+                  color: "white",
+                  textDecoration: "none",
+                  maxWidth: "750px",
+                }}
+              >
+                <h3 style={{ marginTop: 0 }}>{note.title}</h3>
 
-              {note.contact && (
-                <p>
-                  Contact: {note.contact.first_name}{" "}
-                  {note.contact.last_name || ""}
-                </p>
-              )}
+                {note.body && (
+                  <p style={{ color: "#aaa" }}>
+                    {note.body.length > 160
+                      ? `${note.body.slice(0, 160)}...`
+                      : note.body}
+                  </p>
+                )}
 
-              {note.opportunity && (
-                <p>Opportunity: {note.opportunity.name}</p>
-              )}
+                {contact && (
+                  <p>
+                    Contact: {contact.first_name} {contact.last_name || ""}
+                  </p>
+                )}
 
-              {note.source && <p>Source: {note.source}</p>}
-              {note.tags && <p>Tags: {note.tags}</p>}
+                {opportunity && <p>Opportunity: {opportunity.name}</p>}
 
-              {note.created_at && (
-                <p>Created: {new Date(note.created_at).toLocaleString()}</p>
-              )}
-            </Link>
-          ))}
+                {note.source && <p>Source: {note.source}</p>}
+                {note.tags && <p>Tags: {note.tags}</p>}
+
+                {note.created_at && (
+                  <p>Created: {formatDateTime(note.created_at)}</p>
+                )}
+              </Link>
+            );
+          })}
 
           <h2 style={{ marginTop: "40px" }}>Related Contacts</h2>
 
@@ -469,9 +501,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
 
               <p>Type: {activity.activity_type}</p>
 
-              <p>
-                Date: {new Date(activity.activity_date).toLocaleString()}
-              </p>
+              <p>Date: {formatDateTime(activity.activity_date)}</p>
 
               {activity.outcome && <p>Outcome: {activity.outcome}</p>}
 

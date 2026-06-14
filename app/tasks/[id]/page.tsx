@@ -2,6 +2,30 @@ import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import AttachmentsSection from "../../components/AttachmentsSection";
 
+type SupabaseRelation<T> = T | T[] | null;
+
+type RelatedCompany = {
+  id: string;
+  name: string;
+};
+
+type RelatedContact = {
+  id: string;
+  first_name: string;
+  last_name: string | null;
+};
+
+type RelatedOpportunity = {
+  id: string;
+  name: string;
+};
+
+type AssignedProfile = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+};
+
 type Task = {
   id: string;
   workspace_id: string;
@@ -16,24 +40,10 @@ type Task = {
   opportunity_id: string | null;
   created_at: string | null;
   updated_at: string | null;
-  companies: {
-    id: string;
-    name: string;
-  } | null;
-  contacts: {
-    id: string;
-    first_name: string;
-    last_name: string | null;
-  } | null;
-  opportunities: {
-    id: string;
-    name: string;
-  } | null;
-  assigned_profile: {
-    id: string;
-    full_name: string | null;
-    email: string | null;
-  } | null;
+  companies: SupabaseRelation<RelatedCompany>;
+  contacts: SupabaseRelation<RelatedContact>;
+  opportunities: SupabaseRelation<RelatedOpportunity>;
+  assigned_profile: SupabaseRelation<AssignedProfile>;
 };
 
 type PageProps = {
@@ -42,10 +52,30 @@ type PageProps = {
   }>;
 };
 
+function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
+  if (!value) return null;
+
+  if (Array.isArray(value)) {
+    return value[0] ?? null;
+  }
+
+  return value;
+}
+
+function formatDateTime(value: string | null) {
+  if (!value) return "Not available";
+
+  try {
+    return new Date(value).toLocaleString();
+  } catch {
+    return value;
+  }
+}
+
 export default async function TaskDetailPage({ params }: PageProps) {
   const { id } = await params;
 
-  const { data: task, error } = await supabase
+  const { data: taskRow, error } = await supabase
     .from("tasks")
     .select(`
       id,
@@ -82,6 +112,13 @@ export default async function TaskDetailPage({ params }: PageProps) {
     `)
     .eq("id", id)
     .single();
+
+  const task = taskRow as unknown as Task | null;
+
+  const company = singleRelation(task?.companies);
+  const contact = singleRelation(task?.contacts);
+  const opportunity = singleRelation(task?.opportunities);
+  const assignedProfile = singleRelation(task?.assigned_profile);
 
   return (
     <main
@@ -180,19 +217,19 @@ export default async function TaskDetailPage({ params }: PageProps) {
 
             <p>
               <strong>Assigned To:</strong>{" "}
-              {task.assigned_profile?.full_name ||
-                task.assigned_profile?.email ||
+              {assignedProfile?.full_name ||
+                assignedProfile?.email ||
                 "Unassigned"}
             </p>
 
             <p>
               <strong>Related Company:</strong>{" "}
-              {task.companies ? (
+              {company ? (
                 <Link
-                  href={`/companies/${task.companies.id}`}
+                  href={`/companies/${company.id}`}
                   style={{ color: "white" }}
                 >
-                  {task.companies.name}
+                  {company.name}
                 </Link>
               ) : (
                 "Not linked"
@@ -201,12 +238,12 @@ export default async function TaskDetailPage({ params }: PageProps) {
 
             <p>
               <strong>Related Contact:</strong>{" "}
-              {task.contacts ? (
+              {contact ? (
                 <Link
-                  href={`/contacts/${task.contacts.id}`}
+                  href={`/contacts/${contact.id}`}
                   style={{ color: "white" }}
                 >
-                  {task.contacts.first_name} {task.contacts.last_name || ""}
+                  {contact.first_name} {contact.last_name || ""}
                 </Link>
               ) : (
                 "Not linked"
@@ -215,12 +252,12 @@ export default async function TaskDetailPage({ params }: PageProps) {
 
             <p>
               <strong>Related Opportunity:</strong>{" "}
-              {task.opportunities ? (
+              {opportunity ? (
                 <Link
-                  href={`/opportunities/${task.opportunities.id}`}
+                  href={`/opportunities/${opportunity.id}`}
                   style={{ color: "white" }}
                 >
-                  {task.opportunities.name}
+                  {opportunity.name}
                 </Link>
               ) : (
                 "Not linked"
@@ -236,17 +273,11 @@ export default async function TaskDetailPage({ params }: PageProps) {
             </p>
 
             <p>
-              <strong>Created:</strong>{" "}
-              {task.created_at
-                ? new Date(task.created_at).toLocaleString()
-                : "Not available"}
+              <strong>Created:</strong> {formatDateTime(task.created_at)}
             </p>
 
             <p>
-              <strong>Last Updated:</strong>{" "}
-              {task.updated_at
-                ? new Date(task.updated_at).toLocaleString()
-                : "Not available"}
+              <strong>Last Updated:</strong> {formatDateTime(task.updated_at)}
             </p>
           </div>
 

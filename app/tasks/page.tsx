@@ -1,6 +1,25 @@
 import Link from "next/link";
 import { supabase } from "../lib/supabase";
 
+type SupabaseRelation<T> = T | T[] | null;
+
+type RelatedCompany = {
+  id: string;
+  name: string;
+};
+
+type RelatedContact = {
+  id: string;
+  first_name: string;
+  last_name: string | null;
+};
+
+type AssignedProfile = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+};
+
 type Task = {
   id: string;
   title: string;
@@ -12,21 +31,20 @@ type Task = {
   company_id: string | null;
   contact_id: string | null;
   created_at: string | null;
-  companies: {
-    id: string;
-    name: string;
-  } | null;
-  contacts: {
-    id: string;
-    first_name: string;
-    last_name: string | null;
-  } | null;
-  assigned_profile: {
-    id: string;
-    full_name: string | null;
-    email: string | null;
-  } | null;
+  companies: SupabaseRelation<RelatedCompany>;
+  contacts: SupabaseRelation<RelatedContact>;
+  assigned_profile: SupabaseRelation<AssignedProfile>;
 };
+
+function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
+  if (!value) return null;
+
+  if (Array.isArray(value)) {
+    return value[0] ?? null;
+  }
+
+  return value;
+}
 
 export default async function TasksPage() {
   const { data, error } = await supabase
@@ -59,7 +77,7 @@ export default async function TasksPage() {
     `)
     .order("created_at", { ascending: false });
 
-  const tasks: Task[] = data ?? [];
+  const tasks = (data ?? []) as unknown as Task[];
 
   return (
     <main
@@ -77,6 +95,8 @@ export default async function TasksPage() {
           justifyContent: "space-between",
           alignItems: "center",
           marginBottom: "24px",
+          gap: "16px",
+          flexWrap: "wrap",
         }}
       >
         <div>
@@ -87,19 +107,35 @@ export default async function TasksPage() {
           </p>
         </div>
 
-        <Link
-          href="/tasks/new"
-          style={{
-            backgroundColor: "white",
-            color: "black",
-            padding: "12px 16px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Add Task
-        </Link>
+        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+          <Link
+            href="/"
+            style={{
+              backgroundColor: "white",
+              color: "black",
+              padding: "12px 16px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+            }}
+          >
+            Home
+          </Link>
+
+          <Link
+            href="/tasks/new"
+            style={{
+              backgroundColor: "white",
+              color: "black",
+              padding: "12px 16px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+            }}
+          >
+            Add Task
+          </Link>
+        </div>
       </div>
 
       {error && (
@@ -108,42 +144,50 @@ export default async function TasksPage() {
 
       {!error && tasks.length === 0 && <p>No tasks found.</p>}
 
-      {tasks.map((task) => (
-        <Link
-          key={task.id}
-          href={`/tasks/${task.id}`}
-          style={{
-            display: "block",
-            border: "1px solid #333",
-            padding: "16px",
-            marginBottom: "12px",
-            borderRadius: "8px",
-            backgroundColor: "#1a1a1a",
-            color: "white",
-            textDecoration: "none",
-          }}
-        >
-          <h2 style={{ marginTop: 0 }}>{task.title}</h2>
+      {tasks.map((task) => {
+        const company = singleRelation(task.companies);
+        const contact = singleRelation(task.contacts);
+        const assignedProfile = singleRelation(task.assigned_profile);
 
-          <p>Status: {task.status}</p>
-          <p>Priority: {task.priority}</p>
+        return (
+          <Link
+            key={task.id}
+            href={`/tasks/${task.id}`}
+            style={{
+              display: "block",
+              border: "1px solid #333",
+              padding: "16px",
+              marginBottom: "12px",
+              borderRadius: "8px",
+              backgroundColor: "#1a1a1a",
+              color: "white",
+              textDecoration: "none",
+            }}
+          >
+            <h2 style={{ marginTop: 0 }}>{task.title}</h2>
 
-          {task.due_date && <p>Due: {task.due_date}</p>}
+            <p>Status: {task.status}</p>
+            <p>Priority: {task.priority}</p>
 
-          {task.assigned_profile?.full_name && (
-            <p>Assigned To: {task.assigned_profile.full_name}</p>
-          )}
+            {task.due_date && <p>Due: {task.due_date}</p>}
 
-          {task.companies?.name && <p>Company: {task.companies.name}</p>}
+            {(assignedProfile?.full_name || assignedProfile?.email) && (
+              <p>
+                Assigned To:{" "}
+                {assignedProfile.full_name || assignedProfile.email}
+              </p>
+            )}
 
-          {task.contacts && (
-            <p>
-              Contact: {task.contacts.first_name}{" "}
-              {task.contacts.last_name || ""}
-            </p>
-          )}
-        </Link>
-      ))}
+            {company?.name && <p>Company: {company.name}</p>}
+
+            {contact && (
+              <p>
+                Contact: {contact.first_name} {contact.last_name || ""}
+              </p>
+            )}
+          </Link>
+        );
+      })}
     </main>
   );
 }

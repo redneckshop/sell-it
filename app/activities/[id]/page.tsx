@@ -2,6 +2,29 @@ import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import AttachmentsSection from "../../components/AttachmentsSection";
 
+type RelatedCompany = {
+  id: string;
+  name: string;
+};
+
+type RelatedContact = {
+  id: string;
+  first_name: string;
+  last_name: string | null;
+};
+
+type RelatedOpportunity = {
+  id: string;
+  name: string;
+};
+
+type RelatedTask = {
+  id: string;
+  title: string;
+};
+
+type SupabaseRelation<T> = T | T[] | null;
+
 type Activity = {
   id: string;
   workspace_id: string;
@@ -18,23 +41,10 @@ type Activity = {
   task_id: string | null;
   created_at: string | null;
   updated_at: string | null;
-  companies: {
-    id: string;
-    name: string;
-  } | null;
-  contacts: {
-    id: string;
-    first_name: string;
-    last_name: string | null;
-  } | null;
-  opportunities: {
-    id: string;
-    name: string;
-  } | null;
-  tasks: {
-    id: string;
-    title: string;
-  } | null;
+  companies: SupabaseRelation<RelatedCompany>;
+  contacts: SupabaseRelation<RelatedContact>;
+  opportunities: SupabaseRelation<RelatedOpportunity>;
+  tasks: SupabaseRelation<RelatedTask>;
 };
 
 type PageProps = {
@@ -43,10 +53,30 @@ type PageProps = {
   }>;
 };
 
+function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
+  if (!value) return null;
+
+  if (Array.isArray(value)) {
+    return value[0] ?? null;
+  }
+
+  return value;
+}
+
+function formatDateTime(value: string | null) {
+  if (!value) return "Not available";
+
+  try {
+    return new Date(value).toLocaleString();
+  } catch {
+    return value;
+  }
+}
+
 export default async function ActivityDetailPage({ params }: PageProps) {
   const { id } = await params;
 
-  const { data: activity, error } = await supabase
+  const { data: activityRow, error } = await supabase
     .from("activities")
     .select(`
       id,
@@ -84,6 +114,13 @@ export default async function ActivityDetailPage({ params }: PageProps) {
     `)
     .eq("id", id)
     .single();
+
+  const activity = activityRow as unknown as Activity | null;
+
+  const company = singleRelation(activity?.companies);
+  const contact = singleRelation(activity?.contacts);
+  const opportunity = singleRelation(activity?.opportunities);
+  const task = singleRelation(activity?.tasks);
 
   return (
     <main
@@ -174,7 +211,7 @@ export default async function ActivityDetailPage({ params }: PageProps) {
 
             <p>
               <strong>Activity Date:</strong>{" "}
-              {new Date(activity.activity_date).toLocaleString()}
+              {formatDateTime(activity.activity_date)}
             </p>
 
             <p>
@@ -188,12 +225,12 @@ export default async function ActivityDetailPage({ params }: PageProps) {
 
             <p>
               <strong>Related Company:</strong>{" "}
-              {activity.companies ? (
+              {company ? (
                 <Link
-                  href={`/companies/${activity.companies.id}`}
+                  href={`/companies/${company.id}`}
                   style={{ color: "white" }}
                 >
-                  {activity.companies.name}
+                  {company.name}
                 </Link>
               ) : (
                 "Not linked"
@@ -202,13 +239,12 @@ export default async function ActivityDetailPage({ params }: PageProps) {
 
             <p>
               <strong>Related Contact:</strong>{" "}
-              {activity.contacts ? (
+              {contact ? (
                 <Link
-                  href={`/contacts/${activity.contacts.id}`}
+                  href={`/contacts/${contact.id}`}
                   style={{ color: "white" }}
                 >
-                  {activity.contacts.first_name}{" "}
-                  {activity.contacts.last_name || ""}
+                  {contact.first_name} {contact.last_name || ""}
                 </Link>
               ) : (
                 "Not linked"
@@ -217,12 +253,12 @@ export default async function ActivityDetailPage({ params }: PageProps) {
 
             <p>
               <strong>Related Opportunity:</strong>{" "}
-              {activity.opportunities ? (
+              {opportunity ? (
                 <Link
-                  href={`/opportunities/${activity.opportunities.id}`}
+                  href={`/opportunities/${opportunity.id}`}
                   style={{ color: "white" }}
                 >
-                  {activity.opportunities.name}
+                  {opportunity.name}
                 </Link>
               ) : (
                 "Not linked"
@@ -231,12 +267,9 @@ export default async function ActivityDetailPage({ params }: PageProps) {
 
             <p>
               <strong>Related Task:</strong>{" "}
-              {activity.tasks ? (
-                <Link
-                  href={`/tasks/${activity.tasks.id}`}
-                  style={{ color: "white" }}
-                >
-                  {activity.tasks.title}
+              {task ? (
+                <Link href={`/tasks/${task.id}`} style={{ color: "white" }}>
+                  {task.title}
                 </Link>
               ) : (
                 "Not linked"
@@ -260,17 +293,12 @@ export default async function ActivityDetailPage({ params }: PageProps) {
             </p>
 
             <p>
-              <strong>Created:</strong>{" "}
-              {activity.created_at
-                ? new Date(activity.created_at).toLocaleString()
-                : "Not available"}
+              <strong>Created:</strong> {formatDateTime(activity.created_at)}
             </p>
 
             <p>
               <strong>Last Updated:</strong>{" "}
-              {activity.updated_at
-                ? new Date(activity.updated_at).toLocaleString()
-                : "Not available"}
+              {formatDateTime(activity.updated_at)}
             </p>
           </div>
 

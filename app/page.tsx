@@ -3,12 +3,16 @@ import type { CSSProperties } from "react";
 import { supabase } from "./lib/supabase";
 import HomeSearch from "./components/HomeSearch";
 
+type SupabaseRelation<T> = T | T[] | null;
+
+type ProfileWorkspace = {
+  name: string | null;
+};
+
 type Profile = {
   full_name: string | null;
   email: string | null;
-  workspaces: {
-    name: string | null;
-  } | null;
+  workspaces: SupabaseRelation<ProfileWorkspace>;
 };
 
 type Task = {
@@ -19,16 +23,18 @@ type Task = {
   due_date: string | null;
 };
 
+type RelatedCompany = {
+  id: string;
+  name: string;
+};
+
 type HotOpportunity = {
   id: string;
   name: string;
   stage: string;
   lead_temperature: string;
   estimated_monthly_value: number | null;
-  companies: {
-    id: string;
-    name: string;
-  } | null;
+  companies: SupabaseRelation<RelatedCompany>;
 };
 
 type Activity = {
@@ -47,6 +53,16 @@ type Note = {
   tags: string | null;
   created_at: string | null;
 };
+
+function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
+  if (!value) return null;
+
+  if (Array.isArray(value)) {
+    return value[0] ?? null;
+  }
+
+  return value;
+}
 
 function getTodayString() {
   const now = new Date();
@@ -153,8 +169,9 @@ export default async function Home() {
     `)
     .limit(1);
 
-  const profile = profiles?.[0] as Profile | undefined;
-  const workspaceName = profile?.workspaces?.name ?? "No workspace found";
+  const profile = profiles?.[0] as unknown as Profile | undefined;
+  const workspace = singleRelation(profile?.workspaces);
+  const workspaceName = workspace?.name ?? "No workspace found";
   const fullName = profile?.full_name ?? "No profile found";
 
   const { count: companyCount, error: companyCountError } = await supabase
@@ -175,7 +192,7 @@ export default async function Home() {
     .select("id, title, status, priority, due_date")
     .order("due_date", { ascending: true });
 
-  const allTasks: Task[] = taskRows ?? [];
+  const allTasks = (taskRows ?? []) as unknown as Task[];
 
   const openTasks = allTasks.filter(
     (task) => task.status !== "Completed" && task.status !== "Cancelled"
@@ -208,7 +225,8 @@ export default async function Home() {
       .order("updated_at", { ascending: false })
       .limit(10);
 
-  const hotOpportunities: HotOpportunity[] = hotOpportunityRows ?? [];
+  const hotOpportunities = (hotOpportunityRows ??
+    []) as unknown as HotOpportunity[];
 
   const { data: activityRows, error: activityError } = await supabase
     .from("activities")
@@ -216,7 +234,7 @@ export default async function Home() {
     .order("activity_date", { ascending: false })
     .limit(10);
 
-  const recentActivities: Activity[] = activityRows ?? [];
+  const recentActivities = (activityRows ?? []) as unknown as Activity[];
 
   const { data: noteRows, error: noteError } = await supabase
     .from("notes")
@@ -224,7 +242,7 @@ export default async function Home() {
     .order("created_at", { ascending: false })
     .limit(10);
 
-  const recentNotes: Note[] = noteRows ?? [];
+  const recentNotes = (noteRows ?? []) as unknown as Note[];
 
   const navigationLinks = [
     { title: "Companies", href: "/companies" },
@@ -538,25 +556,28 @@ export default async function Home() {
                   </p>
                 )}
 
-                {hotOpportunities.map((opportunity) => (
-                  <Link
-                    key={opportunity.id}
-                    href={`/opportunities/${opportunity.id}`}
-                    style={listLinkStyle()}
-                  >
-                    <strong>{opportunity.name}</strong>
-                    <br />
-                    <span style={{ color: "#aaa" }}>
-                      {opportunity.companies?.name || "No company"} -{" "}
-                      {opportunity.stage}
-                      {opportunity.estimated_monthly_value !== null
-                        ? ` - $${Number(
-                            opportunity.estimated_monthly_value
-                          ).toLocaleString()}/mo`
-                        : ""}
-                    </span>
-                  </Link>
-                ))}
+                {hotOpportunities.map((opportunity) => {
+                  const company = singleRelation(opportunity.companies);
+
+                  return (
+                    <Link
+                      key={opportunity.id}
+                      href={`/opportunities/${opportunity.id}`}
+                      style={listLinkStyle()}
+                    >
+                      <strong>{opportunity.name}</strong>
+                      <br />
+                      <span style={{ color: "#aaa" }}>
+                        {company?.name || "No company"} - {opportunity.stage}
+                        {opportunity.estimated_monthly_value !== null
+                          ? ` - $${Number(
+                              opportunity.estimated_monthly_value
+                            ).toLocaleString()}/mo`
+                          : ""}
+                      </span>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
 

@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { supabase } from "../lib/supabase";
 
+type SupabaseRelation<T> = T | T[] | null;
+
+type Community = {
+  name: string | null;
+};
+
 type Post = {
   id: string;
   title: string;
@@ -15,10 +21,28 @@ type Post = {
   follow_up_needed: boolean | null;
   tags: string | null;
   created_at: string | null;
-  communities: {
-    name: string | null;
-  } | null;
+  communities: SupabaseRelation<Community>;
 };
+
+function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
+  if (!value) return null;
+
+  if (Array.isArray(value)) {
+    return value[0] ?? null;
+  }
+
+  return value;
+}
+
+function previewText(value: string | null) {
+  if (!value) return "";
+
+  if (value.length > 180) {
+    return `${value.slice(0, 180)}...`;
+  }
+
+  return value;
+}
 
 export default async function PostsPage() {
   const { data: postRows, error } = await supabase
@@ -28,7 +52,7 @@ export default async function PostsPage() {
     )
     .order("created_at", { ascending: false });
 
-  const posts = (postRows ?? []) as Post[];
+  const posts = (postRows ?? []) as unknown as Post[];
 
   return (
     <main
@@ -116,73 +140,75 @@ export default async function PostsPage() {
           gap: "16px",
         }}
       >
-        {posts.map((post) => (
-          <Link
-            key={post.id}
-            href={`/posts/${post.id}`}
-            style={{
-              display: "block",
-              border: "1px solid #333",
-              padding: "18px",
-              borderRadius: "10px",
-              backgroundColor: "#1a1a1a",
-              color: "white",
-              textDecoration: "none",
-            }}
-          >
-            <h2 style={{ marginTop: 0 }}>{post.title}</h2>
+        {posts.map((post) => {
+          const community = singleRelation(post.communities);
 
-            {post.communities?.name && (
+          return (
+            <Link
+              key={post.id}
+              href={`/posts/${post.id}`}
+              style={{
+                display: "block",
+                border: "1px solid #333",
+                padding: "18px",
+                borderRadius: "10px",
+                backgroundColor: "#1a1a1a",
+                color: "white",
+                textDecoration: "none",
+              }}
+            >
+              <h2 style={{ marginTop: 0 }}>{post.title}</h2>
+
+              {community?.name && (
+                <p>
+                  <strong>Community:</strong> {community.name}
+                </p>
+              )}
+
+              {post.platform && (
+                <p>
+                  <strong>Platform:</strong> {post.platform}
+                </p>
+              )}
+
+              {post.post_type && (
+                <p>
+                  <strong>Type:</strong> {post.post_type}
+                </p>
+              )}
+
+              {post.post_date && (
+                <p>
+                  <strong>Post Date:</strong> {post.post_date}
+                </p>
+              )}
+
               <p>
-                <strong>Community:</strong> {post.communities.name}
+                <strong>Comments:</strong> {post.comment_count ?? 0}{" "}
+                <strong>Reactions:</strong> {post.reaction_count ?? 0}{" "}
+                <strong>Shares:</strong> {post.share_count ?? 0}
               </p>
-            )}
 
-            {post.platform && (
-              <p>
-                <strong>Platform:</strong> {post.platform}
-              </p>
-            )}
+              {post.follow_up_needed && (
+                <p style={{ color: "#ffcc66", fontWeight: "bold" }}>
+                  Follow-up needed
+                </p>
+              )}
 
-            {post.post_type && (
-              <p>
-                <strong>Type:</strong> {post.post_type}
-              </p>
-            )}
+              {post.original_post_text && (
+                <p style={{ color: "#ccc" }}>
+                  {previewText(post.original_post_text)}
+                </p>
+              )}
 
-            {post.post_date && (
-              <p>
-                <strong>Post Date:</strong> {post.post_date}
-              </p>
-            )}
-
-            <p>
-              <strong>Comments:</strong> {post.comment_count ?? 0}{" "}
-              <strong>Reactions:</strong> {post.reaction_count ?? 0}{" "}
-              <strong>Shares:</strong> {post.share_count ?? 0}
-            </p>
-
-            {post.follow_up_needed && (
-              <p style={{ color: "#ffcc66", fontWeight: "bold" }}>
-                Follow-up needed
-              </p>
-            )}
-
-            {post.original_post_text && (
-              <p style={{ color: "#ccc" }}>
-                {post.original_post_text.length > 180
-                  ? `${post.original_post_text.slice(0, 180)}...`
-                  : post.original_post_text}
-              </p>
-            )}
-
-            {post.tags && (
-              <p style={{ color: "#aaa" }}>
-                <strong>Tags:</strong> {post.tags}
-              </p>
-            )}
-          </Link>
-        ))}
+              {post.tags && (
+                <p style={{ color: "#aaa" }}>
+                  <strong>Tags:</strong> {post.tags}
+                </p>
+              )}
+            </Link>
+          );
+        })}
       </div>
     </main>
   );

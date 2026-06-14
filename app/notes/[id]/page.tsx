@@ -2,6 +2,24 @@ import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import AttachmentsSection from "../../components/AttachmentsSection";
 
+type SupabaseRelation<T> = T | T[] | null;
+
+type RelatedCompany = {
+  id: string;
+  name: string;
+};
+
+type RelatedContact = {
+  id: string;
+  first_name: string;
+  last_name: string | null;
+};
+
+type RelatedOpportunity = {
+  id: string;
+  name: string;
+};
+
 type Note = {
   id: string;
   workspace_id: string;
@@ -11,19 +29,9 @@ type Note = {
   source_url: string | null;
   tags: string | null;
   created_at: string | null;
-  company: {
-    id: string;
-    name: string;
-  } | null;
-  contact: {
-    id: string;
-    first_name: string;
-    last_name: string | null;
-  } | null;
-  opportunity: {
-    id: string;
-    name: string;
-  } | null;
+  company: SupabaseRelation<RelatedCompany>;
+  contact: SupabaseRelation<RelatedContact>;
+  opportunity: SupabaseRelation<RelatedOpportunity>;
 };
 
 type PageProps = {
@@ -32,10 +40,30 @@ type PageProps = {
   }>;
 };
 
+function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
+  if (!value) return null;
+
+  if (Array.isArray(value)) {
+    return value[0] ?? null;
+  }
+
+  return value;
+}
+
+function formatDateTime(value: string | null) {
+  if (!value) return "Not available";
+
+  try {
+    return new Date(value).toLocaleString();
+  } catch {
+    return value;
+  }
+}
+
 export default async function NoteDetailPage({ params }: PageProps) {
   const { id } = await params;
 
-  const { data: note, error } = await supabase
+  const { data: noteRow, error } = await supabase
     .from("notes")
     .select(`
       id,
@@ -62,6 +90,12 @@ export default async function NoteDetailPage({ params }: PageProps) {
     `)
     .eq("id", id)
     .single();
+
+  const note = noteRow as unknown as Note | null;
+
+  const company = singleRelation(note?.company);
+  const contact = singleRelation(note?.contact);
+  const opportunity = singleRelation(note?.opportunity);
 
   return (
     <main
@@ -132,12 +166,12 @@ export default async function NoteDetailPage({ params }: PageProps) {
           >
             <p>
               <strong>Related Company:</strong>{" "}
-              {note.company ? (
+              {company ? (
                 <Link
-                  href={`/companies/${note.company.id}`}
+                  href={`/companies/${company.id}`}
                   style={{ color: "white" }}
                 >
-                  {note.company.name}
+                  {company.name}
                 </Link>
               ) : (
                 "Not linked"
@@ -146,12 +180,12 @@ export default async function NoteDetailPage({ params }: PageProps) {
 
             <p>
               <strong>Related Contact:</strong>{" "}
-              {note.contact ? (
+              {contact ? (
                 <Link
-                  href={`/contacts/${note.contact.id}`}
+                  href={`/contacts/${contact.id}`}
                   style={{ color: "white" }}
                 >
-                  {note.contact.first_name} {note.contact.last_name || ""}
+                  {contact.first_name} {contact.last_name || ""}
                 </Link>
               ) : (
                 "Not linked"
@@ -160,12 +194,12 @@ export default async function NoteDetailPage({ params }: PageProps) {
 
             <p>
               <strong>Related Opportunity:</strong>{" "}
-              {note.opportunity ? (
+              {opportunity ? (
                 <Link
-                  href={`/opportunities/${note.opportunity.id}`}
+                  href={`/opportunities/${opportunity.id}`}
                   style={{ color: "white" }}
                 >
-                  {note.opportunity.name}
+                  {opportunity.name}
                 </Link>
               ) : (
                 "Not linked"
@@ -205,10 +239,7 @@ export default async function NoteDetailPage({ params }: PageProps) {
             </p>
 
             <p>
-              <strong>Created:</strong>{" "}
-              {note.created_at
-                ? new Date(note.created_at).toLocaleString()
-                : "Not available"}
+              <strong>Created:</strong> {formatDateTime(note.created_at)}
             </p>
           </div>
 

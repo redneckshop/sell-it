@@ -1,6 +1,24 @@
 import Link from "next/link";
 import { supabase } from "../lib/supabase";
 
+type SupabaseRelation<T> = T | T[] | null;
+
+type RelatedCompany = {
+  id: string;
+  name: string;
+};
+
+type RelatedContact = {
+  id: string;
+  first_name: string;
+  last_name: string | null;
+};
+
+type RelatedOpportunity = {
+  id: string;
+  name: string;
+};
+
 type Note = {
   id: string;
   title: string;
@@ -9,20 +27,40 @@ type Note = {
   source_url: string | null;
   tags: string | null;
   created_at: string | null;
-  company: {
-    id: string;
-    name: string;
-  } | null;
-  contact: {
-    id: string;
-    first_name: string;
-    last_name: string | null;
-  } | null;
-  opportunity: {
-    id: string;
-    name: string;
-  } | null;
+  company: SupabaseRelation<RelatedCompany>;
+  contact: SupabaseRelation<RelatedContact>;
+  opportunity: SupabaseRelation<RelatedOpportunity>;
 };
+
+function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
+  if (!value) return null;
+
+  if (Array.isArray(value)) {
+    return value[0] ?? null;
+  }
+
+  return value;
+}
+
+function formatDateTime(value: string | null) {
+  if (!value) return "Not available";
+
+  try {
+    return new Date(value).toLocaleString();
+  } catch {
+    return value;
+  }
+}
+
+function previewText(value: string | null) {
+  if (!value) return "";
+
+  if (value.length > 180) {
+    return `${value.slice(0, 180)}...`;
+  }
+
+  return value;
+}
 
 export default async function NotesPage() {
   const { data, error } = await supabase
@@ -51,7 +89,7 @@ export default async function NotesPage() {
     `)
     .order("created_at", { ascending: false });
 
-  const notes: Note[] = data ?? [];
+  const notes = (data ?? []) as unknown as Note[];
 
   return (
     <main
@@ -112,51 +150,50 @@ export default async function NotesPage() {
 
       {!error && notes.length === 0 && <p>No notes found.</p>}
 
-      {notes.map((note) => (
-        <Link
-          key={note.id}
-          href={`/notes/${note.id}`}
-          style={{
-            display: "block",
-            border: "1px solid #333",
-            padding: "18px",
-            marginBottom: "12px",
-            borderRadius: "8px",
-            backgroundColor: "#1a1a1a",
-            color: "white",
-            textDecoration: "none",
-            maxWidth: "900px",
-          }}
-        >
-          <h2 style={{ marginTop: 0 }}>{note.title}</h2>
+      {notes.map((note) => {
+        const company = singleRelation(note.company);
+        const contact = singleRelation(note.contact);
+        const opportunity = singleRelation(note.opportunity);
 
-          {note.body && (
-            <p style={{ color: "#aaa" }}>
-              {note.body.length > 180
-                ? `${note.body.slice(0, 180)}...`
-                : note.body}
-            </p>
-          )}
+        return (
+          <Link
+            key={note.id}
+            href={`/notes/${note.id}`}
+            style={{
+              display: "block",
+              border: "1px solid #333",
+              padding: "18px",
+              marginBottom: "12px",
+              borderRadius: "8px",
+              backgroundColor: "#1a1a1a",
+              color: "white",
+              textDecoration: "none",
+              maxWidth: "900px",
+            }}
+          >
+            <h2 style={{ marginTop: 0 }}>{note.title}</h2>
 
-          {note.company && <p>Company: {note.company.name}</p>}
+            {note.body && (
+              <p style={{ color: "#aaa" }}>{previewText(note.body)}</p>
+            )}
 
-          {note.contact && (
-            <p>
-              Contact: {note.contact.first_name} {note.contact.last_name || ""}
-            </p>
-          )}
+            {company && <p>Company: {company.name}</p>}
 
-          {note.opportunity && <p>Opportunity: {note.opportunity.name}</p>}
+            {contact && (
+              <p>
+                Contact: {contact.first_name} {contact.last_name || ""}
+              </p>
+            )}
 
-          {note.source && <p>Source: {note.source}</p>}
+            {opportunity && <p>Opportunity: {opportunity.name}</p>}
 
-          {note.tags && <p>Tags: {note.tags}</p>}
+            {note.source && <p>Source: {note.source}</p>}
+            {note.tags && <p>Tags: {note.tags}</p>}
 
-          {note.created_at && (
-            <p>Created: {new Date(note.created_at).toLocaleString()}</p>
-          )}
-        </Link>
-      ))}
+            {note.created_at && <p>Created: {formatDateTime(note.created_at)}</p>}
+          </Link>
+        );
+      })}
     </main>
   );
 }
