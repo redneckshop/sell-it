@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useState, type CSSProperties, type FormEvent } from "react";
@@ -1692,6 +1692,14 @@ async function answerBestMemory(userQuestion: string) {
   const searchName = getNameFromQuestion(userQuestion);
   const lower = userQuestion.toLowerCase();
 
+  if (isExecutiveReportQuestion(lower)) {
+    return answerExecutiveReport(userQuestion);
+  }
+
+  if (isComparisonQuestion(lower)) {
+    return answerComparisonQuestion(userQuestion);
+  }
+
   if (lower.includes("company memory")) {
     return answerCompanyMemory(userQuestion);
   }
@@ -1978,8 +1986,786 @@ ${ranked
   .join("\n\n")}`;
 }
 
+type ReportDateRange = {
+  label: string;
+  start: string;
+  end: string;
+};
+
+type ReportCompany = Company & {
+  created_at: string | null;
+  lead_temperature: string | null;
+};
+
+type ReportContact = Contact & {
+  created_at: string | null;
+};
+
+type ReportPainPoint = PainPoint & {
+  created_at: string | null;
+};
+
+function isExecutiveReportQuestion(lowerQuestion: string) {
+  return (
+    lowerQuestion.includes("weekly summary") ||
+    lowerQuestion.includes("week summary") ||
+    lowerQuestion.includes("monthly summary") ||
+    lowerQuestion.includes("month summary") ||
+    lowerQuestion.includes("sales summary") ||
+    lowerQuestion.includes("executive report") ||
+    lowerQuestion.includes("business report") ||
+    lowerQuestion.includes("pipeline report") ||
+    lowerQuestion.includes("what happened this month") ||
+    lowerQuestion.includes("what happened this week") ||
+    lowerQuestion.includes("what happened last week") ||
+    lowerQuestion.includes("what happened recently")
+  );
+}
+
+function getReportDateRange(question: string): ReportDateRange {
+  const lower = question.toLowerCase();
+  const now = new Date();
+  const end = now.toISOString();
+
+  if (lower.includes("this month") || lower.includes("monthly") || lower.includes("month summary")) {
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    return {
+      label: "This Month",
+      start: startOfMonth.toISOString(),
+      end,
+    };
+  }
+
+  if (lower.includes("this week") || lower.includes("weekly") || lower.includes("week summary")) {
+    const start = new Date(now);
+    start.setDate(start.getDate() - 7);
+
+    return {
+      label: "Last 7 Days",
+      start: start.toISOString(),
+      end,
+    };
+  }
+
+  if (lower.includes("sales")) {
+    const start = new Date(now);
+    start.setDate(start.getDate() - 30);
+
+    return {
+      label: "Last 30 Days Sales Window",
+      start: start.toISOString(),
+      end,
+    };
+  }
+
+  const start = new Date(now);
+  start.setDate(start.getDate() - 30);
+
+  return {
+    label: "Last 30 Days",
+    start: start.toISOString(),
+    end,
+  };
+}
+
+function reportCompanyLine(company: ReportCompany) {
+  return `- ${company.name}
+  Phone: ${company.phone || "No phone"} | Email: ${company.email || "No email"} | Temp: ${company.lead_temperature || "No temp"}`;
+}
+
+function reportContactLine(contact: ReportContact) {
+  return `- ${fullContactName(contact)}
+  Company: ${contact.companies?.name || "No company"} | Title: ${contact.title || "No title"} | Phone: ${contact.phone || "No phone"} | Email: ${contact.email || "No email"}`;
+}
+
+function reportPainPointLine(painPoint: ReportPainPoint) {
+  return `- ${painPoint.name}
+  Category: ${painPoint.category || "None"}${painPoint.description ? ` | ${shortText(painPoint.description, 130)}` : ""}`;
+}
+
+function reportLimit<T>(
+  rows: T[],
+  formatter: (row: T) => string,
+  emptyText: string,
+  limit = 8
+) {
+  if (rows.length === 0) {
+    return emptyText;
+  }
+
+  const shown = rows.slice(0, limit).map(formatter).join("\n\n");
+  const remaining = rows.length - limit;
+
+  if (remaining > 0) {
+    return `${shown}\n\n- ${remaining} more not shown.`;
+  }
+
+  return shown;
+}
+
+async function loadReportCompanies(range: ReportDateRange) {
+  const { data, error } = await supabase
+    .from("companies")
+    .select("id, name, website, phone, email, lead_temperature, created_at")
+    .gte("created_at", range.start)
+    .lte("created_at", range.end)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []) as unknown as ReportCompany[];
+}
+
+async function loadReportContacts(range: ReportDateRange) {
+  const { data, error } = await supabase
+    .from("contacts")
+    .select(
+      "id, first_name, last_name, title, email, phone, company_id, created_at, companies(name)"
+    )
+    .gte("created_at", range.start)
+    .lte("created_at", range.end)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []) as unknown as ReportContact[];
+}
+
+async function loadReportOpportunities(range: ReportDateRange) {
+  const { data, error } = await supabase
+    .from("opportunities")
+    .select(
+      `
+      id,
+      name,
+      opportunity_type,
+      stage,
+      lead_temperature,
+      estimated_driver_count,
+      estimated_monthly_value,
+      expected_close_date,
+      next_step,
+      company_id,
+      primary_contact_id,
+      created_at,
+      companies(name),
+      primary_contact:contacts!opportunities_primary_contact_id_fkey (
+        first_name,
+        last_name
+      )
+    `
+    )
+    .gte("created_at", range.start)
+    .lte("created_at", range.end)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []) as unknown as Opportunity[];
+}
+
+async function loadReportPainPoints(range: ReportDateRange) {
+  const { data, error } = await supabase
+    .from("pain_points")
+    .select("id, name, category, description, created_at")
+    .gte("created_at", range.start)
+    .lte("created_at", range.end)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (error) throw new Error(error.message);
+
+  return ((data ?? []) as unknown as ReportPainPoint[]).filter(isRealPainPoint);
+}
+
+async function loadReportClosedOpportunities(range: ReportDateRange) {
+  const { data, error } = await supabase
+    .from("opportunities")
+    .select(
+      `
+      id,
+      name,
+      opportunity_type,
+      stage,
+      lead_temperature,
+      estimated_driver_count,
+      estimated_monthly_value,
+      expected_close_date,
+      next_step,
+      company_id,
+      primary_contact_id,
+      created_at,
+      companies(name),
+      primary_contact:contacts!opportunities_primary_contact_id_fkey (
+        first_name,
+        last_name
+      )
+    `
+    )
+    .in("stage", ["Customer", "Lost"])
+    .gte("created_at", range.start)
+    .lte("created_at", range.end)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []) as unknown as Opportunity[];
+}
+
+async function loadReportHotOpportunities() {
+  const { data, error } = await supabase
+    .from("opportunities")
+    .select(
+      `
+      id,
+      name,
+      opportunity_type,
+      stage,
+      lead_temperature,
+      estimated_driver_count,
+      estimated_monthly_value,
+      expected_close_date,
+      next_step,
+      company_id,
+      primary_contact_id,
+      created_at,
+      companies(name),
+      primary_contact:contacts!opportunities_primary_contact_id_fkey (
+        first_name,
+        last_name
+      )
+    `
+    )
+    .or("lead_temperature.eq.Hot,lead_temperature.eq.Active")
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []) as unknown as Opportunity[];
+}
+
+function executiveAssessment(input: {
+  newCompanies: ReportCompany[];
+  newContacts: ReportContact[];
+  newOpportunities: Opportunity[];
+  newPainPoints: ReportPainPoint[];
+  closedOpportunities: Opportunity[];
+  overdueTasks: Task[];
+  hotOpportunities: Opportunity[];
+}) {
+  const signals: string[] = [];
+
+  if (input.hotOpportunities.length > 0) {
+    signals.push(`- ${input.hotOpportunities.length} hot/active opportunities need attention.`);
+  }
+
+  if (input.overdueTasks.length > 0) {
+    signals.push(`- ${input.overdueTasks.length} overdue tasks are creating follow-up risk.`);
+  }
+
+  if (input.newOpportunities.length > 0) {
+    signals.push(`- ${input.newOpportunities.length} new opportunities were created in this report window.`);
+  }
+
+  if (input.newPainPoints.length > 0) {
+    signals.push(`- ${input.newPainPoints.length} real pain points were captured, which may reveal buying triggers.`);
+  }
+
+  if (input.newCompanies.length === 0 && input.newContacts.length === 0 && input.newOpportunities.length === 0) {
+    signals.push("- No new company/contact/opportunity growth was found in this report window.");
+  }
+
+  if (input.closedOpportunities.length > 0) {
+    signals.push(`- ${input.closedOpportunities.length} opportunities are currently marked Customer or Lost in this window.`);
+  }
+
+  return signals.join("\n") || "- No strong executive signal found yet.";
+}
+
+async function answerExecutiveReport(userQuestion: string) {
+  const range = getReportDateRange(userQuestion);
+
+  const [
+    newCompanies,
+    newContacts,
+    newOpportunities,
+    newPainPoints,
+    closedOpportunities,
+    overdueTasks,
+    hotOpportunities,
+  ] = await Promise.all([
+    loadReportCompanies(range),
+    loadReportContacts(range),
+    loadReportOpportunities(range),
+    loadReportPainPoints(range),
+    loadReportClosedOpportunities(range),
+    getOverdueTasks(),
+    loadReportHotOpportunities(),
+  ]);
+
+  let answer = `AI BUSINESS MEMORY V2 EXECUTIVE REPORT\nWindow: ${range.label}\nFrom: ${formatDate(range.start)}\nTo: ${formatDate(range.end)}`;
+
+  answer += section(
+    "Executive Summary",
+    executiveAssessment({
+      newCompanies,
+      newContacts,
+      newOpportunities,
+      newPainPoints,
+      closedOpportunities,
+      overdueTasks,
+      hotOpportunities,
+    })
+  );
+
+  answer += section(
+    "Scoreboard",
+    [
+      `- New Companies: ${newCompanies.length}`,
+      `- New Contacts: ${newContacts.length}`,
+      `- New Opportunities: ${newOpportunities.length}`,
+      `- New Real Pain Points: ${newPainPoints.length}`,
+      `- Closed / Lost Opportunities Created In Window: ${closedOpportunities.length}`,
+      `- Current Overdue Tasks: ${overdueTasks.length}`,
+      `- Current Hot / Active Opportunities: ${hotOpportunities.length}`,
+    ].join("\n")
+  );
+
+  answer += section(
+    "New Companies",
+    reportLimit(newCompanies, reportCompanyLine, "- No new companies found in this window.", 8)
+  );
+
+  answer += section(
+    "New Contacts",
+    reportLimit(newContacts, reportContactLine, "- No new contacts found in this window.", 8)
+  );
+
+  answer += section(
+    "New Opportunities",
+    reportLimit(newOpportunities, opportunityLine, "- No new opportunities found in this window.", 8)
+  );
+
+  answer += section(
+    "Current Hot / Active Opportunities",
+    reportLimit(hotOpportunities, opportunityLine, "- No hot or active opportunities found.", 8)
+  );
+
+  answer += section(
+    "Closed / Lost Opportunities",
+    reportLimit(closedOpportunities, opportunityLine, "- No Customer or Lost opportunities found in this window.", 8)
+  );
+
+  answer += section(
+    "Current Overdue Tasks",
+    reportLimit(overdueTasks, taskLine, "- No overdue tasks.", 8)
+  );
+
+  answer += section(
+    "New Real Pain Points",
+    reportLimit(newPainPoints, reportPainPointLine, "- No new real pain points found in this window.", 8)
+  );
+
+  answer += section(
+    "Recommended Management Actions",
+    [
+      overdueTasks[0] ? `- Clear the oldest overdue task first: ${overdueTasks[0].title}` : "",
+      hotOpportunities[0]?.next_step ? `- Work top hot opportunity next step: ${hotOpportunities[0].next_step}` : "",
+      hotOpportunities.length > 0 && !hotOpportunities[0]?.next_step ? `- Add a next step to the top hot opportunity: ${hotOpportunities[0].name}` : "",
+      newPainPoints.length > 0 ? "- Review new pain points and link them to companies, contacts, posts, or activities." : "",
+      newCompanies.length > 0 && newContacts.length === 0 ? "- Add contacts for the new companies so they are actionable." : "",
+    ]
+      .filter(Boolean)
+      .join("\n") || "- No urgent management action found."
+  );
+
+  return answer;
+}
+
+type CompanyComparisonMemory = {
+  company: Company;
+  contacts: Contact[];
+  opportunities: Opportunity[];
+  openTasks: Task[];
+  activities: Activity[];
+  notes: Note[];
+  painPoints: PainPoint[];
+  attachments: Attachment[];
+};
+
+function isComparisonQuestion(lowerQuestion: string) {
+  return (
+    lowerQuestion.startsWith("compare ") ||
+    lowerQuestion.includes(" compare ") ||
+    lowerQuestion.includes(" vs ") ||
+    lowerQuestion.includes(" versus ") ||
+    lowerQuestion.includes("side by side") ||
+    lowerQuestion.includes("alpha candidates")
+  );
+}
+
+function cleanComparisonName(value: string) {
+  return value
+    .replace(/\?/g, "")
+    .replace(/\bcompanies\b/gi, "")
+    .replace(/\bcompany\b/gi, "")
+    .replace(/\bcompare\b/gi, "")
+    .replace(/\bside by side\b/gi, "")
+    .replace(/\bversus\b/gi, "")
+    .replace(/\bvs\b/gi, "")
+    .trim();
+}
+
+function parseCompanyComparisonNames(question: string) {
+  const cleaned = question
+    .replace(/\?/g, "")
+    .replace(/^compare\s+/i, "")
+    .replace(/\bside by side\b/gi, "")
+    .trim();
+
+  const splitPatterns = [
+    /\s+and\s+/i,
+    /\s+vs\.?\s+/i,
+    /\s+versus\s+/i,
+    /\s*,\s*/,
+  ];
+
+  for (const pattern of splitPatterns) {
+    const parts = cleaned.split(pattern).map(cleanComparisonName).filter(Boolean);
+
+    if (parts.length >= 2) {
+      return [parts[0], parts[1]];
+    }
+  }
+
+  return [];
+}
+
+function comparisonMetricLine(label: string, left: string | number, right: string | number) {
+  return `- ${label}: ${left} | ${right}`;
+}
+
+function firstOrNone(value: string | null | undefined) {
+  return value && value.trim() ? value : "None saved";
+}
+
+function topOpportunityName(opportunities: Opportunity[]) {
+  if (opportunities.length === 0) {
+    return "None";
+  }
+
+  const hot = opportunities.find(
+    (opportunity) =>
+      opportunity.lead_temperature === "Hot" ||
+      opportunity.lead_temperature === "Active"
+  );
+
+  return hot?.name || opportunities[0].name;
+}
+
+function topTaskName(tasks: Task[]) {
+  return tasks[0]?.title || "None";
+}
+
+function topPainPointName(painPoints: PainPoint[]) {
+  return painPoints[0]?.name || "None";
+}
+
+function recentActivityName(activities: Activity[]) {
+  return activities[0]?.subject || "None";
+}
+
+async function buildCompanyComparisonMemory(company: Company): Promise<CompanyComparisonMemory> {
+  const companyIds = [company.id];
+  const contacts = await loadContactsForCompany(company.id);
+  const opportunities = await loadOpportunitiesForCompany(company.id);
+  const tasks = await loadTasksForCompanyOrContact(companyIds, []);
+  const activities = await loadActivitiesForCompanyOrContact(companyIds, []);
+  const notes = await loadNotesForCompanyContactOpportunity(
+    companyIds,
+    [],
+    idsFromRows(opportunities)
+  );
+
+  const painPoints = await loadPainPointsForRecord(
+    "pain_point_companies",
+    "company_id",
+    company.id
+  );
+
+  const attachments = await loadAttachmentsForMemory({
+    companyIds,
+    contactIds: idsFromRows(contacts),
+    opportunityIds: idsFromRows(opportunities),
+    taskIds: idsFromRows(tasks),
+    activityIds: idsFromRows(activities),
+    noteIds: idsFromRows(notes),
+  });
+
+  const openTasks = tasks.filter(
+    (task) => task.status !== "Completed" && task.status !== "Cancelled"
+  );
+
+  return {
+    company,
+    contacts,
+    opportunities,
+    openTasks,
+    activities,
+    notes,
+    painPoints,
+    attachments,
+  };
+}
+
+function companyComparisonRecommendation(left: CompanyComparisonMemory, right: CompanyComparisonMemory) {
+  const leftHot = left.opportunities.filter(
+    (opportunity) =>
+      opportunity.lead_temperature === "Hot" ||
+      opportunity.lead_temperature === "Active"
+  );
+
+  const rightHot = right.opportunities.filter(
+    (opportunity) =>
+      opportunity.lead_temperature === "Hot" ||
+      opportunity.lead_temperature === "Active"
+  );
+
+  if (leftHot.length > rightHot.length) {
+    return `- ${left.company.name} appears more urgent because it has more hot/active opportunity signal.`;
+  }
+
+  if (rightHot.length > leftHot.length) {
+    return `- ${right.company.name} appears more urgent because it has more hot/active opportunity signal.`;
+  }
+
+  if (left.openTasks.length > right.openTasks.length) {
+    return `- ${left.company.name} needs more task cleanup because it has more open tasks.`;
+  }
+
+  if (right.openTasks.length > left.openTasks.length) {
+    return `- ${right.company.name} needs more task cleanup because it has more open tasks.`;
+  }
+
+  if (left.painPoints.length > right.painPoints.length) {
+    return `- ${left.company.name} has more documented pain-point signal.`;
+  }
+
+  if (right.painPoints.length > left.painPoints.length) {
+    return `- ${right.company.name} has more documented pain-point signal.`;
+  }
+
+  return "- Both companies have similar urgency based on the currently saved CRM data.";
+}
+
+async function answerCompanyComparison(userQuestion: string) {
+  const names = parseCompanyComparisonNames(userQuestion);
+
+  if (names.length < 2) {
+    return "I need two company names to compare. Example: Compare ABC Trucking and Three T Trucking.";
+  }
+
+  const leftCompany = await findCompanyByName(names[0]);
+  const rightCompany = await findCompanyByName(names[1]);
+
+  if (!leftCompany || !rightCompany) {
+    return `I could not find both companies. Found: ${leftCompany?.name || "not found"} and ${rightCompany?.name || "not found"}.`;
+  }
+
+  const [left, right] = await Promise.all([
+    buildCompanyComparisonMemory(leftCompany),
+    buildCompanyComparisonMemory(rightCompany),
+  ]);
+
+  let answer = `AI BUSINESS MEMORY V2 COMPARISON REPORT\nCompare: ${left.company.name} | ${right.company.name}`;
+
+  answer += section(
+    "Side-by-Side Scoreboard",
+    [
+      comparisonMetricLine("Contacts", left.contacts.length, right.contacts.length),
+      comparisonMetricLine("Opportunities", left.opportunities.length, right.opportunities.length),
+      comparisonMetricLine("Open Tasks", left.openTasks.length, right.openTasks.length),
+      comparisonMetricLine("Activities", left.activities.length, right.activities.length),
+      comparisonMetricLine("Notes", left.notes.length, right.notes.length),
+      comparisonMetricLine("Real Pain Points", left.painPoints.length, right.painPoints.length),
+      comparisonMetricLine("Attachments", left.attachments.length, right.attachments.length),
+    ].join("\n")
+  );
+
+  answer += section(
+    "Company Profiles",
+    `${left.company.name}
+- Phone: ${left.company.phone || "Not saved"}
+- Email: ${left.company.email || "Not saved"}
+- Website: ${left.company.website || "Not saved"}
+
+${right.company.name}
+- Phone: ${right.company.phone || "Not saved"}
+- Email: ${right.company.email || "Not saved"}
+- Website: ${right.company.website || "Not saved"}`
+  );
+
+  answer += section(
+    "Best Current Signal",
+    [
+      comparisonMetricLine("Top Opportunity", topOpportunityName(left.opportunities), topOpportunityName(right.opportunities)),
+      comparisonMetricLine("Next Open Task", topTaskName(left.openTasks), topTaskName(right.openTasks)),
+      comparisonMetricLine("Top Pain Point", topPainPointName(left.painPoints), topPainPointName(right.painPoints)),
+      comparisonMetricLine("Recent Activity", recentActivityName(left.activities), recentActivityName(right.activities)),
+    ].join("\n")
+  );
+
+  answer += section(
+    "Contacts",
+    `${left.company.name}
+${limitedList(left.contacts, contactLine, "- No contacts linked.", 4)}
+
+${right.company.name}
+${limitedList(right.contacts, contactLine, "- No contacts linked.", 4)}`
+  );
+
+  answer += section(
+    "Pipeline",
+    `${left.company.name}
+${limitedList(left.opportunities, opportunityLine, "- No opportunities linked.", 4)}
+
+${right.company.name}
+${limitedList(right.opportunities, opportunityLine, "- No opportunities linked.", 4)}`
+  );
+
+  answer += section(
+    "Executive Recommendation",
+    companyComparisonRecommendation(left, right)
+  );
+
+  return answer;
+}
+
+async function loadAlphaCandidateOpportunities() {
+  const { data, error } = await supabase
+    .from("opportunities")
+    .select(
+      `
+      id,
+      name,
+      opportunity_type,
+      stage,
+      lead_temperature,
+      estimated_driver_count,
+      estimated_monthly_value,
+      expected_close_date,
+      next_step,
+      company_id,
+      primary_contact_id,
+      created_at,
+      companies(name),
+      primary_contact:contacts!opportunities_primary_contact_id_fkey (
+        first_name,
+        last_name
+      )
+    `
+    )
+    .order("created_at", { ascending: false })
+    .limit(250);
+
+  if (error) throw new Error(error.message);
+
+  const opportunities = (data ?? []) as unknown as Opportunity[];
+
+  return opportunities.filter((opportunity) => {
+    const text = normalizeText(
+      `${opportunity.name} ${opportunity.opportunity_type || ""} ${opportunity.stage || ""}`
+    );
+
+    return text.includes("alpha");
+  });
+}
+
+async function answerAlphaCandidateComparison() {
+  const opportunities = await loadAlphaCandidateOpportunities();
+
+  const hotOrActive = opportunities.filter(
+    (opportunity) =>
+      opportunity.lead_temperature === "Hot" ||
+      opportunity.lead_temperature === "Active"
+  );
+
+  let answer = "AI BUSINESS MEMORY V2 COMPARISON REPORT\nCompare: Alpha Candidates";
+
+  answer += section(
+    "Alpha Candidate Scoreboard",
+    [
+      `- Alpha Candidates Found: ${opportunities.length}`,
+      `- Hot / Active Alpha Candidates: ${hotOrActive.length}`,
+      `- Candidates With Next Steps: ${opportunities.filter((opportunity) => Boolean(opportunity.next_step)).length}`,
+      `- Estimated Monthly Pipeline Value: ${formatMoney(
+        opportunities.reduce(
+          (total, opportunity) =>
+            total + Number(opportunity.estimated_monthly_value || 0),
+          0
+        )
+      )}`,
+    ].join("\n")
+  );
+
+  answer += section(
+    "Candidate Comparison",
+    reportLimit(
+      opportunities,
+      opportunityLine,
+      "- No alpha candidates found.",
+      12
+    )
+  );
+
+  answer += section(
+    "Best Candidates To Work First",
+    hotOrActive.length > 0
+      ? hotOrActive
+          .slice(0, 5)
+          .map(
+            (opportunity) =>
+              `- ${opportunity.name} - ${opportunity.lead_temperature} - Next Step: ${firstOrNone(opportunity.next_step)}`
+          )
+          .join("\n")
+      : "- No hot or active alpha candidates found."
+  );
+
+  answer += section(
+    "Executive Recommendation",
+    hotOrActive[0]
+      ? `- Work ${hotOrActive[0].name} first because it has the strongest temperature signal.`
+      : "- Add lead temperature and next steps to alpha candidates so the assistant can rank them better."
+  );
+
+  return answer;
+}
+
+async function answerComparisonQuestion(userQuestion: string) {
+  const lower = userQuestion.toLowerCase();
+
+  if (lower.includes("alpha candidate") || lower.includes("alpha candidates")) {
+    return answerAlphaCandidateComparison();
+  }
+
+  return answerCompanyComparison(userQuestion);
+}
+
 async function routeQuestion(userQuestion: string) {
   const lower = userQuestion.toLowerCase();
+
+  if (isExecutiveReportQuestion(lower)) {
+    return answerExecutiveReport(userQuestion);
+  }
+
+  if (isComparisonQuestion(lower)) {
+    return answerComparisonQuestion(userQuestion);
+  }
 
   if (
     lower.includes("business memory") ||
@@ -2054,7 +2840,7 @@ async function routeQuestion(userQuestion: string) {
     return answerCompanyMemory(userQuestion);
   }
 
-  return `I can answer these Sell It questions in AI Business Memory V1.1:
+  return `I can answer these Sell It questions in AI Business Memory V2:
 
 - What should I do today?
 - Who needs follow-up?
@@ -2068,7 +2854,7 @@ async function routeQuestion(userQuestion: string) {
 - Opportunity memory for Alpha Tester.
 - What pain points are most common?
 
-V1.1 filters out fake pain points like broker agreements, liability clauses, insurance requirements, and contract language.`;
+V2 filters out fake pain points like broker agreements, liability clauses, insurance requirements, and contract language.`;
 }
 
 export default function AssistantPage() {
@@ -2077,7 +2863,7 @@ export default function AssistantPage() {
     {
       role: "assistant",
       text:
-        "Ask me about Sell It data. AI Business Memory V1.1 builds short structured reports for companies, contacts, real pain points, and opportunities. It filters out contract/legal/admin language so broker agreements do not show as pain points.",
+        "Ask me about Sell It data. AI Business Memory V2 builds short structured reports for companies, contacts, real pain points, and opportunities. It filters out contract/legal/admin language so broker agreements do not show as pain points.",
     },
   ]);
   const [thinking, setThinking] = useState(false);
@@ -2155,7 +2941,7 @@ export default function AssistantPage() {
 
       <p style={{ color: "#aaa", marginBottom: "32px", maxWidth: "950px" }}>
         Ask natural language questions about your Sell It data. AI Business
-        Memory V1.1 creates concise structured reports from CRM records, tasks,
+        Memory V2 creates concise structured reports from CRM records, tasks,
         activities, notes, real pain points, posts, communities, and attachment
         metadata.
       </p>
@@ -2222,7 +3008,7 @@ export default function AssistantPage() {
         </form>
 
         <div style={cardStyle}>
-          <h2 style={{ marginTop: 0 }}>AI Business Memory V1.1 Examples</h2>
+          <h2 style={{ marginTop: 0 }}>AI Business Memory V2 Examples</h2>
 
           <div
             style={{
@@ -2232,16 +3018,18 @@ export default function AssistantPage() {
             }}
           >
             {[
+              "Give me a weekly summary",
+              "Give me a sales summary",
+              "What happened this month?",
+              "Compare ABC Trucking and Three T Trucking",
+              "Compare Alpha Candidates",
               "Tell me everything we know about ABC Trucking",
               "Company memory for Three T Trucking",
               "Contact memory for Joe Smith",
               "Pain point memory for Need Trucks",
               "Opportunity memory for Alpha Tester",
-              "What do we know about Need Trucks?",
               "Who needs follow-up?",
-              "Show me overdue tasks",
               "Show me hot opportunities",
-              "What pain points are most common?",
             ].map((example) => (
               <button
                 key={example}
@@ -2262,3 +3050,11 @@ export default function AssistantPage() {
     </main>
   );
 }
+
+
+
+
+
+
+
+
