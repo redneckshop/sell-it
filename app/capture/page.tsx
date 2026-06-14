@@ -198,6 +198,7 @@ function normalizeActivityType(value: string) {
   if (lower.includes("meeting")) return "Meeting";
   if (lower.includes("lunch")) return "Lunch";
   if (lower.includes("website")) return "Website Research";
+  if (lower.includes("facebook post")) return "Facebook Comment";
   if (lower.includes("facebook comment")) return "Facebook Comment";
   if (lower.includes("facebook message")) return "Facebook Message";
   if (lower.includes("facebook discussion")) return "Facebook Comment";
@@ -222,7 +223,9 @@ function normalizeActivityOutcome(opportunityValue: string, taskValue: string) {
     combined.includes("interested") ||
     combined.includes("alpha") ||
     combined.includes("beta") ||
-    combined.includes("demo")
+    combined.includes("demo") ||
+    combined.includes("sale") ||
+    combined.includes("equipment")
   ) {
     return "Interested";
   }
@@ -241,6 +244,8 @@ function guessPainPointCategory(name: string) {
   if (lower.includes("dispatch")) return "Dispatch";
   if (lower.includes("accountability")) return "Accountability";
   if (lower.includes("communication")) return "Communication";
+  if (lower.includes("equipment") || lower.includes("unit")) return "Equipment";
+  if (lower.includes("fleet")) return "Fleet";
 
   return "Operations";
 }
@@ -296,6 +301,60 @@ export default function CapturePage() {
       }
     };
   }, [screenshotPreviewUrl]);
+
+  useEffect(() => {
+    async function handleClipboardPaste(event: ClipboardEvent) {
+      const items = event.clipboardData?.items;
+
+      if (!items || items.length === 0) {
+        return;
+      }
+
+      for (const item of Array.from(items)) {
+        if (item.kind !== "file") {
+          continue;
+        }
+
+        const file = item.getAsFile();
+
+        if (!file) {
+          continue;
+        }
+
+        if (!allowedImageTypes.includes(file.type)) {
+          continue;
+        }
+
+        event.preventDefault();
+
+        const extension =
+          file.type === "image/png"
+            ? "png"
+            : file.type === "image/webp"
+            ? "webp"
+            : "jpg";
+
+        const pastedFile = new File(
+          [file],
+          `pasted-screenshot-${Date.now()}.${extension}`,
+          {
+            type: file.type,
+          }
+        );
+
+        await handleScreenshotFile(pastedFile);
+        break;
+      }
+    }
+
+    window.addEventListener("paste", handleClipboardPaste);
+
+    return () => {
+      window.removeEventListener("paste", handleClipboardPaste);
+    };
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleScreenshotFile(file: File | null) {
     setErrorMessage("");
@@ -1029,8 +1088,8 @@ export default function CapturePage() {
           <h2 style={{ marginTop: 0 }}>Upload Screenshot</h2>
 
           <p style={{ color: "#aaa" }}>
-            Drag and drop a PNG, JPG, JPEG, or WEBP screenshot here, or use the
-            file picker below.
+            Drag and drop a PNG, JPG, JPEG, or WEBP screenshot here, use the file
+            picker below, or press Ctrl + V to paste a copied screenshot.
           </p>
 
           <input
