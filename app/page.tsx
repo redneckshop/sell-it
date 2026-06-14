@@ -237,6 +237,7 @@ export default async function Home() {
     { title: "Posts", href: "/posts" },
     { title: "Pain Points", href: "/pain-points" },
     { title: "Capture", href: "/capture" },
+    { title: "Assistant", href: "/assistant" },
   ];
 
   const quickAdds = [
