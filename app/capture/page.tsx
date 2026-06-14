@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { useState, type CSSProperties, type FormEvent } from "react";
+import { supabase } from "../lib/supabase";
+
+const WORKSPACE_ID = "ba491d9b-3b36-426d-b98a-f05b0bf271ed";
+const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
 type CaptureResult = {
   company: string | null;
@@ -12,6 +16,15 @@ type CaptureResult = {
   pain_points: string[];
   summary: string;
   confidence: "Low" | "Medium" | "High";
+};
+
+type SavedRecordLinks = {
+  companyId?: string;
+  contactId?: string;
+  opportunityId?: string;
+  taskId?: string;
+  activityId?: string;
+  painPointIds?: string[];
 };
 
 const inputStyle: CSSProperties = {
@@ -54,26 +67,141 @@ const cardStyle: CSSProperties = {
   marginBottom: "16px",
 };
 
-function ResultRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: string | null | undefined;
-}) {
-  return (
-    <p>
-      <strong>{label}:</strong> {value || "Not found"}
-    </p>
-  );
+function splitContactName(fullName: string) {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+
+  if (parts.length === 0) {
+    return {
+      firstName: "",
+      lastName: "",
+    };
+  }
+
+  if (parts.length === 1) {
+    return {
+      firstName: parts[0],
+      lastName: "",
+    };
+  }
+
+  return {
+    firstName: parts[0],
+    lastName: parts.slice(1).join(" "),
+  };
+}
+
+function parsePainPoints(value: string) {
+  return value
+    .split(/,|\n/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function normalizeOpportunityType(value: string) {
+  const lower = value.toLowerCase();
+
+  if (lower.includes("alpha")) return "Alpha Tester";
+  if (lower.includes("beta")) return "Beta Tester";
+  if (lower.includes("paid") || lower.includes("customer")) return "Paid Customer";
+  if (lower.includes("broker")) return "Broker Adoption";
+  if (lower.includes("contractor")) return "Contractor Adoption";
+  if (lower.includes("partner")) return "Partnership";
+
+  return "Other";
+}
+
+function normalizeOpportunityStage(value: string) {
+  const lower = value.toLowerCase();
+
+  if (lower.includes("alpha")) return "Alpha Candidate";
+  if (lower.includes("beta")) return "Beta Candidate";
+  if (lower.includes("demo")) return "Demo Scheduled";
+  if (lower.includes("meeting")) return "Meeting Scheduled";
+  if (lower.includes("customer")) return "Customer";
+  if (lower.includes("lost")) return "Lost";
+  if (lower.includes("paused")) return "Paused";
+  if (lower.includes("interested")) return "Discovery";
+  if (lower.includes("follow")) return "Contact Made";
+
+  return "New Lead";
+}
+
+function normalizeActivityType(value: string) {
+  const lower = value.toLowerCase();
+
+  if (lower.includes("call")) return "Call";
+  if (lower.includes("voicemail")) return "Voicemail";
+  if (lower.includes("text")) return "Text Message";
+  if (lower.includes("email")) return "Email";
+  if (lower.includes("meeting")) return "Meeting";
+  if (lower.includes("lunch")) return "Lunch";
+  if (lower.includes("website")) return "Website Research";
+  if (lower.includes("facebook comment")) return "Facebook Comment";
+  if (lower.includes("facebook message")) return "Facebook Message";
+  if (lower.includes("note")) return "Note";
+
+  return "Other";
+}
+
+function normalizeActivityOutcome(opportunityValue: string, taskValue: string) {
+  const combined = `${opportunityValue} ${taskValue}`.toLowerCase();
+
+  if (combined.includes("not interested")) return "Not Interested";
+  if (combined.includes("bad fit")) return "Bad Fit";
+  if (combined.includes("converted")) return "Converted";
+  if (combined.includes("meeting")) return "Meeting Booked";
+  if (combined.includes("follow") || taskValue.trim()) return "Follow-Up Needed";
+
+  if (
+    combined.includes("interested") ||
+    combined.includes("alpha") ||
+    combined.includes("beta") ||
+    combined.includes("demo")
+  ) {
+    return "Interested";
+  }
+
+  return "Spoke";
+}
+
+function guessPainPointCategory(name: string) {
+  const lower = name.toLowerCase();
+
+  if (lower.includes("truck")) return "Trucking Capacity";
+  if (lower.includes("driver")) return "Labor";
+  if (lower.includes("work")) return "Work Pipeline";
+  if (lower.includes("ticket") || lower.includes("paper")) return "Paperwork";
+  if (lower.includes("bill") || lower.includes("pay")) return "Billing";
+  if (lower.includes("dispatch")) return "Dispatch";
+  if (lower.includes("accountability")) return "Accountability";
+  if (lower.includes("communication")) return "Communication";
+
+  return "Operations";
+}
+
+function getNowForActivity() {
+  return new Date().toISOString();
 }
 
 export default function CapturePage() {
   const [inputText, setInputText] = useState("");
   const [result, setResult] = useState<CaptureResult | null>(null);
   const [rawText, setRawText] = useState("");
+
+  const [reviewCompany, setReviewCompany] = useState("");
+  const [reviewContact, setReviewContact] = useState("");
+  const [reviewOpportunity, setReviewOpportunity] = useState("");
+  const [reviewTask, setReviewTask] = useState("");
+  const [reviewActivity, setReviewActivity] = useState("");
+  const [reviewPainPoints, setReviewPainPoints] = useState("");
+  const [reviewSummary, setReviewSummary] = useState("");
+
   const [errorMessage, setErrorMessage] = useState("");
+  const [saveMessage, setSaveMessage] = useState("");
+  const [savedLinks, setSavedLinks] = useState<SavedRecordLinks | null>(null);
+
   const [analyzing, setAnalyzing] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   async function handleAnalyze(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -82,6 +210,8 @@ export default function CapturePage() {
     setResult(null);
     setRawText("");
     setErrorMessage("");
+    setSaveMessage("");
+    setSavedLinks(null);
 
     try {
       const response = await fetch("/api/capture/analyze", {
@@ -102,8 +232,21 @@ export default function CapturePage() {
         return;
       }
 
-      setResult(data.result || null);
+      const aiResult = data.result as CaptureResult;
+
+      setResult(aiResult || null);
       setRawText(data.raw_text || "");
+
+      if (aiResult) {
+        setReviewCompany(aiResult.company || "");
+        setReviewContact(aiResult.contact || "");
+        setReviewOpportunity(aiResult.opportunity || "");
+        setReviewTask(aiResult.task || "");
+        setReviewActivity(aiResult.activity || "");
+        setReviewPainPoints((aiResult.pain_points || []).join(", "));
+        setReviewSummary(aiResult.summary || "");
+      }
+
       setAnalyzing(false);
     } catch (error) {
       const message =
@@ -111,6 +254,404 @@ export default function CapturePage() {
 
       setErrorMessage(message);
       setAnalyzing(false);
+    }
+  }
+
+  async function findOrCreateCompany(companyName: string) {
+    const cleanName = companyName.trim();
+
+    if (!cleanName) return null;
+
+    const { data: existingCompany, error: findError } = await supabase
+      .from("companies")
+      .select("id, name")
+      .ilike("name", cleanName)
+      .limit(1)
+      .maybeSingle();
+
+    if (findError) throw new Error(`Company lookup failed: ${findError.message}`);
+
+    if (existingCompany?.id) {
+      return existingCompany.id as string;
+    }
+
+    const { data: newCompany, error: insertError } = await supabase
+      .from("companies")
+      .insert({
+        workspace_id: WORKSPACE_ID,
+        name: cleanName,
+        created_by: USER_ID,
+        updated_by: USER_ID,
+      })
+      .select("id")
+      .single();
+
+    if (insertError) throw new Error(`Company save failed: ${insertError.message}`);
+
+    return newCompany.id as string;
+  }
+
+  async function findOrCreateContact(contactName: string, companyId: string | null) {
+    const cleanName = contactName.trim();
+
+    if (!cleanName) return null;
+
+    const { firstName, lastName } = splitContactName(cleanName);
+
+    if (!firstName) return null;
+
+    let query = supabase
+      .from("contacts")
+      .select("id, first_name, last_name, company_id")
+      .ilike("first_name", firstName)
+      .limit(10);
+
+    if (lastName) {
+      query = query.ilike("last_name", lastName);
+    }
+
+    const { data: existingContacts, error: findError } = await query;
+
+    if (findError) throw new Error(`Contact lookup failed: ${findError.message}`);
+
+    const matchingContact = (existingContacts || []).find((contact) => {
+      if (!companyId) return true;
+      return contact.company_id === companyId || contact.company_id === null;
+    });
+
+    if (matchingContact?.id) {
+      return matchingContact.id as string;
+    }
+
+    const { data: newContact, error: insertError } = await supabase
+      .from("contacts")
+      .insert({
+        workspace_id: WORKSPACE_ID,
+        first_name: firstName,
+        last_name: lastName || null,
+        company_id: companyId,
+        notes: reviewSummary || inputText || null,
+        created_by: USER_ID,
+        updated_by: USER_ID,
+      })
+      .select("id")
+      .single();
+
+    if (insertError) throw new Error(`Contact save failed: ${insertError.message}`);
+
+    return newContact.id as string;
+  }
+
+  async function findOrCreatePainPoint(painPointName: string) {
+    const cleanName = painPointName.trim();
+
+    if (!cleanName) return null;
+
+    const { data: existingPainPoint, error: findError } = await supabase
+      .from("pain_points")
+      .select("id, name")
+      .ilike("name", cleanName)
+      .limit(1)
+      .maybeSingle();
+
+    if (findError) {
+      throw new Error(`Pain point lookup failed: ${findError.message}`);
+    }
+
+    if (existingPainPoint?.id) {
+      return existingPainPoint.id as string;
+    }
+
+    const { data: newPainPoint, error: insertError } = await supabase
+      .from("pain_points")
+      .insert({
+        workspace_id: WORKSPACE_ID,
+        name: cleanName,
+        category: guessPainPointCategory(cleanName),
+        description: `Discovered through AI Capture.\n\n${reviewSummary || inputText}`,
+        created_by: USER_ID,
+        updated_by: USER_ID,
+      })
+      .select("id")
+      .single();
+
+    if (insertError) {
+      throw new Error(`Pain point save failed: ${insertError.message}`);
+    }
+
+    return newPainPoint.id as string;
+  }
+
+  async function findOrCreateOpportunity(
+    opportunityValue: string,
+    companyId: string | null,
+    contactId: string | null
+  ) {
+    const cleanOpportunity = opportunityValue.trim();
+
+    if (!cleanOpportunity || !companyId) return null;
+
+    const opportunityName = reviewCompany
+      ? `${reviewCompany} - ${cleanOpportunity}`
+      : cleanOpportunity;
+
+    const { data: existingOpportunity, error: findError } = await supabase
+      .from("opportunities")
+      .select("id, name, company_id")
+      .eq("company_id", companyId)
+      .ilike("name", opportunityName)
+      .limit(1)
+      .maybeSingle();
+
+    if (findError) {
+      throw new Error(`Opportunity lookup failed: ${findError.message}`);
+    }
+
+    if (existingOpportunity?.id) {
+      return existingOpportunity.id as string;
+    }
+
+    const opportunityType = normalizeOpportunityType(cleanOpportunity);
+
+    const { data: newOpportunity, error: insertError } = await supabase
+      .from("opportunities")
+      .insert({
+        workspace_id: WORKSPACE_ID,
+        name: opportunityName,
+        company_id: companyId,
+        primary_contact_id: contactId,
+        opportunity_type: opportunityType,
+        opportunity_type_other_description:
+          opportunityType === "Other" ? cleanOpportunity : null,
+        stage: normalizeOpportunityStage(cleanOpportunity),
+        lead_temperature: "Warm",
+        next_step: reviewTask || null,
+        notes: reviewSummary || inputText || null,
+        created_by: USER_ID,
+        updated_by: USER_ID,
+      })
+      .select("id")
+      .single();
+
+    if (insertError) {
+      throw new Error(`Opportunity save failed: ${insertError.message}`);
+    }
+
+    return newOpportunity.id as string;
+  }
+
+  async function findOrCreateTask(
+    taskValue: string,
+    companyId: string | null,
+    contactId: string | null,
+    opportunityId: string | null
+  ) {
+    const cleanTask = taskValue.trim();
+
+    if (!cleanTask) return null;
+
+    let query = supabase
+      .from("tasks")
+      .select("id, title, company_id, contact_id, opportunity_id")
+      .ilike("title", cleanTask)
+      .limit(10);
+
+    if (companyId) {
+      query = query.eq("company_id", companyId);
+    }
+
+    const { data: existingTasks, error: findError } = await query;
+
+    if (findError) {
+      throw new Error(`Task lookup failed: ${findError.message}`);
+    }
+
+    const matchingTask = (existingTasks || []).find((task) => {
+      const contactMatches = !contactId || task.contact_id === contactId;
+      const opportunityMatches =
+        !opportunityId || task.opportunity_id === opportunityId;
+
+      return contactMatches && opportunityMatches;
+    });
+
+    if (matchingTask?.id) {
+      return matchingTask.id as string;
+    }
+
+    const { data: newTask, error: insertError } = await supabase
+      .from("tasks")
+      .insert({
+        workspace_id: WORKSPACE_ID,
+        title: cleanTask,
+        description: `Created from AI Capture.\n\n${reviewSummary || ""}\n\nOriginal text:\n${inputText}`,
+        due_date: null,
+        priority: "Normal",
+        status: "Open",
+        assigned_to: USER_ID,
+        company_id: companyId,
+        contact_id: contactId,
+        opportunity_id: opportunityId,
+        created_by: USER_ID,
+        updated_by: USER_ID,
+      })
+      .select("id")
+      .single();
+
+    if (insertError) {
+      throw new Error(`Task save failed: ${insertError.message}`);
+    }
+
+    return newTask.id as string;
+  }
+
+  async function createActivity(
+    activityValue: string,
+    companyId: string | null,
+    contactId: string | null,
+    taskId: string | null,
+    opportunityId: string | null
+  ) {
+    const cleanActivity = activityValue.trim() || "AI Capture Note";
+
+    const subjectParts = [];
+
+    if (cleanActivity) subjectParts.push(cleanActivity);
+    if (reviewCompany) subjectParts.push(reviewCompany);
+    if (reviewContact) subjectParts.push(reviewContact);
+
+    const subject = subjectParts.join(" - ") || "AI Capture Activity";
+
+    const { data: newActivity, error: insertError } = await supabase
+      .from("activities")
+      .insert({
+        workspace_id: WORKSPACE_ID,
+        activity_type: normalizeActivityType(cleanActivity),
+        activity_date: getNowForActivity(),
+        subject,
+        summary: reviewSummary || null,
+        raw_notes: inputText || null,
+        outcome: normalizeActivityOutcome(reviewOpportunity, reviewTask),
+        follow_up_needed: Boolean(reviewTask),
+        company_id: companyId,
+        contact_id: contactId,
+        task_id: taskId,
+        opportunity_id: opportunityId,
+        created_by: USER_ID,
+        updated_by: USER_ID,
+      })
+      .select("id")
+      .single();
+
+    if (insertError) {
+      throw new Error(`Activity save failed: ${insertError.message}`);
+    }
+
+    return newActivity.id as string;
+  }
+
+  async function linkPainPointRelations(
+    painPointId: string,
+    companyId: string | null,
+    contactId: string | null,
+    activityId: string | null
+  ) {
+    if (companyId) {
+      await supabase.from("pain_point_companies").upsert(
+        {
+          workspace_id: WORKSPACE_ID,
+          pain_point_id: painPointId,
+          company_id: companyId,
+          created_by: USER_ID,
+        },
+        { onConflict: "pain_point_id,company_id" }
+      );
+    }
+
+    if (contactId) {
+      await supabase.from("pain_point_contacts").upsert(
+        {
+          workspace_id: WORKSPACE_ID,
+          pain_point_id: painPointId,
+          contact_id: contactId,
+          created_by: USER_ID,
+        },
+        { onConflict: "pain_point_id,contact_id" }
+      );
+    }
+
+    if (activityId) {
+      await supabase.from("pain_point_activities").upsert(
+        {
+          workspace_id: WORKSPACE_ID,
+          pain_point_id: painPointId,
+          activity_id: activityId,
+          created_by: USER_ID,
+        },
+        { onConflict: "pain_point_id,activity_id" }
+      );
+    }
+  }
+
+  async function handleSaveReviewedResult() {
+    setSaving(true);
+    setErrorMessage("");
+    setSaveMessage("");
+    setSavedLinks(null);
+
+    try {
+      const companyId = await findOrCreateCompany(reviewCompany);
+      const contactId = await findOrCreateContact(reviewContact, companyId);
+      const opportunityId = await findOrCreateOpportunity(
+        reviewOpportunity,
+        companyId,
+        contactId
+      );
+      const taskId = await findOrCreateTask(
+        reviewTask,
+        companyId,
+        contactId,
+        opportunityId
+      );
+      const activityId = await createActivity(
+        reviewActivity,
+        companyId,
+        contactId,
+        taskId,
+        opportunityId
+      );
+
+      const painPointNames = parsePainPoints(reviewPainPoints);
+      const painPointIds: string[] = [];
+
+      for (const painPointName of painPointNames) {
+        const painPointId = await findOrCreatePainPoint(painPointName);
+
+        if (painPointId) {
+          painPointIds.push(painPointId);
+          await linkPainPointRelations(
+            painPointId,
+            companyId,
+            contactId,
+            activityId
+          );
+        }
+      }
+
+      setSavedLinks({
+        companyId: companyId || undefined,
+        contactId: contactId || undefined,
+        opportunityId: opportunityId || undefined,
+        taskId: taskId || undefined,
+        activityId: activityId || undefined,
+        painPointIds,
+      });
+
+      setSaveMessage("Reviewed AI Capture result saved to Sell It.");
+      setSaving(false);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Save failed.";
+      setErrorMessage(message);
+      setSaving(false);
     }
   }
 
@@ -142,7 +683,7 @@ export default function CapturePage() {
       <p style={{ color: "#aaa", marginBottom: "32px", maxWidth: "900px" }}>
         Paste raw notes, call summaries, messages, meeting notes, or copied text.
         Sell It will analyze the text and return structured CRM information.
-        Version 1 only analyzes and displays results. It does not save records.
+        Version 2 lets you review, edit, and save the result.
       </p>
 
       <form
@@ -189,30 +730,178 @@ export default function CapturePage() {
 
       {result && (
         <section style={{ maxWidth: "950px" }}>
-          <h2>Structured Result</h2>
+          <h2>Review Before Saving</h2>
+
+          <p style={{ color: "#aaa" }}>
+            Edit anything below before saving. Nothing is saved until you click
+            Save Reviewed Result.
+          </p>
 
           <div style={cardStyle}>
-            <ResultRow label="Company" value={result.company} />
-            <ResultRow label="Contact" value={result.contact} />
-            <ResultRow label="Opportunity" value={result.opportunity} />
-            <ResultRow label="Task" value={result.task} />
-            <ResultRow label="Activity" value={result.activity} />
+            <label>
+              Company
+              <input
+                value={reviewCompany}
+                onChange={(event) => setReviewCompany(event.target.value)}
+                placeholder="Company name"
+                style={inputStyle}
+              />
+            </label>
+
+            <label>
+              Contact
+              <input
+                value={reviewContact}
+                onChange={(event) => setReviewContact(event.target.value)}
+                placeholder="Contact name"
+                style={inputStyle}
+              />
+            </label>
+
+            <label>
+              Opportunity
+              <input
+                value={reviewOpportunity}
+                onChange={(event) => setReviewOpportunity(event.target.value)}
+                placeholder="Opportunity or sales stage"
+                style={inputStyle}
+              />
+            </label>
+
+            <label>
+              Task
+              <input
+                value={reviewTask}
+                onChange={(event) => setReviewTask(event.target.value)}
+                placeholder="Next action"
+                style={inputStyle}
+              />
+            </label>
+
+            <label>
+              Activity
+              <input
+                value={reviewActivity}
+                onChange={(event) => setReviewActivity(event.target.value)}
+                placeholder="What happened"
+                style={inputStyle}
+              />
+            </label>
+
+            <label>
+              Pain Points
+              <textarea
+                value={reviewPainPoints}
+                onChange={(event) => setReviewPainPoints(event.target.value)}
+                rows={3}
+                placeholder="Comma-separated pain points"
+                style={inputStyle}
+              />
+            </label>
+
+            <label>
+              Summary
+              <textarea
+                value={reviewSummary}
+                onChange={(event) => setReviewSummary(event.target.value)}
+                rows={5}
+                placeholder="Summary"
+                style={inputStyle}
+              />
+            </label>
 
             <p>
-              <strong>Pain Points:</strong>{" "}
-              {result.pain_points.length > 0
-                ? result.pain_points.join(", ")
-                : "None found"}
+              <strong>AI Confidence:</strong> {result.confidence}
             </p>
 
-            <p>
-              <strong>Confidence:</strong> {result.confidence}
-            </p>
+            <button
+              type="button"
+              disabled={saving}
+              onClick={handleSaveReviewedResult}
+              style={buttonStyle}
+            >
+              {saving ? "Saving..." : "Save Reviewed Result"}
+            </button>
           </div>
+        </section>
+      )}
 
-          <div style={cardStyle}>
-            <h3 style={{ marginTop: 0 }}>Summary</h3>
-            <p style={{ whiteSpace: "pre-wrap" }}>{result.summary}</p>
+      {saveMessage && (
+        <section style={{ maxWidth: "950px" }}>
+          <div
+            style={{
+              ...cardStyle,
+              borderColor: "#2f7a3e",
+            }}
+          >
+            <h2 style={{ marginTop: 0 }}>Saved</h2>
+            <p>{saveMessage}</p>
+
+            {savedLinks?.companyId && (
+              <p>
+                Company:{" "}
+                <Link
+                  href={`/companies/${savedLinks.companyId}`}
+                  style={{ color: "#8ab4ff" }}
+                >
+                  Open company
+                </Link>
+              </p>
+            )}
+
+            {savedLinks?.contactId && (
+              <p>
+                Contact:{" "}
+                <Link
+                  href={`/contacts/${savedLinks.contactId}`}
+                  style={{ color: "#8ab4ff" }}
+                >
+                  Open contact
+                </Link>
+              </p>
+            )}
+
+            {savedLinks?.opportunityId && (
+              <p>
+                Opportunity:{" "}
+                <Link
+                  href={`/opportunities/${savedLinks.opportunityId}`}
+                  style={{ color: "#8ab4ff" }}
+                >
+                  Open opportunity
+                </Link>
+              </p>
+            )}
+
+            {savedLinks?.taskId && (
+              <p>
+                Task:{" "}
+                <Link
+                  href={`/tasks/${savedLinks.taskId}`}
+                  style={{ color: "#8ab4ff" }}
+                >
+                  Open task
+                </Link>
+              </p>
+            )}
+
+            {savedLinks?.activityId && (
+              <p>
+                Activity:{" "}
+                <Link
+                  href={`/activities/${savedLinks.activityId}`}
+                  style={{ color: "#8ab4ff" }}
+                >
+                  Open activity
+                </Link>
+              </p>
+            )}
+
+            {savedLinks?.painPointIds && savedLinks.painPointIds.length > 0 && (
+              <p>
+                Pain Points Saved/Linked: {savedLinks.painPointIds.length}
+              </p>
+            )}
           </div>
         </section>
       )}
