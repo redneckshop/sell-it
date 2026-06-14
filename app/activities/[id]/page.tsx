@@ -17,6 +17,7 @@ type Activity = {
   opportunity_id: string | null;
   task_id: string | null;
   created_at: string | null;
+  updated_at: string | null;
   companies: {
     id: string;
     name: string;
@@ -62,6 +63,7 @@ export default async function ActivityDetailPage({ params }: PageProps) {
       opportunity_id,
       task_id,
       created_at,
+      updated_at,
       companies (
         id,
         name
@@ -128,6 +130,22 @@ export default async function ActivityDetailPage({ params }: PageProps) {
         >
           Back to Activities
         </Link>
+
+        {activity && (
+          <Link
+            href={`/activities/${activity.id}/edit`}
+            style={{
+              color: "black",
+              backgroundColor: "white",
+              padding: "10px 14px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+            }}
+          >
+            Edit Activity
+          </Link>
+        )}
       </div>
 
       {error && (
@@ -245,6 +263,13 @@ export default async function ActivityDetailPage({ params }: PageProps) {
               <strong>Created:</strong>{" "}
               {activity.created_at
                 ? new Date(activity.created_at).toLocaleString()
+                : "Not available"}
+            </p>
+
+            <p>
+              <strong>Last Updated:</strong>{" "}
+              {activity.updated_at
+                ? new Date(activity.updated_at).toLocaleString()
                 : "Not available"}
             </p>
           </div>
