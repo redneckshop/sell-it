@@ -13,6 +13,7 @@ type Company = {
   operating_regions: string | null;
   assets_equipment: string | null;
   created_at: string | null;
+  updated_at: string | null;
 };
 
 type Contact = {
@@ -86,7 +87,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
   const { data: company, error } = await supabase
     .from("companies")
     .select(
-      "id, workspace_id, name, website, phone, email, lead_temperature, operating_regions, assets_equipment, created_at"
+      "id, workspace_id, name, website, phone, email, lead_temperature, operating_regions, assets_equipment, created_at, updated_at"
     )
     .eq("id", id)
     .single();
@@ -202,6 +203,22 @@ export default async function CompanyDetailPage({ params }: PageProps) {
         >
           Back to Companies
         </Link>
+
+        {company && (
+          <Link
+            href={`/companies/${company.id}/edit`}
+            style={{
+              color: "black",
+              backgroundColor: "white",
+              padding: "10px 14px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+            }}
+          >
+            Edit Company
+          </Link>
+        )}
       </div>
 
       {error && <p style={{ color: "red" }}>Database error: {error.message}</p>}
@@ -251,6 +268,13 @@ export default async function CompanyDetailPage({ params }: PageProps) {
               <strong>Created:</strong>{" "}
               {company.created_at
                 ? new Date(company.created_at).toLocaleString()
+                : "Not available"}
+            </p>
+
+            <p>
+              <strong>Last Updated:</strong>{" "}
+              {company.updated_at
+                ? new Date(company.updated_at).toLocaleString()
                 : "Not available"}
             </p>
           </div>
