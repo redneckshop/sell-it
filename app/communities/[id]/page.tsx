@@ -121,6 +121,22 @@ export default async function CommunityDetailPage({ params }: PageProps) {
         >
           Add Post
         </Link>
+
+        {community && (
+          <Link
+            href={`/communities/${community.id}/delete`}
+            style={{
+              color: "black",
+              backgroundColor: "#ffdddd",
+              padding: "10px 14px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+            }}
+          >
+            Delete Community
+          </Link>
+        )}
       </div>
 
       {error && (
