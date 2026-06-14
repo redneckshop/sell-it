@@ -9,6 +9,7 @@ type Company = {
   website: string | null;
   phone: string | null;
   email: string | null;
+  lead_temperature: string;
   operating_regions: string | null;
   assets_equipment: string | null;
   created_at: string | null;
@@ -85,7 +86,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
   const { data: company, error } = await supabase
     .from("companies")
     .select(
-      "id, workspace_id, name, website, phone, email, operating_regions, assets_equipment, created_at"
+      "id, workspace_id, name, website, phone, email, lead_temperature, operating_regions, assets_equipment, created_at"
     )
     .eq("id", id)
     .single();
@@ -229,6 +230,11 @@ export default async function CompanyDetailPage({ params }: PageProps) {
 
             <p>
               <strong>Email:</strong> {company.email || "Not provided"}
+            </p>
+
+            <p>
+              <strong>Lead Temperature:</strong>{" "}
+              {company.lead_temperature || "Not provided"}
             </p>
 
             <p>

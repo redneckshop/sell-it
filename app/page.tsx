@@ -18,6 +18,12 @@ type Task = {
   due_date: string | null;
 };
 
+type HotCompany = {
+  id: string;
+  name: string;
+  lead_temperature: string;
+};
+
 type HotOpportunity = {
   id: string;
   name: string;
@@ -100,6 +106,15 @@ export default async function Home() {
     (task) => task.due_date && task.due_date < today
   );
 
+  const { data: hotCompanyRows, error: hotCompanyError } = await supabase
+    .from("companies")
+    .select("id, name, lead_temperature")
+    .eq("lead_temperature", "Hot")
+    .order("created_at", { ascending: false })
+    .limit(5);
+
+  const hotCompanies: HotCompany[] = hotCompanyRows ?? [];
+
   const { data: hotOpportunityRows, error: hotOpportunityError } =
     await supabase
       .from("opportunities")
@@ -119,6 +134,8 @@ export default async function Home() {
       .limit(5);
 
   const hotOpportunities: HotOpportunity[] = hotOpportunityRows ?? [];
+
+  const hotLeadCount = hotCompanies.length + hotOpportunities.length;
 
   const { data: activityRows, error: activityError } = await supabase
     .from("activities")
@@ -303,16 +320,31 @@ export default async function Home() {
             <p style={{ color: "#aaa", marginTop: 0 }}>Hot Leads</p>
 
             <h2 style={{ fontSize: "42px", margin: "8px 0" }}>
-              {hotOpportunities.length}
+              {hotLeadCount}
             </h2>
 
-            {hotOpportunities.length === 0 && (
-              <p style={{ color: "#aaa" }}>No hot opportunities yet.</p>
+            {hotLeadCount === 0 && (
+              <p style={{ color: "#aaa" }}>No hot leads yet.</p>
             )}
+
+            {hotCompanies.map((company) => (
+              <Link
+                key={`company-${company.id}`}
+                href={`/companies/${company.id}`}
+                style={{
+                  display: "block",
+                  color: "white",
+                  textDecoration: "none",
+                  marginBottom: "8px",
+                }}
+              >
+                {company.name} — Company
+              </Link>
+            ))}
 
             {hotOpportunities.map((opportunity) => (
               <Link
-                key={opportunity.id}
+                key={`opportunity-${opportunity.id}`}
                 href={`/opportunities/${opportunity.id}`}
                 style={{
                   display: "block",
@@ -430,6 +462,12 @@ export default async function Home() {
         {taskError && (
           <p style={{ color: "red", marginTop: "32px" }}>
             Task error: {taskError.message}
+          </p>
+        )}
+
+        {hotCompanyError && (
+          <p style={{ color: "red", marginTop: "32px" }}>
+            Hot company error: {hotCompanyError.message}
           </p>
         )}
 

@@ -26,6 +26,7 @@ export default function NewCompanyPage() {
   const [website, setWebsite] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [leadTemperature, setLeadTemperature] = useState("Warm");
   const [operatingRegions, setOperatingRegions] = useState("");
   const [assetsEquipment, setAssetsEquipment] = useState("");
   const [saving, setSaving] = useState(false);
@@ -43,6 +44,7 @@ export default function NewCompanyPage() {
       website: website || null,
       phone: phone || null,
       email: email || null,
+      lead_temperature: leadTemperature,
       operating_regions: operatingRegions || null,
       assets_equipment: assetsEquipment || null,
       created_by: USER_ID,
@@ -121,6 +123,21 @@ export default function NewCompanyPage() {
             onChange={(event) => setEmail(event.target.value)}
             style={inputStyle}
           />
+        </label>
+
+        <label>
+          Lead Temperature
+          <select
+            value={leadTemperature}
+            onChange={(event) => setLeadTemperature(event.target.value)}
+            style={inputStyle}
+          >
+            <option value="Cold">Cold</option>
+            <option value="Warm">Warm</option>
+            <option value="Hot">Hot</option>
+            <option value="Active">Active</option>
+            <option value="Dead">Dead</option>
+          </select>
         </label>
 
         <label>
