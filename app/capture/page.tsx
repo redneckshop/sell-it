@@ -29,6 +29,25 @@ type CaptureResult = {
   confidence: "Low" | "Medium" | "High";
 };
 
+type MultiCaptureRecord = {
+  selected: boolean;
+  record_type: "Company" | "Contact" | "CompanyContact" | "Lead" | "Other";
+  company: string | null;
+  contact: string | null;
+  contacts: string[];
+  phone: string | null;
+  email: string | null;
+  location: string | null;
+  fleet_size: string | null;
+  opportunity: string | null;
+  task: string | null;
+  activity: string | null;
+  pain_points: string[];
+  notes: string | null;
+  summary: string;
+  confidence: "Low" | "Medium" | "High";
+};
+
 type SavedRecordLinks = {
   companyId?: string;
   contactId?: string;
@@ -38,6 +57,14 @@ type SavedRecordLinks = {
   activityId?: string;
   painPointIds?: string[];
   sourceFileAttached?: boolean;
+};
+
+type MultiSaveSummary = {
+  importActivityId?: string;
+  selectedCount: number;
+  companyIds: string[];
+  contactIds: string[];
+  sourceFileAttached: boolean;
 };
 
 const inputStyle: CSSProperties = {
@@ -60,6 +87,16 @@ const buttonStyle: CSSProperties = {
   borderRadius: "6px",
   fontWeight: "bold",
   border: "none",
+  cursor: "pointer",
+};
+
+const secondaryButtonStyle: CSSProperties = {
+  color: "white",
+  backgroundColor: "#333",
+  padding: "10px 14px",
+  borderRadius: "6px",
+  fontWeight: "bold",
+  border: "1px solid #555",
   cursor: "pointer",
 };
 
@@ -186,14 +223,12 @@ function getAttachmentFileType(file: File) {
   if (isImageFile(file)) return "Screenshot";
   if (extension === "pdf") return "PDF";
 
-  if (["csv", "tsv"].includes(extension)) return "CSV";
-
-  if (["doc", "docx", "txt", "md", "rtf"].includes(extension)) {
+  if (
+    ["csv", "tsv", "doc", "docx", "txt", "md", "rtf", "xls", "xlsx"].includes(
+      extension
+    )
+  ) {
     return "Document";
-  }
-
-  if (["xls", "xlsx"].includes(extension)) {
-    return "Spreadsheet";
   }
 
   if (["mp3", "wav", "m4a"].includes(extension)) {
@@ -259,6 +294,7 @@ function normalizeActivityType(value: string) {
   if (lower.includes("note")) return "Note";
   if (lower.includes("file")) return "Note";
   if (lower.includes("csv")) return "Note";
+  if (lower.includes("import")) return "Note";
 
   return "Other";
 }
@@ -317,9 +353,31 @@ function fileToDataUrl(file: File) {
   });
 }
 
+function buildMultiRecordNotes(record: MultiCaptureRecord) {
+  return [
+    "Created from AI Capture V4 smart multi-record extraction.",
+    "",
+    record.summary ? `Summary: ${record.summary}` : "",
+    record.notes ? `Notes: ${record.notes}` : "",
+    record.location ? `Location: ${record.location}` : "",
+    record.fleet_size ? `Fleet Size: ${record.fleet_size}` : "",
+    record.phone ? `Phone: ${record.phone}` : "",
+    record.email ? `Email: ${record.email}` : "",
+    record.opportunity ? `Opportunity: ${record.opportunity}` : "",
+    record.task ? `Task: ${record.task}` : "",
+    record.pain_points.length > 0
+      ? `Pain Points: ${record.pain_points.join(", ")}`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 export default function CapturePage() {
   const [inputText, setInputText] = useState("");
   const [result, setResult] = useState<CaptureResult | null>(null);
+  const [multiRecords, setMultiRecords] = useState<MultiCaptureRecord[]>([]);
+  const [sourceType, setSourceType] = useState("");
   const [rawText, setRawText] = useState("");
 
   const [sourceFile, setSourceFile] = useState<File | null>(null);
@@ -345,9 +403,13 @@ export default function CapturePage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
   const [savedLinks, setSavedLinks] = useState<SavedRecordLinks | null>(null);
+  const [multiSaveMessage, setMultiSaveMessage] = useState("");
+  const [multiSaveSummary, setMultiSaveSummary] =
+    useState<MultiSaveSummary | null>(null);
 
   const [analyzing, setAnalyzing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savingMulti, setSavingMulti] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -451,6 +513,8 @@ export default function CapturePage() {
     setErrorMessage("");
     setSaveMessage("");
     setSavedLinks(null);
+    setMultiSaveMessage("");
+    setMultiSaveSummary(null);
     setSourceFileReadMessage("");
     setSourceFileText("");
     setSourceFileImageDataUrl("");
@@ -521,6 +585,7 @@ export default function CapturePage() {
 
   async function handleDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
+    event.stopPropagation();
     setIsDragging(false);
 
     const file = event.dataTransfer.files?.[0] ?? null;
@@ -544,10 +609,14 @@ export default function CapturePage() {
 
     setAnalyzing(true);
     setResult(null);
+    setMultiRecords([]);
+    setSourceType("");
     setRawText("");
     setErrorMessage("");
     setSaveMessage("");
     setSavedLinks(null);
+    setMultiSaveMessage("");
+    setMultiSaveSummary(null);
 
     const combinedText = [
       inputText.trim(),
@@ -588,8 +657,13 @@ export default function CapturePage() {
       }
 
       const aiResult = data.result as CaptureResult;
+      const aiMultiRecords = Array.isArray(data.multi_records)
+        ? (data.multi_records as MultiCaptureRecord[])
+        : [];
 
       setResult(aiResult || null);
+      setMultiRecords(aiMultiRecords);
+      setSourceType(data.source_type || "");
       setRawText(data.raw_text || "");
 
       if (aiResult) {
@@ -622,7 +696,33 @@ export default function CapturePage() {
     }
   }
 
-  async function findOrCreateCompany(companyName: string) {
+  function updateMultiRecord(
+    index: number,
+    field: keyof MultiCaptureRecord,
+    value: string | boolean | string[]
+  ) {
+    setMultiRecords((records) =>
+      records.map((record, recordIndex) => {
+        if (recordIndex !== index) return record;
+
+        return {
+          ...record,
+          [field]: value,
+        };
+      })
+    );
+  }
+
+  function toggleAllMultiRecords(selected: boolean) {
+    setMultiRecords((records) =>
+      records.map((record) => ({
+        ...record,
+        selected,
+      }))
+    );
+  }
+
+  async function findOrCreateCompanyFromValues(companyName: string, phone = "") {
     const cleanName = companyName.trim();
 
     if (!cleanName) return null;
@@ -637,11 +737,11 @@ export default function CapturePage() {
     if (findError) throw new Error(`Company lookup failed: ${findError.message}`);
 
     if (existingCompany?.id) {
-      if (reviewPhone && !existingCompany.phone) {
+      if (phone && !existingCompany.phone) {
         await supabase
           .from("companies")
           .update({
-            phone: reviewPhone,
+            phone,
             updated_by: USER_ID,
           })
           .eq("id", existingCompany.id);
@@ -655,7 +755,7 @@ export default function CapturePage() {
       .insert({
         workspace_id: WORKSPACE_ID,
         name: cleanName,
-        phone: reviewPhone || null,
+        phone: phone || null,
         created_by: USER_ID,
         updated_by: USER_ID,
       })
@@ -667,11 +767,23 @@ export default function CapturePage() {
     return newCompany.id as string;
   }
 
-  async function findOrCreateContact(
-    contactName: string,
-    companyId: string | null,
-    phoneForThisContact: string
-  ) {
+  async function findOrCreateCompany(companyName: string) {
+    return findOrCreateCompanyFromValues(companyName, reviewPhone);
+  }
+
+  async function findOrCreateContactFromValues({
+    contactName,
+    companyId,
+    phone,
+    email,
+    notes,
+  }: {
+    contactName: string;
+    companyId: string | null;
+    phone: string;
+    email: string;
+    notes: string;
+  }) {
     const cleanName = contactName.trim();
 
     if (!cleanName) return null;
@@ -682,7 +794,7 @@ export default function CapturePage() {
 
     let query = supabase
       .from("contacts")
-      .select("id, first_name, last_name, company_id, phone")
+      .select("id, first_name, last_name, company_id, phone, email")
       .ilike("first_name", firstName)
       .limit(10);
 
@@ -704,8 +816,12 @@ export default function CapturePage() {
         updated_by: USER_ID,
       };
 
-      if (phoneForThisContact && !matchingContact.phone) {
-        updatePayload.phone = phoneForThisContact;
+      if (phone && !matchingContact.phone) {
+        updatePayload.phone = phone;
+      }
+
+      if (email && !matchingContact.email) {
+        updatePayload.email = email;
       }
 
       if (companyId && !matchingContact.company_id) {
@@ -727,16 +843,9 @@ export default function CapturePage() {
         first_name: firstName,
         last_name: lastName || null,
         company_id: companyId,
-        phone: phoneForThisContact || null,
-        notes:
-          `Created from AI Capture.\n\n${reviewNotes || ""}\n\n${
-            reviewSummary || ""
-          }\n\nLocation: ${reviewLocation || "Not found"}\nFleet Size: ${
-            reviewFleetSize || "Not found"
-          }\nAll Contacts Mentioned:\n${parseContacts(
-            reviewContacts,
-            reviewContact
-          ).join("\n")}`.trim() || null,
+        phone: phone || null,
+        email: email || null,
+        notes: notes || null,
         created_by: USER_ID,
         updated_by: USER_ID,
       })
@@ -746,6 +855,28 @@ export default function CapturePage() {
     if (insertError) throw new Error(`Contact save failed: ${insertError.message}`);
 
     return newContact.id as string;
+  }
+
+  async function findOrCreateContact(
+    contactName: string,
+    companyId: string | null,
+    phoneForThisContact: string
+  ) {
+    return findOrCreateContactFromValues({
+      contactName,
+      companyId,
+      phone: phoneForThisContact,
+      email: "",
+      notes:
+        `Created from AI Capture.\n\n${reviewNotes || ""}\n\n${
+          reviewSummary || ""
+        }\n\nLocation: ${reviewLocation || "Not found"}\nFleet Size: ${
+          reviewFleetSize || "Not found"
+        }\nAll Contacts Mentioned:\n${parseContacts(
+          reviewContacts,
+          reviewContact
+        ).join("\n")}`.trim() || "",
+    });
   }
 
   async function saveAllContacts(companyId: string | null) {
@@ -1004,6 +1135,53 @@ export default function CapturePage() {
     return newActivity.id as string;
   }
 
+  async function createMultiRecordImportActivity(records: MultiCaptureRecord[]) {
+    const summaries = records
+      .slice(0, 50)
+      .map((record, index) => {
+        return `${index + 1}. ${record.company || "No company"}${
+          record.contact ? ` — ${record.contact}` : ""
+        }${record.phone ? ` — ${record.phone}` : ""}${
+          record.email ? ` — ${record.email}` : ""
+        }\n${record.summary || record.notes || ""}`;
+      })
+      .join("\n\n");
+
+    const { data: newActivity, error: insertError } = await supabase
+      .from("activities")
+      .insert({
+        workspace_id: WORKSPACE_ID,
+        activity_type: "Note",
+        activity_date: getNowForActivity(),
+        subject: `AI Capture Multi-Record Import - ${
+          sourceFile?.name || "Source File"
+        }`,
+        summary:
+          `Imported ${records.length} selected records from AI Capture V4.\n\nSource Type: ${
+            sourceType || "Unknown"
+          }\nSource File: ${
+            sourceFile?.name || "No source file"
+          }\n\nRecords:\n${summaries}`.trim(),
+        raw_notes: inputText || sourceFileText || null,
+        outcome: "Follow-Up Needed",
+        follow_up_needed: true,
+        company_id: null,
+        contact_id: null,
+        task_id: null,
+        opportunity_id: null,
+        created_by: USER_ID,
+        updated_by: USER_ID,
+      })
+      .select("id")
+      .single();
+
+    if (insertError) {
+      throw new Error(`Import activity save failed: ${insertError.message}`);
+    }
+
+    return newActivity.id as string;
+  }
+
   async function uploadSourceFileAttachment(activityId: string) {
     if (!sourceFile) return false;
 
@@ -1038,7 +1216,7 @@ export default function CapturePage() {
       storage_path: storagePath,
       file_path: storagePath,
       description: `Original source file used for AI Capture.\n\n${
-        reviewSummary || ""
+        reviewSummary || multiSaveMessage || ""
       }`,
       uploaded_by: null,
     });
@@ -1170,6 +1348,94 @@ export default function CapturePage() {
     }
   }
 
+  async function handleSaveSelectedMultiRecords() {
+    setSavingMulti(true);
+    setErrorMessage("");
+    setMultiSaveMessage("");
+    setMultiSaveSummary(null);
+
+    try {
+      const selectedRecords = multiRecords.filter((record) => record.selected);
+
+      if (selectedRecords.length === 0) {
+        setErrorMessage("Select at least one extracted record before saving.");
+        setSavingMulti(false);
+        return;
+      }
+
+      const importActivityId = await createMultiRecordImportActivity(
+        selectedRecords
+      );
+
+      let sourceFileAttached = false;
+
+      if (importActivityId) {
+        sourceFileAttached = await uploadSourceFileAttachment(importActivityId);
+      }
+
+      const companyIds: string[] = [];
+      const contactIds: string[] = [];
+
+      for (const record of selectedRecords) {
+        const companyId = await findOrCreateCompanyFromValues(
+          record.company || "",
+          record.contact ? "" : record.phone || ""
+        );
+
+        if (companyId) {
+          companyIds.push(companyId);
+        }
+
+        const contactNames = parseContacts(
+          (record.contacts || []).join("\n"),
+          record.contact || ""
+        );
+
+        for (let index = 0; index < contactNames.length; index += 1) {
+          const contactName = contactNames[index];
+          const isPrimary =
+            contactName.toLowerCase() ===
+            String(record.contact || "").trim().toLowerCase();
+
+          const contactId = await findOrCreateContactFromValues({
+            contactName,
+            companyId,
+            phone: isPrimary ? record.phone || "" : "",
+            email: isPrimary ? record.email || "" : "",
+            notes: buildMultiRecordNotes(record),
+          });
+
+          if (contactId) {
+            contactIds.push(contactId);
+          }
+        }
+      }
+
+      const uniqueCompanyIds = dedupeStrings(companyIds);
+      const uniqueContactIds = dedupeStrings(contactIds);
+
+      setMultiSaveSummary({
+        importActivityId,
+        selectedCount: selectedRecords.length,
+        companyIds: uniqueCompanyIds,
+        contactIds: uniqueContactIds,
+        sourceFileAttached,
+      });
+
+      setMultiSaveMessage(
+        "Selected AI Capture records saved to Sell It. Companies and contacts were created or reused, and the source file was attached to an import activity."
+      );
+
+      setSavingMulti(false);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Multi-record save failed.";
+
+      setErrorMessage(message);
+      setSavingMulti(false);
+    }
+  }
+
   return (
     <main
       style={{
@@ -1198,8 +1464,8 @@ export default function CapturePage() {
       <p style={{ color: "#aaa", marginBottom: "32px", maxWidth: "900px" }}>
         Paste text, upload any source file, drag and drop a file, paste a
         screenshot, or combine them. Images and text/CSV files can be analyzed
-        now. Other file types can be attached to the saved activity as source
-        evidence.
+        now. AI Capture V4 can extract one lead or multiple company/contact
+        records from messy files.
       </p>
 
       <form
@@ -1344,13 +1610,301 @@ export default function CapturePage() {
         </div>
       )}
 
-      {result && (
-        <section style={{ maxWidth: "950px" }}>
-          <h2>Review Before Saving</h2>
+      {multiRecords.length > 0 && (
+        <section style={{ maxWidth: "1100px", marginBottom: "40px" }}>
+          <h2>AI Capture V4 — Multi-Record Review</h2>
 
           <p style={{ color: "#aaa" }}>
-            Edit anything below before saving. Nothing is saved until you click
-            Save Reviewed Result.
+            Source Type: {sourceType || "Unknown"} | Records Found:{" "}
+            {multiRecords.length}
+          </p>
+
+          <p style={{ color: "#aaa" }}>
+            Use this section for CSV files, tables, messy contact lists, and
+            multi-company files. Select only the records you want to save.
+          </p>
+
+          <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
+            <button
+              type="button"
+              onClick={() => toggleAllMultiRecords(true)}
+              style={secondaryButtonStyle}
+            >
+              Select All
+            </button>
+
+            <button
+              type="button"
+              onClick={() => toggleAllMultiRecords(false)}
+              style={secondaryButtonStyle}
+            >
+              Unselect All
+            </button>
+
+            <button
+              type="button"
+              disabled={savingMulti}
+              onClick={handleSaveSelectedMultiRecords}
+              style={buttonStyle}
+            >
+              {savingMulti ? "Saving..." : "Save Selected Multi Records"}
+            </button>
+          </div>
+
+          {multiRecords.map((record, index) => (
+            <div key={`${record.company}-${record.contact}-${index}`} style={cardStyle}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: "16px",
+                  alignItems: "center",
+                  marginBottom: "12px",
+                }}
+              >
+                <h3 style={{ margin: 0 }}>Record {index + 1}</h3>
+
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={record.selected}
+                    onChange={(event) =>
+                      updateMultiRecord(index, "selected", event.target.checked)
+                    }
+                    style={{ marginRight: "8px" }}
+                  />
+                  Save this record
+                </label>
+              </div>
+
+              <label>
+                Record Type
+                <select
+                  value={record.record_type}
+                  onChange={(event) =>
+                    updateMultiRecord(
+                      index,
+                      "record_type",
+                      event.target.value as MultiCaptureRecord["record_type"]
+                    )
+                  }
+                  style={inputStyle}
+                >
+                  <option value="Company">Company</option>
+                  <option value="Contact">Contact</option>
+                  <option value="CompanyContact">Company + Contact</option>
+                  <option value="Lead">Lead</option>
+                  <option value="Other">Other</option>
+                </select>
+              </label>
+
+              <label>
+                Company
+                <input
+                  value={record.company || ""}
+                  onChange={(event) =>
+                    updateMultiRecord(index, "company", event.target.value)
+                  }
+                  style={inputStyle}
+                />
+              </label>
+
+              <label>
+                Primary Contact
+                <input
+                  value={record.contact || ""}
+                  onChange={(event) =>
+                    updateMultiRecord(index, "contact", event.target.value)
+                  }
+                  style={inputStyle}
+                />
+              </label>
+
+              <label>
+                All Contacts
+                <textarea
+                  value={(record.contacts || []).join("\n")}
+                  onChange={(event) =>
+                    updateMultiRecord(
+                      index,
+                      "contacts",
+                      parseContacts(event.target.value, record.contact || "")
+                    )
+                  }
+                  rows={3}
+                  style={inputStyle}
+                />
+              </label>
+
+              <label>
+                Phone
+                <input
+                  value={record.phone || ""}
+                  onChange={(event) =>
+                    updateMultiRecord(index, "phone", event.target.value)
+                  }
+                  style={inputStyle}
+                />
+              </label>
+
+              <label>
+                Email
+                <input
+                  value={record.email || ""}
+                  onChange={(event) =>
+                    updateMultiRecord(index, "email", event.target.value)
+                  }
+                  style={inputStyle}
+                />
+              </label>
+
+              <label>
+                Location
+                <input
+                  value={record.location || ""}
+                  onChange={(event) =>
+                    updateMultiRecord(index, "location", event.target.value)
+                  }
+                  style={inputStyle}
+                />
+              </label>
+
+              <label>
+                Fleet Size / Capacity
+                <input
+                  value={record.fleet_size || ""}
+                  onChange={(event) =>
+                    updateMultiRecord(index, "fleet_size", event.target.value)
+                  }
+                  style={inputStyle}
+                />
+              </label>
+
+              <label>
+                Opportunity
+                <input
+                  value={record.opportunity || ""}
+                  onChange={(event) =>
+                    updateMultiRecord(index, "opportunity", event.target.value)
+                  }
+                  style={inputStyle}
+                />
+              </label>
+
+              <label>
+                Task
+                <input
+                  value={record.task || ""}
+                  onChange={(event) =>
+                    updateMultiRecord(index, "task", event.target.value)
+                  }
+                  style={inputStyle}
+                />
+              </label>
+
+              <label>
+                Pain Points
+                <textarea
+                  value={(record.pain_points || []).join(", ")}
+                  onChange={(event) =>
+                    updateMultiRecord(
+                      index,
+                      "pain_points",
+                      parsePainPoints(event.target.value)
+                    )
+                  }
+                  rows={2}
+                  style={inputStyle}
+                />
+              </label>
+
+              <label>
+                Notes
+                <textarea
+                  value={record.notes || ""}
+                  onChange={(event) =>
+                    updateMultiRecord(index, "notes", event.target.value)
+                  }
+                  rows={3}
+                  style={inputStyle}
+                />
+              </label>
+
+              <label>
+                Summary
+                <textarea
+                  value={record.summary || ""}
+                  onChange={(event) =>
+                    updateMultiRecord(index, "summary", event.target.value)
+                  }
+                  rows={3}
+                  style={inputStyle}
+                />
+              </label>
+
+              <p>
+                <strong>Confidence:</strong> {record.confidence}
+              </p>
+            </div>
+          ))}
+
+          <button
+            type="button"
+            disabled={savingMulti}
+            onClick={handleSaveSelectedMultiRecords}
+            style={buttonStyle}
+          >
+            {savingMulti ? "Saving..." : "Save Selected Multi Records"}
+          </button>
+        </section>
+      )}
+
+      {multiSaveMessage && (
+        <section style={{ maxWidth: "950px" }}>
+          <div
+            style={{
+              ...cardStyle,
+              borderColor: "#2f7a3e",
+            }}
+          >
+            <h2 style={{ marginTop: 0 }}>Multi-Record Save Complete</h2>
+            <p>{multiSaveMessage}</p>
+
+            {multiSaveSummary && (
+              <>
+                <p>Selected Records Saved: {multiSaveSummary.selectedCount}</p>
+                <p>Companies Saved/Linked: {multiSaveSummary.companyIds.length}</p>
+                <p>Contacts Saved/Linked: {multiSaveSummary.contactIds.length}</p>
+                <p>
+                  Source File Attached:{" "}
+                  {multiSaveSummary.sourceFileAttached ? "Yes" : "No"}
+                </p>
+
+                {multiSaveSummary.importActivityId && (
+                  <p>
+                    Import Activity:{" "}
+                    <Link
+                      href={`/activities/${multiSaveSummary.importActivityId}`}
+                      style={{ color: "#8ab4ff" }}
+                    >
+                      Open import activity
+                    </Link>
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+        </section>
+      )}
+
+      {result && (
+        <section style={{ maxWidth: "950px" }}>
+          <h2>Single-Record Review</h2>
+
+          <p style={{ color: "#aaa" }}>
+            Use this section when the source is one lead, one conversation, or
+            one screenshot. For CSV/list imports, use the multi-record review
+            section above.
           </p>
 
           <div style={cardStyle}>
@@ -1488,7 +2042,7 @@ export default function CapturePage() {
               onClick={handleSaveReviewedResult}
               style={buttonStyle}
             >
-              {saving ? "Saving..." : "Save Reviewed Result"}
+              {saving ? "Saving..." : "Save Single Reviewed Result"}
             </button>
           </div>
         </section>
