@@ -396,6 +396,22 @@ export default function PainPointDetailPage() {
         <Link href="/pain-points/new" style={linkButtonStyle}>
           Add Pain Point
         </Link>
+
+        {painPoint && (
+          <Link
+            href={`/pain-points/${painPoint.id}/delete`}
+            style={{
+              color: "black",
+              backgroundColor: "#ffdddd",
+              padding: "10px 14px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+            }}
+          >
+            Delete Pain Point
+          </Link>
+        )}
       </div>
 
       {message && (
