@@ -1,13 +1,58 @@
 ﻿"use client";
 
 import Link from "next/link";
-import { useState, type CSSProperties, type FormEvent } from "react";
+import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { supabase } from "../lib/supabase";
 
 type ChatMessage = {
   role: "user" | "assistant";
   text: string;
 };
+const ASSISTANT_MESSAGES_STORAGE_KEY = "sell-it-assistant-v2-messages";
+const ASSISTANT_QUESTION_STORAGE_KEY = "sell-it-assistant-v2-question";
+
+const initialAssistantMessages: ChatMessage[] = [
+  {
+    role: "assistant",
+    text: "Ask me vague Sell It memory questions like: I remember talking to Becky, who complained about paper tickets, or that company from North Dakota. Assistant V2 now searches broadly, ranks possible matches, and asks for clarification when needed.",
+  },
+];
+
+function loadStoredMessages() {
+  if (typeof window === "undefined") {
+    return initialAssistantMessages;
+  }
+
+  const stored = window.sessionStorage.getItem(ASSISTANT_MESSAGES_STORAGE_KEY);
+
+  if (!stored) {
+    return initialAssistantMessages;
+  }
+
+  try {
+    const parsed = JSON.parse(stored) as ChatMessage[];
+
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return initialAssistantMessages;
+    }
+
+    return parsed.filter(
+      (message) =>
+        (message.role === "user" || message.role === "assistant") &&
+        typeof message.text === "string"
+    );
+  } catch {
+    return initialAssistantMessages;
+  }
+}
+
+function loadStoredQuestion() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  return window.sessionStorage.getItem(ASSISTANT_QUESTION_STORAGE_KEY) || "";
+}
 
 type Company = {
   id: string;
@@ -15,6 +60,11 @@ type Company = {
   website: string | null;
   phone: string | null;
   email: string | null;
+  lead_temperature?: string | null;
+  operating_regions?: string | null;
+  assets_equipment?: string | null;
+  notes?: string | null;
+  created_at?: string | null;
 };
 
 type Contact = {
@@ -24,6 +74,7 @@ type Contact = {
   title: string | null;
   email: string | null;
   phone: string | null;
+  notes?: string | null;
   company_id: string | null;
   companies: { name: string | null } | null;
 };
@@ -38,6 +89,7 @@ type Opportunity = {
   estimated_monthly_value: number | null;
   expected_close_date: string | null;
   next_step: string | null;
+  notes?: string | null;
   company_id: string | null;
   primary_contact_id: string | null;
   created_at: string | null;
@@ -51,11 +103,13 @@ type Opportunity = {
 type Task = {
   id: string;
   title: string;
+  description?: string | null;
   due_date: string | null;
   priority: string | null;
   status: string | null;
   company_id: string | null;
   contact_id: string | null;
+  opportunity_id?: string | null;
   companies: { name: string | null } | null;
   contacts: { first_name: string | null; last_name: string | null } | null;
 };
@@ -66,6 +120,7 @@ type Activity = {
   activity_type: string | null;
   activity_date: string | null;
   summary: string | null;
+  raw_notes?: string | null;
   outcome: string | null;
   follow_up_needed: boolean | null;
   company_id: string | null;
@@ -126,6 +181,7 @@ type Community = {
   industry: string | null;
   location_focus: string | null;
   status: string | null;
+  rules_notes?: string | null;
   relevance_score: number | null;
   tags: string | null;
   created_at: string | null;
@@ -138,6 +194,7 @@ type Attachment = {
   file_url: string | null;
   storage_path: string | null;
   description: string | null;
+  ai_summary?: string | null;
   created_at: string | null;
   uploaded_by: string | null;
   related_company_id: string | null;
@@ -148,6 +205,963 @@ type Attachment = {
   related_note_id: string | null;
   related_post_id: string | null;
 };
+
+
+type MemoryEntityKind =
+  | "company"
+  | "contact"
+  | "opportunity"
+  | "task"
+  | "activity"
+  | "note"
+  | "community"
+  | "post"
+  | "pain_point"
+  | "attachment";
+
+type MemoryMatch = {
+  kind: MemoryEntityKind;
+  id: string;
+  title: string;
+  subtitle: string;
+  score: number;
+  reasons: string[];
+};
+
+type MemorySearchData = {
+  companies: Company[];
+  contacts: Contact[];
+  opportunities: Opportunity[];
+  tasks: Task[];
+  activities: Activity[];
+  notes: Note[];
+  communities: Community[];
+  posts: Post[];
+  painPoints: PainPoint[];
+  attachments: Attachment[];
+};
+
+const memoryStopWords = new Set([
+  "a",
+  "an",
+  "and",
+  "are",
+  "as",
+  "at",
+  "be",
+  "been",
+  "but",
+  "by",
+  "can",
+  "did",
+  "do",
+  "does",
+  "for",
+  "from",
+  "guy",
+  "had",
+  "has",
+  "have",
+  "he",
+  "her",
+  "him",
+  "his",
+  "i",
+  "in",
+  "is",
+  "it",
+  "me",
+  "mentioned",
+  "of",
+  "on",
+  "or",
+  "our",
+  "person",
+  "remember",
+  "she",
+  "show",
+  "someone",
+  "talk",
+  "talked",
+  "talking",
+  "that",
+  "the",
+  "their",
+  "them",
+  "there",
+  "this",
+  "to",
+  "was",
+  "we",
+  "who",
+  "with",
+  "about",
+  "company",
+  "contact",
+  "opportunity",
+  "pain",
+  "point",
+  "post",
+  "note",
+  "task",
+  "activity",
+]);
+
+function memoryKindLabel(kind: MemoryEntityKind) {
+  const labels: Record<MemoryEntityKind, string> = {
+    company: "Company",
+    contact: "Contact",
+    opportunity: "Opportunity",
+    task: "Task",
+    activity: "Activity",
+    note: "Note",
+    community: "Community",
+    post: "Post",
+    pain_point: "Pain Point",
+    attachment: "Attachment",
+  };
+
+  return labels[kind];
+}
+
+function memoryHref(match: MemoryMatch) {
+  const routeRoots: Record<MemoryEntityKind, string> = {
+    company: "companies",
+    contact: "contacts",
+    opportunity: "opportunities",
+    task: "tasks",
+    activity: "activities",
+    note: "notes",
+    community: "communities",
+    post: "posts",
+    pain_point: "pain-points",
+    attachment: "attachments",
+  };
+
+  const root = routeRoots[match.kind];
+
+  if (match.kind === "attachment") {
+    return "Open the related record to view this attachment.";
+  }
+
+  return `/${root}/${match.id}`;
+}
+
+function memoryTokens(question: string) {
+  return normalizeText(question)
+    .split(" ")
+    .filter((token) => token.length >= 3 && !memoryStopWords.has(token));
+}
+
+function memoryPhrases(question: string) {
+  const tokens = memoryTokens(question);
+  const phrases: string[] = [];
+
+  for (let index = 0; index < tokens.length - 1; index += 1) {
+    phrases.push(`${tokens[index]} ${tokens[index + 1]}`);
+  }
+
+  for (let index = 0; index < tokens.length - 2; index += 1) {
+    phrases.push(`${tokens[index]} ${tokens[index + 1]} ${tokens[index + 2]}`);
+  }
+
+  return dedupeStrings(phrases).filter((phrase) => phrase.length >= 7);
+}
+
+function joinSearchFields(fields: Array<string | number | boolean | null | undefined>) {
+  return fields
+    .filter((field) => field !== null && field !== undefined && field !== false)
+    .map((field) => String(field))
+    .join(" ");
+}
+
+function scoreMemoryCandidate(input: {
+  question: string;
+  kind: MemoryEntityKind;
+  title: string;
+  subtitle: string;
+  searchText: string;
+}) {
+  const normalizedTitle = normalizeText(input.title);
+  const normalizedSubtitle = normalizeText(input.subtitle);
+  const normalizedSearchText = normalizeText(input.searchText);
+  const tokens = memoryTokens(input.question);
+  const phrases = memoryPhrases(input.question);
+  const extractedName = normalizeText(getNameFromQuestion(input.question));
+  const lowerQuestion = normalizeText(input.question);
+
+  let score = 0;
+  const reasons: string[] = [];
+
+  if (extractedName && normalizedTitle.includes(extractedName)) {
+    score += 45;
+    reasons.push(`name matched "${getNameFromQuestion(input.question)}"`);
+  }
+
+  for (const phrase of phrases) {
+    if (normalizedTitle.includes(phrase)) {
+      score += 26;
+      reasons.push(`title matched "${phrase}"`);
+    } else if (normalizedSubtitle.includes(phrase)) {
+      score += 20;
+      reasons.push(`summary matched "${phrase}"`);
+    } else if (normalizedSearchText.includes(phrase)) {
+      score += 16;
+      reasons.push(`field matched "${phrase}"`);
+    }
+  }
+
+  for (const token of tokens) {
+    if (normalizedTitle.split(" ").includes(token)) {
+      score += 14;
+      reasons.push(`title contains "${token}"`);
+    } else if (normalizedTitle.includes(token)) {
+      score += 10;
+      reasons.push(`title contains "${token}"`);
+    } else if (normalizedSubtitle.includes(token)) {
+      score += 7;
+      reasons.push(`summary contains "${token}"`);
+    } else if (normalizedSearchText.includes(token)) {
+      score += 5;
+      reasons.push(`field contains "${token}"`);
+    }
+  }
+
+  if (lowerQuestion.includes("who") && input.kind === "contact" && score > 0) {
+    score += 10;
+  }
+
+  if (
+    lowerQuestion.includes("company") &&
+    input.kind === "company" &&
+    score > 0
+  ) {
+    score += 10;
+  }
+
+  if (
+    (lowerQuestion.includes("facebook") || lowerQuestion.includes("post")) &&
+    input.kind === "post" &&
+    score > 0
+  ) {
+    score += 12;
+  }
+
+  if (
+    (lowerQuestion.includes("complain") ||
+      lowerQuestion.includes("needed") ||
+      lowerQuestion.includes("need") ||
+      lowerQuestion.includes("problem")) &&
+    input.kind === "pain_point" &&
+    score > 0
+  ) {
+    score += 12;
+  }
+
+  return {
+    score,
+    reasons: dedupeStrings(reasons).slice(0, 4),
+  };
+}
+
+function buildMemoryMatch(input: {
+  kind: MemoryEntityKind;
+  id: string;
+  title: string;
+  subtitle: string;
+  searchText: string;
+  question: string;
+}) {
+  const scoreResult = scoreMemoryCandidate({
+    question: input.question,
+    kind: input.kind,
+    title: input.title,
+    subtitle: input.subtitle,
+    searchText: input.searchText,
+  });
+
+  return {
+    kind: input.kind,
+    id: input.id,
+    title: input.title,
+    subtitle: input.subtitle,
+    score: scoreResult.score,
+    reasons: scoreResult.reasons,
+  };
+}
+
+async function loadMemorySearchData() {
+  const [
+    companyResult,
+    contactResult,
+    opportunityResult,
+    taskResult,
+    activityResult,
+    noteResult,
+    communityResult,
+    postResult,
+    painPointResult,
+    attachmentResult,
+  ] = await Promise.all([
+    supabase
+      .from("companies")
+      .select("*")
+      .eq("is_archived", false)
+      .order("created_at", { ascending: false })
+      .limit(300),
+    supabase
+      .from("contacts")
+      .select("*, companies(name)")
+      .eq("is_archived", false)
+      .order("created_at", { ascending: false })
+      .limit(300),
+    supabase
+      .from("opportunities")
+      .select(
+        "*, companies(name), primary_contact:contacts!opportunities_primary_contact_id_fkey(first_name, last_name)"
+      )
+      .eq("is_archived", false)
+      .order("created_at", { ascending: false })
+      .limit(300),
+    supabase
+      .from("tasks")
+      .select("*, companies(name), contacts(first_name, last_name)")
+      .order("created_at", { ascending: false })
+      .limit(300),
+    supabase
+      .from("activities")
+      .select("*, companies(name), contacts(first_name, last_name)")
+      .order("activity_date", { ascending: false })
+      .limit(300),
+    supabase
+      .from("notes")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(300),
+    supabase
+      .from("communities")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(300),
+    supabase
+      .from("posts")
+      .select("*, communities(name, platform)")
+      .order("created_at", { ascending: false })
+      .limit(300),
+    supabase
+      .from("pain_points")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(300),
+    supabase
+      .from("attachments")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(300),
+  ]);
+
+  const firstError =
+    companyResult.error ||
+    contactResult.error ||
+    opportunityResult.error ||
+    taskResult.error ||
+    activityResult.error ||
+    noteResult.error ||
+    communityResult.error ||
+    postResult.error ||
+    painPointResult.error ||
+    attachmentResult.error;
+
+  if (firstError) {
+    throw new Error(firstError.message);
+  }
+
+  return {
+    companies: (companyResult.data ?? []) as unknown as Company[],
+    contacts: (contactResult.data ?? []) as unknown as Contact[],
+    opportunities: (opportunityResult.data ?? []) as unknown as Opportunity[],
+    tasks: (taskResult.data ?? []) as unknown as Task[],
+    activities: (activityResult.data ?? []) as unknown as Activity[],
+    notes: (noteResult.data ?? []) as unknown as Note[],
+    communities: (communityResult.data ?? []) as unknown as Community[],
+    posts: (postResult.data ?? []) as unknown as Post[],
+    painPoints: ((painPointResult.data ?? []) as unknown as PainPoint[]).filter(
+      isRealPainPoint
+    ),
+    attachments: (attachmentResult.data ?? []) as unknown as Attachment[],
+  };
+}
+
+function buildMemoryMatches(data: MemorySearchData, question: string) {
+  const matches: MemoryMatch[] = [];
+
+  for (const company of data.companies) {
+    matches.push(
+      buildMemoryMatch({
+        kind: "company",
+        id: company.id,
+        title: company.name,
+        subtitle: `Company | Phone: ${company.phone || "No phone"} | Email: ${
+          company.email || "No email"
+        }`,
+        searchText: joinSearchFields([
+          company.name,
+          company.website,
+          company.phone,
+          company.email,
+          company.lead_temperature,
+          company.operating_regions,
+          company.assets_equipment,
+          company.notes,
+        ]),
+        question,
+      })
+    );
+  }
+
+  for (const contact of data.contacts) {
+    const name = fullContactName(contact);
+
+    matches.push(
+      buildMemoryMatch({
+        kind: "contact",
+        id: contact.id,
+        title: name || "Unnamed contact",
+        subtitle: `Contact | Company: ${
+          contact.companies?.name || "No company"
+        } | Title: ${contact.title || "No title"}`,
+        searchText: joinSearchFields([
+          name,
+          contact.first_name,
+          contact.last_name,
+          contact.title,
+          contact.email,
+          contact.phone,
+          contact.notes,
+          contact.companies?.name,
+        ]),
+        question,
+      })
+    );
+  }
+
+  for (const opportunity of data.opportunities) {
+    matches.push(
+      buildMemoryMatch({
+        kind: "opportunity",
+        id: opportunity.id,
+        title: opportunity.name,
+        subtitle: `Opportunity | ${opportunity.stage || "No stage"} | ${
+          opportunity.companies?.name || "No company"
+        }`,
+        searchText: joinSearchFields([
+          opportunity.name,
+          opportunity.stage,
+          opportunity.opportunity_type,
+          opportunity.lead_temperature,
+          opportunity.next_step,
+          opportunity.notes,
+          opportunity.companies?.name,
+          opportunity.primary_contact
+            ? fullContactName({
+                first_name: opportunity.primary_contact.first_name,
+                last_name: opportunity.primary_contact.last_name,
+              })
+            : "",
+        ]),
+        question,
+      })
+    );
+  }
+
+  for (const task of data.tasks) {
+    matches.push(
+      buildMemoryMatch({
+        kind: "task",
+        id: task.id,
+        title: task.title,
+        subtitle: `Task | Status: ${task.status || "Unknown"} | Priority: ${
+          task.priority || "Normal"
+        }`,
+        searchText: joinSearchFields([
+          task.title,
+          task.description,
+          task.status,
+          task.priority,
+          task.companies?.name,
+          task.contacts
+            ? fullContactName({
+                first_name: task.contacts.first_name,
+                last_name: task.contacts.last_name,
+              })
+            : "",
+        ]),
+        question,
+      })
+    );
+  }
+
+  for (const activity of data.activities) {
+    matches.push(
+      buildMemoryMatch({
+        kind: "activity",
+        id: activity.id,
+        title: activity.subject,
+        subtitle: `Activity | ${activity.activity_type || "Unknown"} | Outcome: ${
+          activity.outcome || "None"
+        }`,
+        searchText: joinSearchFields([
+          activity.subject,
+          activity.activity_type,
+          activity.summary,
+          activity.raw_notes,
+          activity.outcome,
+          activity.companies?.name,
+          activity.contacts
+            ? fullContactName({
+                first_name: activity.contacts.first_name,
+                last_name: activity.contacts.last_name,
+              })
+            : "",
+        ]),
+        question,
+      })
+    );
+  }
+
+  for (const note of data.notes) {
+    matches.push(
+      buildMemoryMatch({
+        kind: "note",
+        id: note.id,
+        title: note.title,
+        subtitle: `Note | Source: ${note.source || "No source"}`,
+        searchText: joinSearchFields([
+          note.title,
+          note.body,
+          note.source,
+          note.source_url,
+          note.tags,
+        ]),
+        question,
+      })
+    );
+  }
+
+  for (const community of data.communities) {
+    matches.push(
+      buildMemoryMatch({
+        kind: "community",
+        id: community.id,
+        title: community.name,
+        subtitle: `Community | ${community.platform || "Unknown platform"} | ${
+          community.location_focus || "No location"
+        }`,
+        searchText: joinSearchFields([
+          community.name,
+          community.platform,
+          community.url,
+          community.description,
+          community.industry,
+          community.location_focus,
+          community.status,
+          community.rules_notes,
+          community.tags,
+        ]),
+        question,
+      })
+    );
+  }
+
+  for (const post of data.posts) {
+    matches.push(
+      buildMemoryMatch({
+        kind: "post",
+        id: post.id,
+        title: post.title,
+        subtitle: `Post | ${post.platform || "Unknown platform"} | ${
+          post.communities?.name || "No community"
+        }`,
+        searchText: joinSearchFields([
+          post.title,
+          post.platform,
+          post.post_type,
+          post.post_url,
+          post.original_post_text,
+          post.ai_summary,
+          post.pain_points_found,
+          post.leads_found,
+          post.tags,
+          post.communities?.name,
+          post.communities?.platform,
+        ]),
+        question,
+      })
+    );
+  }
+
+  for (const painPoint of data.painPoints) {
+    matches.push(
+      buildMemoryMatch({
+        kind: "pain_point",
+        id: painPoint.id,
+        title: painPoint.name,
+        subtitle: `Pain Point | Category: ${painPoint.category || "None"}`,
+        searchText: joinSearchFields([
+          painPoint.name,
+          painPoint.description,
+          painPoint.category,
+        ]),
+        question,
+      })
+    );
+  }
+
+  for (const attachment of data.attachments) {
+    matches.push(
+      buildMemoryMatch({
+        kind: "attachment",
+        id: attachment.id,
+        title: attachment.file_name,
+        subtitle: `Attachment | Type: ${attachment.file_type || "Unknown"}`,
+        searchText: joinSearchFields([
+          attachment.file_name,
+          attachment.file_type,
+          attachment.description,
+          attachment.ai_summary,
+          attachment.storage_path,
+        ]),
+        question,
+      })
+    );
+  }
+
+  return matches
+    .filter((match) => match.score >= 12)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 8);
+}
+
+function shouldClarifyMemoryMatch(matches: MemoryMatch[]) {
+  if (matches.length < 2) return false;
+
+  const [first, second] = matches;
+
+  if (!first || !second) return false;
+
+  return first.score < 55 || first.score - second.score <= 12;
+}
+
+function clarificationText(matches: MemoryMatch[], question: string) {
+  return `I found multiple possible matches for "${question}". Which one do you mean?
+
+${matches
+  .slice(0, 5)
+  .map((match, index) => {
+    const reasonText =
+      match.reasons.length > 0 ? ` | Matched: ${match.reasons.join(", ")}` : "";
+
+    return `${index + 1}. ${match.title} - ${memoryKindLabel(match.kind)}
+   ${match.subtitle}${reasonText}
+   Open: ${memoryHref(match)}`;
+  })
+  .join("\n\n")}
+
+Reply with the name or a little more detail, and I will pull the business memory summary.`;
+}
+
+function noMemoryMatchText(question: string) {
+  return `I did not find a strong conversational memory match for "${question}".
+
+Try searching with one or two concrete clues, such as:
+
+- a person's name
+- company name
+- city or state
+- pain point phrase like "paper tickets" or "need trucks"
+- post topic like "billing delays"
+- phone, email, role, or community name`;
+}
+
+function genericMemorySummary(match: MemoryMatch, data: MemorySearchData) {
+  if (match.kind === "task") {
+    const task = data.tasks.find((row) => row.id === match.id);
+
+    if (!task) return `I found a task match: ${match.title}`;
+
+    return `BUSINESS MEMORY SUMMARY
+Subject: ${task.title}
+Record Type: Task
+
+Summary
+- Status: ${task.status || "Unknown"}
+- Priority: ${task.priority || "Normal"}
+- Due: ${formatDate(task.due_date)}
+- Company: ${task.companies?.name || "No company linked"}
+- Contact: ${
+      task.contacts
+        ? fullContactName({
+            first_name: task.contacts.first_name,
+            last_name: task.contacts.last_name,
+          })
+        : "No contact linked"
+    }
+- Description: ${shortText(task.description, 500) || "No description saved."}
+
+Open this record:
+${memoryHref(match)}`;
+  }
+
+  if (match.kind === "activity") {
+    const activity = data.activities.find((row) => row.id === match.id);
+
+    if (!activity) return `I found an activity match: ${match.title}`;
+
+    return `BUSINESS MEMORY SUMMARY
+Subject: ${activity.subject}
+Record Type: Activity
+
+Summary
+- Type: ${activity.activity_type || "Unknown"}
+- Outcome: ${activity.outcome || "None"}
+- Date: ${formatDate(activity.activity_date)}
+- Follow-up Needed: ${activity.follow_up_needed ? "Yes" : "No"}
+- Company: ${activity.companies?.name || "No company linked"}
+- Contact: ${
+      activity.contacts
+        ? fullContactName({
+            first_name: activity.contacts.first_name,
+            last_name: activity.contacts.last_name,
+          })
+        : "No contact linked"
+    }
+
+Notes
+${shortText(activity.summary || activity.raw_notes, 700) || "No notes saved."}
+
+Open this record:
+${memoryHref(match)}`;
+  }
+
+  if (match.kind === "note") {
+    const note = data.notes.find((row) => row.id === match.id);
+
+    if (!note) return `I found a note match: ${match.title}`;
+
+    return `BUSINESS MEMORY SUMMARY
+Subject: ${note.title}
+Record Type: Note
+
+Summary
+- Source: ${note.source || "No source"}
+- Source URL: ${note.source_url || "No source URL"}
+- Tags: ${note.tags || "No tags"}
+- Created: ${formatDate(note.created_at)}
+
+Body
+${shortText(note.body, 900) || "No body saved."}
+
+Open this record:
+${memoryHref(match)}`;
+  }
+
+  if (match.kind === "community") {
+    const community = data.communities.find((row) => row.id === match.id);
+
+    if (!community) return `I found a community match: ${match.title}`;
+
+    const relatedPosts = data.posts.filter(
+      (post) => post.community_id === community.id
+    );
+
+    return `BUSINESS MEMORY SUMMARY
+Subject: ${community.name}
+Record Type: Community
+
+Summary
+- Platform: ${community.platform || "Unknown"}
+- URL: ${community.url || "No URL"}
+- Industry: ${community.industry || "Unknown"}
+- Location Focus: ${community.location_focus || "Unknown"}
+- Status: ${community.status || "Unknown"}
+- Relevance Score: ${community.relevance_score ?? "Not scored"}
+- Related Posts Found: ${relatedPosts.length}
+- Tags: ${community.tags || "No tags"}
+
+Description
+${shortText(community.description || community.rules_notes, 800) || "No description saved."}
+
+Open this record:
+${memoryHref(match)}`;
+  }
+
+  if (match.kind === "post") {
+    const post = data.posts.find((row) => row.id === match.id);
+
+    if (!post) return `I found a post match: ${match.title}`;
+
+    return `BUSINESS MEMORY SUMMARY
+Subject: ${post.title}
+Record Type: Post
+
+Summary
+- Platform: ${post.platform || "Unknown"}
+- Community: ${post.communities?.name || "No community linked"}
+- Post Type: ${post.post_type || "Unknown"}
+- Post Date: ${formatDate(post.post_date)}
+- Follow-up Needed: ${post.follow_up_needed ? "Yes" : "No"}
+- Comments: ${post.comment_count ?? 0}
+- Reactions: ${post.reaction_count ?? 0}
+- Shares: ${post.share_count ?? 0}
+- Tags: ${post.tags || "No tags"}
+
+AI Summary
+${shortText(post.ai_summary, 700) || "No AI summary saved."}
+
+Pain Points Found
+${shortText(post.pain_points_found, 500) || "No pain point text saved."}
+
+Leads Found
+${shortText(post.leads_found, 500) || "No lead text saved."}
+
+Original Text
+${shortText(post.original_post_text, 900) || "No original text saved."}
+
+Post URL
+${post.post_url || "No URL saved."}
+
+Open this record:
+${memoryHref(match)}`;
+  }
+
+  if (match.kind === "attachment") {
+    const attachment = data.attachments.find((row) => row.id === match.id);
+
+    if (!attachment) return `I found an attachment match: ${match.title}`;
+
+    return `BUSINESS MEMORY SUMMARY
+Subject: ${attachment.file_name}
+Record Type: Attachment Metadata
+
+Summary
+- File Type: ${attachment.file_type || "Unknown"}
+- Created: ${formatDate(attachment.created_at)}
+- Description: ${attachment.description || "No description saved."}
+- AI Summary: ${attachment.ai_summary || "No AI summary saved."}
+
+Related IDs
+- Company: ${attachment.related_company_id || "None"}
+- Contact: ${attachment.related_contact_id || "None"}
+- Opportunity: ${attachment.related_opportunity_id || "None"}
+- Task: ${attachment.related_task_id || "None"}
+- Activity: ${attachment.related_activity_id || "None"}
+- Note: ${attachment.related_note_id || "None"}
+- Post: ${attachment.related_post_id || "None"}
+
+V2 searches attachment metadata only. It does not search full file contents yet.`;
+  }
+
+  return `I found a ${memoryKindLabel(match.kind)} match: ${match.title}`;
+}
+
+async function answerMemoryMatch(match: MemoryMatch, data: MemorySearchData) {
+  if (match.kind === "company") {
+    const answer = await answerCompanyMemory(`company memory for ${match.title}`);
+    return `${answer}
+
+Open this record:
+${memoryHref(match)}`;
+  }
+
+  if (match.kind === "contact") {
+    const answer = await answerContactMemory(`contact memory for ${match.title}`);
+    return `${answer}
+
+Open this record:
+${memoryHref(match)}`;
+  }
+
+  if (match.kind === "opportunity") {
+    const answer = await answerOpportunityMemory(`opportunity memory for ${match.title}`);
+    return `${answer}
+
+Open this record:
+${memoryHref(match)}`;
+  }
+
+  if (match.kind === "pain_point") {
+    const answer = await answerPainPointMemory(`pain point memory for ${match.title}`);
+    return `${answer}
+
+Open this record:
+${memoryHref(match)}`;
+  }
+
+  return genericMemorySummary(match, data);
+}
+
+async function answerConversationalMemory(userQuestion: string) {
+  const data = await loadMemorySearchData();
+  const matches = buildMemoryMatches(data, userQuestion);
+
+  if (matches.length === 0) {
+    return noMemoryMatchText(userQuestion);
+  }
+
+  if (shouldClarifyMemoryMatch(matches)) {
+    return clarificationText(matches, userQuestion);
+  }
+
+  const bestMatch = matches[0];
+
+  if (!bestMatch) {
+    return noMemoryMatchText(userQuestion);
+  }
+
+  const summary = await answerMemoryMatch(bestMatch, data);
+
+  return `I found the strongest match for "${userQuestion}":
+
+${bestMatch.title} - ${memoryKindLabel(bestMatch.kind)}
+${bestMatch.subtitle}
+Matched because: ${
+    bestMatch.reasons.length > 0
+      ? bestMatch.reasons.join(", ")
+      : "it had the strongest fuzzy score"
+  }
+
+${summary}`;
+}
+
+function isConversationalMemoryQuestion(lowerQuestion: string) {
+  const conversationalSignals = [
+    "i remember",
+    "remember talking",
+    "talking to",
+    "talked to",
+    "who was",
+    "who did",
+    "who complained",
+    "who mentioned",
+    "mentioned needing",
+    "needed trucks",
+    "need trucks",
+    "paper tickets",
+    "billing delays",
+    "dispatch confusion",
+    "that company",
+    "that trucking",
+    "from north dakota",
+    "facebook post",
+    "show me the guy",
+    "show me the person",
+    "which broker",
+    "who needed",
+  ];
+
+  return conversationalSignals.some((signal) => lowerQuestion.includes(signal));
+}
+
 
 const inputStyle: CSSProperties = {
   display: "block",
@@ -399,7 +1413,8 @@ function taskLine(task: Task) {
   return `- ${task.title}${company}${contact}
   Status: ${task.status || "Unknown"} | Priority: ${
     task.priority || "Normal"
-  } | Due: ${formatDate(task.due_date)}`;
+  } | Due: ${formatDate(task.due_date)}
+  Open: /tasks/${task.id}`;
 }
 
 function opportunityLine(opportunity: Opportunity) {
@@ -418,7 +1433,8 @@ function opportunityLine(opportunity: Opportunity) {
   Stage: ${opportunity.stage || "Unknown"} | Temperature: ${
     opportunity.lead_temperature || "Unknown"
   } | Value: ${formatMoney(opportunity.estimated_monthly_value)}${primaryContact}
-  Next Step: ${opportunity.next_step || "None saved"}`;
+  Next Step: ${opportunity.next_step || "None saved"}
+  Open: /opportunities/${opportunity.id}`;
 }
 
 function activityLine(activity: Activity) {
@@ -426,15 +1442,16 @@ function activityLine(activity: Activity) {
   Type: ${activity.activity_type || "Unknown"} | Outcome: ${
     activity.outcome || "None"
   } | Date: ${formatDate(activity.activity_date)}
-  ${shortText(activity.summary, 190) || "No summary saved."}`;
+  ${shortText(activity.summary, 190) || "No summary saved."}
+  Open: /activities/${activity.id}`;
 }
-
 
 function painPointLine(painPoint: PainPoint) {
   return `- ${painPoint.name}
   Category: ${painPoint.category || "None"}${
     painPoint.description ? ` | ${shortText(painPoint.description, 140)}` : ""
-  }`;
+  }
+  Open: /pain-points/${painPoint.id}`;
 }
 
 function postLine(post: Post) {
@@ -446,7 +1463,8 @@ function postLine(post: Post) {
   Platform: ${post.platform || "Unknown"} | Follow-up: ${
     post.follow_up_needed ? "Yes" : "No"
   }
-  ${shortText(post.ai_summary || post.original_post_text, 170) || "No summary saved."}`;
+  ${shortText(post.ai_summary || post.original_post_text, 170) || "No summary saved."}
+  Open: /posts/${post.id}`;
 }
 
 function attachmentLine(attachment: Attachment) {
@@ -456,11 +1474,18 @@ function attachmentLine(attachment: Attachment) {
   )}${attachment.description ? ` | ${shortText(attachment.description, 90)}` : ""}`;
 }
 
+function companyLine(company: Company) {
+  return `- ${company.name}
+  Phone: ${company.phone || "No phone"} | Email: ${company.email || "No email"}
+  Open: /companies/${company.id}`;
+}
+
 function contactLine(contact: Contact) {
   return `- ${fullContactName(contact)}
   Company: ${contact.companies?.name || "No company"} | Title: ${
     contact.title || "No title"
-  } | Phone: ${contact.phone || "No phone"} | Email: ${contact.email || "No email"}`;
+  } | Phone: ${contact.phone || "No phone"} | Email: ${contact.email || "No email"}
+  Open: /contacts/${contact.id}`;
 }
 
 function communityLine(community: Community) {
@@ -469,7 +1494,36 @@ function communityLine(community: Community) {
     community.industry || "Unknown"
   } | Location: ${community.location_focus || "Unknown"} | Relevance: ${
     community.relevance_score ?? "Not scored"
-  }`;
+  }
+  Open: /communities/${community.id}`;
+}
+
+function renderMessageText(text: string) {
+  const routeSplitPattern =
+    /(\/(?:companies|contacts|opportunities|tasks|activities|notes|communities|posts|pain-points)\/[a-zA-Z0-9-]+)/g;
+
+  const internalRoutePattern =
+    /^\/(?:companies|contacts|opportunities|tasks|activities|notes|communities|posts|pain-points)\/[a-zA-Z0-9-]+$/;
+
+  return text.split(routeSplitPattern).map((part, index) => {
+    if (internalRoutePattern.test(part)) {
+      return (
+        <Link
+          key={`${part}-${index}`}
+          href={part}
+          style={{
+            color: "#8ab4ff",
+            textDecoration: "underline",
+            fontWeight: "bold",
+          }}
+        >
+          {part}
+        </Link>
+      );
+    }
+
+    return <span key={`${part}-${index}`}>{part}</span>;
+  });
 }
 
 function dataGapLine(label: string, isMissing: boolean) {
@@ -1025,12 +2079,20 @@ async function loadAttachmentsForMemory(input: {
 function buildKnowledgeHighlights(activities: Activity[], notes: Note[]) {
   const activityLines = activities
     .slice(0, 8)
-    .map((activity) => shortText(activity.summary || activity.subject, 160))
+    .map((activity) => {
+      const text = shortText(activity.summary || activity.subject, 160);
+      return text ? `${text}
+  Open: /activities/${activity.id}` : "";
+    })
     .filter(Boolean);
 
   const noteLines = notes
     .slice(0, 8)
-    .map((note) => shortText(note.body || note.title, 160))
+    .map((note) => {
+      const text = shortText(note.body || note.title, 160);
+      return text ? `${text}
+  Open: /notes/${note.id}` : "";
+    })
     .filter(Boolean);
 
   return dedupeStrings([...activityLines, ...noteLines]).slice(0, 6);
@@ -1054,12 +2116,26 @@ function limitedList<T>(
   return shown;
 }
 
+function buildNoMemoryMatchMessage(searchName: string, searchedArea: string) {
+  return `I could not find a strong ${searchedArea} memory match for "${searchName}".
+
+I searched the saved Sell It memory, but nothing was strong enough to trust.
+
+Try one of these:
+- A company name
+- A contact name
+- A location
+- A pain point like need trucks or paper tickets
+- A task or follow-up phrase
+- An activity detail
+- A post, community, note, or attachment clue`;
+}
 async function answerCompanyMemory(userQuestion: string) {
   const searchName = getNameFromQuestion(userQuestion);
   const company = await findCompanyByName(searchName);
 
   if (!company) {
-    return `I could not find a company matching "${searchName}".`;
+    return buildNoMemoryMatchMessage(searchName, "company");
   }
 
   const companyIds = [company.id];
@@ -1245,7 +2321,7 @@ async function answerContactMemory(userQuestion: string) {
   const contact = await findContactByName(searchName);
 
   if (!contact) {
-    return `I could not find a contact matching "${searchName}".`;
+    return buildNoMemoryMatchMessage(searchName, "contact");
   }
 
   const companyIds = contact.company_id ? [contact.company_id] : [];
@@ -1391,7 +2467,9 @@ async function answerPainPointMemory(userQuestion: string) {
   const painPoint = await findPainPointByName(searchName);
 
   if (!painPoint) {
-    return `I could not find a real pain point matching "${searchName}". Contract clauses, insurance terms, and broker agreement language are intentionally ignored.`;
+    return `${buildNoMemoryMatchMessage(searchName, "real pain point")}
+
+Note: Contract clauses, insurance terms, and broker agreement language are intentionally ignored.`;
   }
 
   const linkedIds = await loadPainPointLinkedIds(painPoint.id);
@@ -1457,13 +2535,7 @@ async function answerPainPointMemory(userQuestion: string) {
 
   answer += section(
     "Companies With This Pain",
-    limitedList(
-      companies,
-      (company) => `- ${company.name}
-  Phone: ${company.phone || "No phone"} | Email: ${company.email || "No email"}`,
-      "- No companies linked.",
-      5
-    )
+    limitedList(companies, companyLine, "- No companies linked.", 5)
   );
 
   answer += section(
@@ -1538,7 +2610,7 @@ async function answerOpportunityMemory(userQuestion: string) {
   const opportunity = await findOpportunityByName(searchName);
 
   if (!opportunity) {
-    return `I could not find an opportunity matching "${searchName}".`;
+    return buildNoMemoryMatchMessage(searchName, "opportunity");
   }
 
   const companyIds = opportunity.company_id ? [opportunity.company_id] : [];
@@ -1745,7 +2817,7 @@ async function answerBestMemory(userQuestion: string) {
     return answerOpportunityMemory(`opportunity memory for ${opportunity.name}`);
   }
 
-  return `I could not find a company, contact, real pain point, or opportunity matching "${searchName}".`;
+  return answerConversationalMemory(userQuestion);
 }
 
 async function getOverdueTasks() {
@@ -2792,6 +3864,10 @@ async function routeQuestion(userQuestion: string) {
     return answerBestMemory(userQuestion);
   }
 
+  if (isConversationalMemoryQuestion(lower)) {
+    return answerConversationalMemory(userQuestion);
+  }
+
   if (
     lower.includes("what should i do today") ||
     lower.includes("do today")
@@ -2852,34 +3928,49 @@ async function routeQuestion(userQuestion: string) {
     return answerCompanyMemory(userQuestion);
   }
 
-  return `I can answer these Sell It questions in AI Business Memory V2:
-
-- What should I do today?
-- Who needs follow-up?
-- Show me overdue tasks.
-- Show me hot opportunities.
-- Show me recent activities.
-- Tell me everything we know about ABC Trucking.
-- Company memory for ABC Trucking.
-- Contact memory for Joe Smith.
-- Pain point memory for Need Trucks.
-- Opportunity memory for Alpha Tester.
-- What pain points are most common?
-
-V2 filters out fake pain points like broker agreements, liability clauses, insurance requirements, and contract language.`;
+  return answerConversationalMemory(userQuestion);
 }
 
 export default function AssistantPage() {
   const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      role: "assistant",
-      text:
-        "Ask me about Sell It data. AI Business Memory V2 builds short structured reports for companies, contacts, real pain points, and opportunities. It filters out contract/legal/admin language so broker agreements do not show as pain points.",
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>(initialAssistantMessages);
   const [thinking, setThinking] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [storageReady, setStorageReady] = useState(false);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setMessages(loadStoredMessages());
+      setQuestion(loadStoredQuestion());
+      setStorageReady(true);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
+  useEffect(() => {
+    if (!storageReady) return;
+
+    window.sessionStorage.setItem(
+      ASSISTANT_MESSAGES_STORAGE_KEY,
+      JSON.stringify(messages)
+    );
+  }, [messages, storageReady]);
+
+  useEffect(() => {
+    if (!storageReady) return;
+
+    window.sessionStorage.setItem(ASSISTANT_QUESTION_STORAGE_KEY, question);
+  }, [question, storageReady]);
+
+  function handleClearConversation() {
+    setMessages(initialAssistantMessages);
+    setQuestion("");
+    setErrorMessage("");
+
+    window.sessionStorage.removeItem(ASSISTANT_MESSAGES_STORAGE_KEY);
+    window.sessionStorage.removeItem(ASSISTANT_QUESTION_STORAGE_KEY);
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -2952,14 +4043,61 @@ export default function AssistantPage() {
       <h1>AI Assistant</h1>
 
       <p style={{ color: "#aaa", marginBottom: "32px", maxWidth: "950px" }}>
-        Ask natural language questions about your Sell It data. AI Business
-        Memory V2 creates concise structured reports from CRM records, tasks,
-        activities, notes, real pain points, posts, communities, and attachment
+        Ask natural language questions about your Sell It data. AI Assistant
+        V2 now supports conversational memory search across CRM records, tasks,
+        activities, notes, posts, communities, pain points, and attachment
         metadata.
       </p>
 
       <section style={{ maxWidth: "1000px" }}>
-        <div style={cardStyle}>
+        
+
+        <form onSubmit={handleSubmit} style={{ ...cardStyle, position: "sticky", top: "16px", zIndex: 20 }}>
+          <label>
+            Ask Sell It
+            <input
+              value={question}
+              onChange={(event) => setQuestion(event.target.value)}
+              placeholder="Example: Tell me everything we know about ABC Trucking"
+              style={inputStyle}
+            />
+          </label>
+
+          <div
+            style={{
+              display: "flex",
+              gap: "12px",
+              flexWrap: "wrap",
+              marginTop: "14px",
+            }}
+          >
+            <button
+              type="submit"
+              disabled={thinking}
+              style={{
+                ...buttonStyle,
+                opacity: thinking ? 0.7 : 1,
+              }}
+            >
+              {thinking ? "Checking..." : "Ask"}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleClearConversation}
+              disabled={thinking}
+              style={{
+                ...buttonStyle,
+                backgroundColor: "#dddddd",
+                opacity: thinking ? 0.7 : 1,
+              }}
+            >
+              Clear Results
+            </button>
+          </div>
+        </form>
+
+<div style={cardStyle}>
           <h2 style={{ marginTop: 0 }}>Conversation</h2>
 
           {messages.map((message, index) => (
@@ -2984,9 +4122,9 @@ export default function AssistantPage() {
                 {message.role === "user" ? "You" : "Assistant"}
               </p>
 
-              <p style={{ whiteSpace: "pre-wrap", marginBottom: 0 }}>
-                {message.text}
-              </p>
+              <div style={{ whiteSpace: "pre-wrap", marginBottom: 0, lineHeight: 1.45 }}>
+                {renderMessageText(message.text)}
+              </div>
             </div>
           ))}
 
@@ -2994,30 +4132,6 @@ export default function AssistantPage() {
 
           {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}
         </div>
-
-        <form onSubmit={handleSubmit} style={cardStyle}>
-          <label>
-            Ask Sell It
-            <input
-              value={question}
-              onChange={(event) => setQuestion(event.target.value)}
-              placeholder="Example: Tell me everything we know about ABC Trucking"
-              style={inputStyle}
-            />
-          </label>
-
-          <button
-            type="submit"
-            disabled={thinking}
-            style={{
-              ...buttonStyle,
-              marginTop: "14px",
-              opacity: thinking ? 0.7 : 1,
-            }}
-          >
-            {thinking ? "Checking..." : "Ask"}
-          </button>
-        </form>
 
         <div style={cardStyle}>
           <h2 style={{ marginTop: 0 }}>AI Business Memory V2 Examples</h2>
@@ -3062,4 +4176,21 @@ export default function AssistantPage() {
     </main>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
