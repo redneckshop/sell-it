@@ -248,6 +248,22 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             Edit Company
           </Link>
         )}
+
+        {company && (
+          <Link
+            href={`/companies/${company.id}/delete`}
+            style={{
+              color: "black",
+              backgroundColor: "#ffdddd",
+              padding: "10px 14px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+            }}
+          >
+            Delete Company
+          </Link>
+        )}
       </div>
 
       {error && <p style={{ color: "red" }}>Database error: {error.message}</p>}
