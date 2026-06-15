@@ -8,13 +8,13 @@ type ChatMessage = {
   role: "user" | "assistant";
   text: string;
 };
-const ASSISTANT_MESSAGES_STORAGE_KEY = "sell-it-assistant-v2-messages";
-const ASSISTANT_QUESTION_STORAGE_KEY = "sell-it-assistant-v2-question";
+const ASSISTANT_MESSAGES_STORAGE_KEY = "sell-it-assistant-v3-messages";
+const ASSISTANT_QUESTION_STORAGE_KEY = "sell-it-assistant-v3-question";
 
 const initialAssistantMessages: ChatMessage[] = [
   {
     role: "assistant",
-    text: "Ask me vague Sell It memory questions like: I remember talking to Becky, who complained about paper tickets, or that company from North Dakota. Assistant V2 now searches broadly, ranks possible matches, and asks for clarification when needed.",
+    text: "Ask me what to do next. Assistant V3 can recommend priorities, call order, at-risk opportunities, cold companies, trending pain points, and assigned work when assignment data exists.",
   },
 ];
 
@@ -1505,25 +1505,106 @@ function renderMessageText(text: string) {
   const internalRoutePattern =
     /^\/(?:companies|contacts|opportunities|tasks|activities|notes|communities|posts|pain-points)\/[a-zA-Z0-9-]+$/;
 
-  return text.split(routeSplitPattern).map((part, index) => {
-    if (internalRoutePattern.test(part)) {
+  function renderLinkedText(value: string, keyPrefix: string) {
+    return value.split(routeSplitPattern).map((part, index) => {
+      if (internalRoutePattern.test(part)) {
+        return (
+          <Link
+            key={`${keyPrefix}-${part}-${index}`}
+            href={part}
+            style={{
+              color: "#8ab4ff",
+              textDecoration: "underline",
+              fontWeight: "bold",
+            }}
+          >
+            {part}
+          </Link>
+        );
+      }
+
+      return <span key={`${keyPrefix}-${index}`}>{part}</span>;
+    });
+  }
+
+  function recommendationSummary(itemText: string) {
+    const lines = itemText
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    const title = lines[0] || "Recommendation";
+    const score = lines.find((line) => line.startsWith("Priority Score:"));
+    const category = lines.find((line) => line.startsWith("Category:"));
+
+    return [title, score?.replace("Priority Score:", "Score:"), category]
+      .filter(Boolean)
+      .join(" | ");
+  }
+
+  const looksLikeRecommendationAnswer =
+    text.includes("Priority Score:") &&
+    text.includes("Suggested action:") &&
+    text.includes("Related record links:");
+
+  if (looksLikeRecommendationAnswer) {
+    const firstRecommendationIndex = text.search(/\n\d+\.\s/);
+
+    if (firstRecommendationIndex > -1) {
+      const intro = text.slice(0, firstRecommendationIndex).trim();
+      const items = text
+        .slice(firstRecommendationIndex)
+        .trim()
+        .split(/\n(?=\d+\.\s)/g)
+        .filter(Boolean);
+
       return (
-        <Link
-          key={`${part}-${index}`}
-          href={part}
-          style={{
-            color: "#8ab4ff",
-            textDecoration: "underline",
-            fontWeight: "bold",
-          }}
-        >
-          {part}
-        </Link>
+        <>
+          {intro ? (
+            <div style={{ marginBottom: "12px" }}>
+              {renderLinkedText(intro, "recommendation-intro")}
+            </div>
+          ) : null}
+
+          <div style={{ display: "grid", gap: "10px" }}>
+            {items.map((item, index) => (
+              <details
+                key={`recommendation-${index}`}
+                style={{
+                  border: "1px solid #333",
+                  borderRadius: "8px",
+                  padding: "12px",
+                  backgroundColor: "#151515",
+                }}
+              >
+                <summary
+                  style={{
+                    cursor: "pointer",
+                    fontWeight: "bold",
+                    color: "white",
+                  }}
+                >
+                  {recommendationSummary(item)}
+                </summary>
+
+                <div
+                  style={{
+                    marginTop: "12px",
+                    lineHeight: 1.45,
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  {renderLinkedText(item, `recommendation-${index}`)}
+                </div>
+              </details>
+            ))}
+          </div>
+        </>
       );
     }
+  }
 
-    return <span key={`${part}-${index}`}>{part}</span>;
-  });
+  return renderLinkedText(text, "message");
 }
 
 function dataGapLine(label: string, isMissing: boolean) {
@@ -3064,6 +3145,1105 @@ ${ranked
   .join("\n\n")}`;
 }
 
+
+type RecommendationQuestionMode =
+  | "today"
+  | "call_first"
+  | "at_risk"
+  | "cold_companies"
+  | "cold_contacts"
+  | "trending_pain_points"
+  | "alpha_candidates"
+  | "owner_work"
+  | "top_priorities";
+
+type RecommendationTask = Task & Record<string, unknown>;
+type RecommendationOpportunity = Opportunity & Record<string, unknown>;
+type RecommendationCompany = Company & Record<string, unknown>;
+type RecommendationContact = Contact & Record<string, unknown>;
+type RecommendationActivity = Activity & Record<string, unknown>;
+type RecommendationPainPoint = PainPoint & { mentionCount?: number; recentMentionCount?: number };
+type RecommendationProfile = Record<string, unknown>;
+type RecommendationLink = {
+  label: string;
+  href: string;
+};
+type RecommendationItem = {
+  title: string;
+  category: string;
+  score: number;
+  reasons: string[];
+  suggestedAction: string;
+  links: RecommendationLink[];
+  ownerRows: Array<Record<string, unknown>>;
+};
+type RecommendationData = {
+  tasks: RecommendationTask[];
+  opportunities: RecommendationOpportunity[];
+  companies: RecommendationCompany[];
+  contacts: RecommendationContact[];
+  activities: RecommendationActivity[];
+  painPoints: RecommendationPainPoint[];
+  posts: Post[];
+  profiles: RecommendationProfile[];
+  painPointLinks: Record<string, Array<Record<string, unknown>>>;
+};
+
+function isRecommendationQuestion(lowerQuestion: string) {
+  const recommendationSignals = [
+    "what should i do today",
+    "what should i do",
+    "what should we do today",
+    "what needs my attention",
+    "what needs attention",
+    "what are my top priorities",
+    "top priorities",
+    "recommend",
+    "recommendation",
+    "who should i call first",
+    "who should we call first",
+    "who do i call first",
+    "which leads are going cold",
+    "leads are going cold",
+    "going cold",
+    "gone cold",
+    "companies have gone cold",
+    "contacts have gone cold",
+    "opportunities are at risk",
+    "opportunity is at risk",
+    "at risk",
+    "alpha candidates should i focus",
+    "alpha candidates",
+    "what should trent work on",
+    "what should angel work on",
+    "what should charles work on",
+    "what should charley work on",
+    "what should",
+    "who should",
+  ];
+
+  return recommendationSignals.some((signal) => lowerQuestion.includes(signal));
+}
+
+function getRecommendationQuestionMode(lowerQuestion: string): RecommendationQuestionMode {
+  if (getRequestedRecommendationOwner(lowerQuestion)) return "owner_work";
+
+  if (
+    lowerQuestion.includes("call first") ||
+    lowerQuestion.includes("who should i call") ||
+    lowerQuestion.includes("who should we call")
+  ) {
+    return "call_first";
+  }
+
+  if (lowerQuestion.includes("alpha candidate") || lowerQuestion.includes("alpha candidates")) {
+    return "alpha_candidates";
+  }
+
+  if (lowerQuestion.includes("pain point") || lowerQuestion.includes("trending")) {
+    return "trending_pain_points";
+  }
+
+  if (lowerQuestion.includes("at risk") || lowerQuestion.includes("going cold")) {
+    return "at_risk";
+  }
+
+  if (lowerQuestion.includes("companies have gone cold") || lowerQuestion.includes("companies are cold")) {
+    return "cold_companies";
+  }
+
+  if (lowerQuestion.includes("contacts have gone cold") || lowerQuestion.includes("contacts are cold")) {
+    return "cold_contacts";
+  }
+
+  if (lowerQuestion.includes("what should i do today") || lowerQuestion.includes("do today")) {
+    return "today";
+  }
+
+  return "top_priorities";
+}
+
+function getRequestedRecommendationOwner(lowerQuestion: string) {
+  const knownNames = ["trent", "angel", "charles", "charley"];
+
+  for (const name of knownNames) {
+    if (lowerQuestion.includes(`what should ${name} work on`)) {
+      return name;
+    }
+  }
+
+  const match = lowerQuestion.match(/what should ([a-z][a-z0-9_-]*) work on/);
+
+  return match?.[1] ?? "";
+}
+
+function capitalizeName(value: string) {
+  if (!value) return value;
+  return `${value[0]?.toUpperCase() || ""}${value.slice(1)}`;
+}
+
+function parseDateValue(value: string | null | undefined) {
+  if (!value) return null;
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return null;
+
+  return date;
+}
+
+function daysSince(value: string | null | undefined) {
+  const date = parseDateValue(value);
+
+  if (!date) return null;
+
+  const now = new Date();
+  const difference = now.getTime() - date.getTime();
+
+  return Math.max(0, Math.floor(difference / 86400000));
+}
+
+function daysUntil(value: string | null | undefined) {
+  const date = parseDateValue(value);
+
+  if (!date) return null;
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  return Math.floor((target.getTime() - today.getTime()) / 86400000);
+}
+
+function isOpenTask(task: Task) {
+  const status = normalizeText(task.status);
+
+  return status !== "completed" && status !== "cancelled" && status !== "canceled";
+}
+
+function isClosedOpportunity(opportunity: Opportunity) {
+  const stage = normalizeText(opportunity.stage);
+
+  return (
+    stage.includes("customer") ||
+    stage.includes("lost") ||
+    stage.includes("closed") ||
+    stage.includes("dead")
+  );
+}
+
+function priorityScore(priority: string | null | undefined) {
+  const normalized = normalizeText(priority);
+
+  if (normalized.includes("urgent")) return 18;
+  if (normalized.includes("high")) return 12;
+  if (normalized.includes("normal")) return 5;
+  if (normalized.includes("low")) return 1;
+
+  return 4;
+}
+
+function opportunityTemperatureScore(value: string | null | undefined) {
+  const normalized = normalizeText(value);
+
+  if (normalized.includes("active")) return 20;
+  if (normalized.includes("hot")) return 18;
+  if (normalized.includes("warm")) return 9;
+  if (normalized.includes("cold")) return 2;
+
+  return 4;
+}
+
+function getStringField(row: Record<string, unknown>, field: string) {
+  const value = row[field];
+
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+
+  return "";
+}
+
+function getOptionalIdField(row: Record<string, unknown>, field: string) {
+  const value = row[field];
+
+  return typeof value === "string" && value.trim() ? value : "";
+}
+
+function profileDisplayName(profile: RecommendationProfile) {
+  const fields = ["full_name", "display_name", "name", "email"];
+
+  for (const field of fields) {
+    const value = getStringField(profile, field);
+
+    if (value) return value;
+  }
+
+  return getStringField(profile, "id") || getStringField(profile, "user_id") || "Unknown user";
+}
+
+function profileIds(profile: RecommendationProfile) {
+  return [
+    getStringField(profile, "id"),
+    getStringField(profile, "user_id"),
+    getStringField(profile, "auth_user_id"),
+  ].filter(Boolean);
+}
+
+function profileSearchText(profile: RecommendationProfile) {
+  return normalizeText(
+    [
+      getStringField(profile, "full_name"),
+      getStringField(profile, "display_name"),
+      getStringField(profile, "name"),
+      getStringField(profile, "email"),
+      getStringField(profile, "id"),
+      getStringField(profile, "user_id"),
+      getStringField(profile, "auth_user_id"),
+    ].join(" ")
+  );
+}
+
+function getOwnerProfileMatches(ownerName: string, profiles: RecommendationProfile[]) {
+  const normalizedOwner = normalizeText(ownerName);
+
+  if (!normalizedOwner) return [];
+
+  return profiles.filter((profile) => profileSearchText(profile).includes(normalizedOwner));
+}
+
+function recordAssignmentValues(row: Record<string, unknown>) {
+  const fields = [
+    "assigned_to",
+    "assigned_user_id",
+    "assigned_to_user_id",
+    "owner_id",
+    "created_by",
+    "updated_by",
+    "user_id",
+    "sales_owner",
+    "assignee",
+    "assigned_to_name",
+    "created_by_name",
+  ];
+
+  return fields
+    .map((field) => getStringField(row, field))
+    .filter(Boolean);
+}
+
+function recordHasAssignmentFields(row: Record<string, unknown>) {
+  const fields = [
+    "assigned_to",
+    "assigned_user_id",
+    "assigned_to_user_id",
+    "owner_id",
+    "created_by",
+    "updated_by",
+    "user_id",
+    "sales_owner",
+    "assignee",
+  ];
+
+  return fields.some((field) => Object.prototype.hasOwnProperty.call(row, field));
+}
+
+function recordMatchesRequestedOwner(
+  row: Record<string, unknown>,
+  ownerName: string,
+  profiles: RecommendationProfile[]
+) {
+  const normalizedOwner = normalizeText(ownerName);
+  const matchingProfiles = getOwnerProfileMatches(ownerName, profiles);
+  const matchingProfileIds = new Set(
+    matchingProfiles.flatMap(profileIds).map((value) => value.toLowerCase())
+  );
+
+  for (const value of recordAssignmentValues(row)) {
+    const lowerValue = value.toLowerCase();
+
+    if (lowerValue && matchingProfileIds.has(lowerValue)) {
+      return true;
+    }
+
+    if (normalizeText(value).includes(normalizedOwner)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function recommendationLinks(links: RecommendationLink[]) {
+  const seen = new Set<string>();
+  const uniqueLinks: RecommendationLink[] = [];
+
+  for (const link of links) {
+    if (!link.href || seen.has(link.href)) continue;
+
+    seen.add(link.href);
+    uniqueLinks.push(link);
+  }
+
+  return uniqueLinks;
+}
+
+function formatRecommendationLink(link: RecommendationLink) {
+  return `- ${link.label}: ${link.href}`;
+}
+
+function formatRecommendationItem(item: RecommendationItem, index: number) {
+  return `${index + 1}. ${item.title}
+Priority Score: ${item.score}
+Category: ${item.category}
+
+Reason:
+${item.reasons.map((reason) => `- ${reason}`).join("\n")}
+
+Suggested action:
+${item.suggestedAction}
+
+Related record links:
+${recommendationLinks(item.links).map(formatRecommendationLink).join("\n") || "- No direct record link found."}`;
+}
+
+function formatRecommendationAnswer(
+  title: string,
+  recommendations: RecommendationItem[],
+  emptyText: string,
+  limit = 8
+) {
+  if (recommendations.length === 0) {
+    return `${title}
+
+${emptyText}`;
+  }
+
+  const ranked = recommendations
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+
+  return `${title}
+
+${ranked.map(formatRecommendationItem).join("\n\n")}`;
+}
+
+function lastActivityForCompany(companyId: string, activities: RecommendationActivity[]) {
+  return activities.find((activity) => activity.company_id === companyId) ?? null;
+}
+
+function lastActivityForContact(contactId: string, activities: RecommendationActivity[]) {
+  return activities.find((activity) => activity.contact_id === contactId) ?? null;
+}
+
+function lastActivityForOpportunity(
+  opportunity: RecommendationOpportunity,
+  activities: RecommendationActivity[]
+) {
+  const opportunityId = opportunity.id;
+  const companyId = opportunity.company_id;
+  const contactId = opportunity.primary_contact_id;
+
+  return (
+    activities.find((activity) => getOptionalIdField(activity, "opportunity_id") === opportunityId) ??
+    activities.find(
+      (activity) =>
+        (companyId && activity.company_id === companyId) ||
+        (contactId && activity.contact_id === contactId)
+    ) ??
+    null
+  );
+}
+
+function openTasksForOpportunity(
+  opportunity: RecommendationOpportunity,
+  tasks: RecommendationTask[]
+) {
+  return tasks.filter((task) => {
+    if (!isOpenTask(task)) return false;
+
+    return (
+      getOptionalIdField(task, "opportunity_id") === opportunity.id ||
+      (opportunity.company_id && task.company_id === opportunity.company_id) ||
+      (opportunity.primary_contact_id && task.contact_id === opportunity.primary_contact_id)
+    );
+  });
+}
+
+function buildTaskRecommendation(task: RecommendationTask, category: string) {
+  const dueOffset = daysUntil(task.due_date);
+  const companyName = task.companies?.name || "";
+  const contactName = task.contacts
+    ? fullContactName({
+        first_name: task.contacts.first_name,
+        last_name: task.contacts.last_name,
+      })
+    : "";
+
+  const overdueDays = dueOffset !== null && dueOffset < 0 ? Math.abs(dueOffset) : 0;
+  const dueToday = dueOffset === 0;
+
+  const score =
+    (overdueDays > 0 ? 95 : dueToday ? 88 : 65) +
+    priorityScore(task.priority) +
+    Math.min(overdueDays, 14);
+
+  return {
+    title: `Work task: ${task.title}`,
+    category,
+    score,
+    reasons: [
+      overdueDays > 0 ? `Task is overdue by ${overdueDays} day(s).` : "",
+      dueToday ? "Task is due today." : "",
+      `Priority is ${task.priority || "not set"}.`,
+      companyName ? `Company: ${companyName}.` : "",
+      contactName ? `Contact: ${contactName}.` : "",
+    ].filter(Boolean),
+    suggestedAction:
+      overdueDays > 0 || dueToday
+        ? "Handle this today, then mark it complete or reschedule it with a new due date."
+        : "Review this task and decide whether it needs a firm due date.",
+    links: recommendationLinks([
+      { label: "Task", href: `/tasks/${task.id}` },
+      task.company_id ? { label: "Company", href: `/companies/${task.company_id}` } : { label: "", href: "" },
+      task.contact_id ? { label: "Contact", href: `/contacts/${task.contact_id}` } : { label: "", href: "" },
+    ]),
+    ownerRows: [task],
+  };
+}
+
+function buildOpportunityRecommendation(
+  opportunity: RecommendationOpportunity,
+  tasks: RecommendationTask[],
+  activities: RecommendationActivity[],
+  category: string
+) {
+  const lastActivity = lastActivityForOpportunity(opportunity, activities);
+  const daysInactive = lastActivity ? daysSince(lastActivity.activity_date) : daysSince(opportunity.created_at);
+  const relatedOpenTasks = openTasksForOpportunity(opportunity, tasks);
+  const stale = daysInactive === null || daysInactive >= 10;
+  const noOpenTask = relatedOpenTasks.length === 0;
+  const temperatureScore = opportunityTemperatureScore(opportunity.lead_temperature);
+
+  const score =
+    62 +
+    temperatureScore +
+    (stale ? 16 : 0) +
+    (noOpenTask ? 10 : 0) +
+    (opportunity.estimated_monthly_value ? 8 : 0);
+
+  const contactName = opportunity.primary_contact
+    ? fullContactName({
+        first_name: opportunity.primary_contact.first_name,
+        last_name: opportunity.primary_contact.last_name,
+      })
+    : "";
+
+  return {
+    title: `${category}: ${opportunity.name}`,
+    category,
+    score,
+    reasons: [
+      `Stage is ${opportunity.stage || "not set"}.`,
+      `Lead temperature is ${opportunity.lead_temperature || "not set"}.`,
+      daysInactive === null
+        ? "No recent activity date was found."
+        : `Last related activity was about ${daysInactive} day(s) ago.`,
+      noOpenTask ? "No open follow-up task was found for this opportunity." : "",
+      opportunity.next_step ? `Saved next step: ${opportunity.next_step}.` : "No saved next step.",
+      contactName ? `Primary contact: ${contactName}.` : "",
+    ].filter(Boolean),
+    suggestedAction:
+      opportunity.next_step ||
+      "Create a follow-up task and contact the decision-maker to confirm next interest.",
+    links: recommendationLinks([
+      { label: "Opportunity", href: `/opportunities/${opportunity.id}` },
+      opportunity.company_id ? { label: "Company", href: `/companies/${opportunity.company_id}` } : { label: "", href: "" },
+      opportunity.primary_contact_id ? { label: "Contact", href: `/contacts/${opportunity.primary_contact_id}` } : { label: "", href: "" },
+      relatedOpenTasks[0] ? { label: "Related task", href: `/tasks/${relatedOpenTasks[0].id}` } : { label: "", href: "" },
+      lastActivity ? { label: "Last activity", href: `/activities/${lastActivity.id}` } : { label: "", href: "" },
+    ]),
+    ownerRows: [opportunity, ...relatedOpenTasks],
+  };
+}
+
+function buildActivityFollowUpRecommendation(activity: RecommendationActivity) {
+  const activityAge = daysSince(activity.activity_date);
+  const companyName = activity.companies?.name || "";
+  const contactName = activity.contacts
+    ? fullContactName({
+        first_name: activity.contacts.first_name,
+        last_name: activity.contacts.last_name,
+      })
+    : "";
+
+  return {
+    title: `Follow up from activity: ${activity.subject}`,
+    category: "Follow-up Needed",
+    score: 82 + (activityAge === null ? 0 : Math.min(activityAge, 10)),
+    reasons: [
+      "Activity is marked follow-up needed.",
+      activityAge === null ? "" : `Activity happened about ${activityAge} day(s) ago.`,
+      activity.outcome ? `Outcome: ${activity.outcome}.` : "",
+      companyName ? `Company: ${companyName}.` : "",
+      contactName ? `Contact: ${contactName}.` : "",
+    ].filter(Boolean),
+    suggestedAction:
+      "Review the activity notes and create or complete the next follow-up step.",
+    links: recommendationLinks([
+      { label: "Activity", href: `/activities/${activity.id}` },
+      activity.company_id ? { label: "Company", href: `/companies/${activity.company_id}` } : { label: "", href: "" },
+      activity.contact_id ? { label: "Contact", href: `/contacts/${activity.contact_id}` } : { label: "", href: "" },
+    ]),
+    ownerRows: [activity],
+  };
+}
+
+function buildColdCompanyRecommendations(data: RecommendationData) {
+  return data.companies
+    .map((company) => {
+      const lastActivity = lastActivityForCompany(company.id, data.activities);
+      const daysCold = lastActivity ? daysSince(lastActivity.activity_date) : daysSince(company.created_at);
+      const relatedOpenOpportunities = data.opportunities.filter(
+        (opportunity) => opportunity.company_id === company.id && !isClosedOpportunity(opportunity)
+      );
+
+      if (daysCold !== null && daysCold < 30 && relatedOpenOpportunities.length === 0) {
+        return null;
+      }
+
+      const score =
+        45 +
+        Math.min(daysCold ?? 45, 45) +
+        relatedOpenOpportunities.length * 8 +
+        opportunityTemperatureScore(company.lead_temperature);
+
+      return {
+        title: `Re-engage company: ${company.name}`,
+        category: "Company Gone Cold",
+        score,
+        reasons: [
+          daysCold === null
+            ? "No recent activity date was found."
+            : `No related activity for about ${daysCold} day(s).`,
+          relatedOpenOpportunities.length > 0
+            ? `${relatedOpenOpportunities.length} open opportunity/opportunities are connected.`
+            : "No open opportunity is connected.",
+          company.lead_temperature ? `Company temperature: ${company.lead_temperature}.` : "",
+        ].filter(Boolean),
+        suggestedAction:
+          relatedOpenOpportunities[0]?.next_step ||
+          "Review the company and create a simple reconnect task if it is still worth pursuing.",
+        links: recommendationLinks([
+          { label: "Company", href: `/companies/${company.id}` },
+          lastActivity ? { label: "Last activity", href: `/activities/${lastActivity.id}` } : { label: "", href: "" },
+          relatedOpenOpportunities[0]
+            ? { label: "Open opportunity", href: `/opportunities/${relatedOpenOpportunities[0].id}` }
+            : { label: "", href: "" },
+        ]),
+        ownerRows: [company, ...relatedOpenOpportunities],
+      } satisfies RecommendationItem;
+    })
+    .filter((item): item is RecommendationItem => Boolean(item))
+    .sort((a, b) => b.score - a.score);
+}
+
+function buildColdContactRecommendations(data: RecommendationData) {
+  return data.contacts
+    .map((contact) => {
+      const lastActivity = lastActivityForContact(contact.id, data.activities);
+      const daysCold = lastActivity ? daysSince(lastActivity.activity_date) : daysSince(getStringField(contact, "created_at"));
+      const relatedOpenOpportunities = data.opportunities.filter(
+        (opportunity) =>
+          opportunity.primary_contact_id === contact.id && !isClosedOpportunity(opportunity)
+      );
+
+      if (daysCold !== null && daysCold < 30 && relatedOpenOpportunities.length === 0) {
+        return null;
+      }
+
+      const name = fullContactName(contact);
+
+      return {
+        title: `Reconnect with ${name || "contact"}`,
+        category: "Contact Gone Cold",
+        score: 42 + Math.min(daysCold ?? 45, 45) + relatedOpenOpportunities.length * 10,
+        reasons: [
+          daysCold === null
+            ? "No recent activity date was found."
+            : `No related activity for about ${daysCold} day(s).`,
+          contact.companies?.name ? `Company: ${contact.companies.name}.` : "",
+          relatedOpenOpportunities.length > 0
+            ? `${relatedOpenOpportunities.length} open opportunity/opportunities are connected.`
+            : "No open opportunity is connected.",
+        ].filter(Boolean),
+        suggestedAction:
+          "Call or text this contact if the relationship is still worth keeping warm.",
+        links: recommendationLinks([
+          { label: "Contact", href: `/contacts/${contact.id}` },
+          contact.company_id ? { label: "Company", href: `/companies/${contact.company_id}` } : { label: "", href: "" },
+          lastActivity ? { label: "Last activity", href: `/activities/${lastActivity.id}` } : { label: "", href: "" },
+          relatedOpenOpportunities[0]
+            ? { label: "Open opportunity", href: `/opportunities/${relatedOpenOpportunities[0].id}` }
+            : { label: "", href: "" },
+        ]),
+        ownerRows: [contact, ...relatedOpenOpportunities],
+      } satisfies RecommendationItem;
+    })
+    .filter((item): item is RecommendationItem => Boolean(item))
+    .sort((a, b) => b.score - a.score);
+}
+
+function buildAtRiskOpportunityRecommendations(data: RecommendationData) {
+  return data.opportunities
+    .filter((opportunity) => !isClosedOpportunity(opportunity))
+    .map((opportunity) => {
+      const lastActivity = lastActivityForOpportunity(opportunity, data.activities);
+      const daysInactive = lastActivity ? daysSince(lastActivity.activity_date) : daysSince(opportunity.created_at);
+      const relatedOpenTasks = openTasksForOpportunity(opportunity, data.tasks);
+      const hasOverdueTask = relatedOpenTasks.some((task) => {
+        const dueOffset = daysUntil(task.due_date);
+        return dueOffset !== null && dueOffset < 0;
+      });
+
+      const risky =
+        daysInactive === null ||
+        daysInactive >= 14 ||
+        relatedOpenTasks.length === 0 ||
+        hasOverdueTask ||
+        normalizeText(opportunity.stage).includes("paused");
+
+      if (!risky) return null;
+
+      const item = buildOpportunityRecommendation(
+        opportunity,
+        data.tasks,
+        data.activities,
+        "Opportunity At Risk"
+      );
+
+      return {
+        ...item,
+        score: item.score + (hasOverdueTask ? 14 : 0),
+        reasons: [
+          ...item.reasons,
+          hasOverdueTask ? "A related follow-up task is overdue." : "",
+        ].filter(Boolean),
+      } satisfies RecommendationItem;
+    })
+    .filter((item): item is RecommendationItem => Boolean(item))
+    .sort((a, b) => b.score - a.score);
+}
+
+function buildAlphaCandidateRecommendations(data: RecommendationData) {
+  return data.opportunities
+    .filter((opportunity) => {
+      const text = normalizeText(
+        [
+          opportunity.name,
+          opportunity.opportunity_type,
+          opportunity.stage,
+          opportunity.lead_temperature,
+          opportunity.next_step,
+          opportunity.notes,
+        ].join(" ")
+      );
+
+      return text.includes("alpha") && !isClosedOpportunity(opportunity);
+    })
+    .map((opportunity) =>
+      buildOpportunityRecommendation(
+        opportunity,
+        data.tasks,
+        data.activities,
+        "Alpha Candidate Focus"
+      )
+    )
+    .sort((a, b) => b.score - a.score);
+}
+
+function buildCallFirstRecommendations(data: RecommendationData) {
+  const recommendations: RecommendationItem[] = [];
+
+  const hotOpportunities = data.opportunities
+    .filter(
+      (opportunity) =>
+        !isClosedOpportunity(opportunity) &&
+        (normalizeText(opportunity.lead_temperature).includes("hot") ||
+          normalizeText(opportunity.lead_temperature).includes("active"))
+    )
+    .slice(0, 12);
+
+  for (const opportunity of hotOpportunities) {
+    recommendations.push(
+      buildOpportunityRecommendation(
+        opportunity,
+        data.tasks,
+        data.activities,
+        "Call First"
+      )
+    );
+  }
+
+  for (const task of data.tasks.filter((row) => isOpenTask(row)).slice(0, 25)) {
+    const dueOffset = daysUntil(task.due_date);
+
+    if (task.contact_id && dueOffset !== null && dueOffset <= 0) {
+      recommendations.push(buildTaskRecommendation(task, "Call First"));
+    }
+  }
+
+  for (const activity of data.activities.filter((row) => row.follow_up_needed).slice(0, 15)) {
+    if (activity.contact_id || activity.company_id) {
+      recommendations.push(buildActivityFollowUpRecommendation(activity));
+    }
+  }
+
+  return recommendations.sort((a, b) => b.score - a.score);
+}
+
+function buildTodayRecommendations(data: RecommendationData) {
+  const recommendations: RecommendationItem[] = [];
+
+  for (const task of data.tasks.filter((row) => isOpenTask(row))) {
+    const dueOffset = daysUntil(task.due_date);
+
+    if (dueOffset !== null && dueOffset <= 0) {
+      recommendations.push(
+        buildTaskRecommendation(
+          task,
+          dueOffset < 0 ? "Overdue Task" : "Due Today"
+        )
+      );
+    }
+  }
+
+  for (const activity of data.activities.filter((row) => row.follow_up_needed).slice(0, 12)) {
+    recommendations.push(buildActivityFollowUpRecommendation(activity));
+  }
+
+  for (const opportunity of data.opportunities.filter((row) => !isClosedOpportunity(row))) {
+    const temp = normalizeText(opportunity.lead_temperature);
+    const lastActivity = lastActivityForOpportunity(opportunity, data.activities);
+    const inactiveDays = lastActivity ? daysSince(lastActivity.activity_date) : daysSince(opportunity.created_at);
+
+    if (
+      temp.includes("hot") ||
+      temp.includes("active") ||
+      inactiveDays === null ||
+      inactiveDays >= 10
+    ) {
+      recommendations.push(
+        buildOpportunityRecommendation(
+          opportunity,
+          data.tasks,
+          data.activities,
+          "Pipeline Priority"
+        )
+      );
+    }
+  }
+
+  return recommendations.sort((a, b) => b.score - a.score);
+}
+
+function buildTrendingPainPointRecommendations(data: RecommendationData) {
+  const activityById = new Map(data.activities.map((activity) => [activity.id, activity]));
+  const postById = new Map(data.posts.map((post) => [post.id, post]));
+  const linkGroups = data.painPointLinks;
+
+  return data.painPoints
+    .map((painPoint) => {
+      const rows = [
+        ...(linkGroups.companyLinks ?? []),
+        ...(linkGroups.contactLinks ?? []),
+        ...(linkGroups.activityLinks ?? []),
+        ...(linkGroups.postLinks ?? []),
+      ].filter((row) => getStringField(row, "pain_point_id") === painPoint.id);
+
+      let recentMentions = daysSince(painPoint.created_at) !== null && (daysSince(painPoint.created_at) ?? 999) <= 30 ? 1 : 0;
+
+      for (const row of rows) {
+        const activityId = getStringField(row, "activity_id");
+        const postId = getStringField(row, "post_id");
+        const activity = activityId ? activityById.get(activityId) : null;
+        const post = postId ? postById.get(postId) : null;
+        const activityAge = activity ? daysSince(activity.activity_date) : null;
+        const postAge = post ? daysSince(post.post_date || post.created_at) : null;
+
+        if ((activityAge !== null && activityAge <= 30) || (postAge !== null && postAge <= 30)) {
+          recentMentions += 1;
+        }
+      }
+
+      const totalMentions = rows.length;
+
+      if (totalMentions === 0 && recentMentions === 0) return null;
+
+      return {
+        title: `Watch pain point: ${painPoint.name}`,
+        category: "Trending Pain Point",
+        score: 40 + totalMentions * 8 + recentMentions * 12,
+        reasons: [
+          `${totalMentions} linked record(s) mention this pain point.`,
+          `${recentMentions} recent signal(s) found in roughly the last 30 days.`,
+          painPoint.category ? `Category: ${painPoint.category}.` : "",
+        ].filter(Boolean),
+        suggestedAction:
+          "Use this pain point in outreach and check the linked companies, contacts, posts, or activities.",
+        links: recommendationLinks([{ label: "Pain point", href: `/pain-points/${painPoint.id}` }]),
+        ownerRows: [painPoint],
+      } satisfies RecommendationItem;
+    })
+    .filter((item): item is RecommendationItem => Boolean(item))
+    .sort((a, b) => b.score - a.score);
+}
+
+async function loadRecommendationData(): Promise<RecommendationData> {
+  const [
+    taskResult,
+    opportunityResult,
+    activityResult,
+    companyResult,
+    contactResult,
+    painPointResult,
+    postResult,
+    companyLinks,
+    contactLinks,
+    activityLinks,
+    postLinks,
+  ] = await Promise.all([
+    supabase
+      .from("tasks")
+      .select("*, companies(name), contacts(first_name, last_name)")
+      .order("due_date", { ascending: true, nullsFirst: false })
+      .limit(500),
+    supabase
+      .from("opportunities")
+      .select(
+        "*, companies(name), primary_contact:contacts!opportunities_primary_contact_id_fkey(first_name, last_name)"
+      )
+      .eq("is_archived", false)
+      .order("created_at", { ascending: false })
+      .limit(500),
+    supabase
+      .from("activities")
+      .select("*, companies(name), contacts(first_name, last_name)")
+      .order("activity_date", { ascending: false })
+      .limit(500),
+    supabase
+      .from("companies")
+      .select("*")
+      .eq("is_archived", false)
+      .order("created_at", { ascending: false })
+      .limit(500),
+    supabase
+      .from("contacts")
+      .select("*, companies(name)")
+      .eq("is_archived", false)
+      .order("created_at", { ascending: false })
+      .limit(500),
+    supabase
+      .from("pain_points")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(500),
+    supabase
+      .from("posts")
+      .select("*, communities(name, platform)")
+      .order("created_at", { ascending: false })
+      .limit(500),
+    supabase.from("pain_point_companies").select("*"),
+    supabase.from("pain_point_contacts").select("*"),
+    supabase.from("pain_point_activities").select("*"),
+    supabase.from("pain_point_posts").select("*"),
+  ]);
+
+  const firstError =
+    taskResult.error ||
+    opportunityResult.error ||
+    activityResult.error ||
+    companyResult.error ||
+    contactResult.error ||
+    painPointResult.error ||
+    postResult.error ||
+    companyLinks.error ||
+    contactLinks.error ||
+    activityLinks.error ||
+    postLinks.error;
+
+  if (firstError) {
+    throw new Error(firstError.message);
+  }
+
+  const profileResult = await supabase.from("profiles").select("*").limit(250);
+  const profiles = profileResult.error
+    ? []
+    : ((profileResult.data ?? []) as unknown as RecommendationProfile[]);
+
+  return {
+    tasks: (taskResult.data ?? []) as unknown as RecommendationTask[],
+    opportunities: (opportunityResult.data ?? []) as unknown as RecommendationOpportunity[],
+    activities: (activityResult.data ?? []) as unknown as RecommendationActivity[],
+    companies: (companyResult.data ?? []) as unknown as RecommendationCompany[],
+    contacts: (contactResult.data ?? []) as unknown as RecommendationContact[],
+    painPoints: ((painPointResult.data ?? []) as unknown as RecommendationPainPoint[]).filter(isRealPainPoint),
+    posts: (postResult.data ?? []) as unknown as Post[],
+    profiles,
+    painPointLinks: {
+      companyLinks: (companyLinks.data ?? []) as Array<Record<string, unknown>>,
+      contactLinks: (contactLinks.data ?? []) as Array<Record<string, unknown>>,
+      activityLinks: (activityLinks.data ?? []) as Array<Record<string, unknown>>,
+      postLinks: (postLinks.data ?? []) as Array<Record<string, unknown>>,
+    },
+  };
+}
+
+function assignmentStatusMessage(data: RecommendationData, ownerName: string) {
+  const assignmentRows: Array<Record<string, unknown>> = [
+    ...data.tasks,
+    ...data.opportunities,
+    ...data.activities,
+    ...data.companies,
+    ...data.contacts,
+  ];
+
+  const hasAssignmentFields = assignmentRows.some(recordHasAssignmentFields);
+  const matchingProfiles = getOwnerProfileMatches(ownerName, data.profiles);
+
+  return `Assignment check for ${capitalizeName(ownerName)}
+- Profiles matched: ${
+    matchingProfiles.length > 0
+      ? matchingProfiles.map(profileDisplayName).join(", ")
+      : "none found"
+  }
+- Assignment fields found in loaded records: ${hasAssignmentFields ? "yes" : "no"}
+- Checked fields where present: assigned_to, created_by, updated_by, owner_id, assignee`;
+}
+
+function answerOwnerRecommendations(
+  data: RecommendationData,
+  ownerName: string,
+  recommendations: RecommendationItem[]
+) {
+  const filtered = recommendations.filter((recommendation) =>
+    recommendation.ownerRows.some((row) =>
+      recordMatchesRequestedOwner(row, ownerName, data.profiles)
+    )
+  );
+
+  if (filtered.length === 0) {
+    return `I did not find any recommended work assigned to ${capitalizeName(ownerName)}.
+
+${assignmentStatusMessage(data, ownerName)}
+
+I am not going to guess or assign work to ${capitalizeName(ownerName)} without saved assignment data.
+
+Suggested action:
+Add assigned_to on tasks/opportunities or create tasks specifically assigned to ${capitalizeName(ownerName)}, then ask again.`;
+  }
+
+  return `${assignmentStatusMessage(data, ownerName)}
+
+${formatRecommendationAnswer(
+    `Recommended work for ${capitalizeName(ownerName)}`,
+    filtered,
+    `No assigned work found for ${capitalizeName(ownerName)}.`
+  )}`;
+}
+
+async function answerRecommendationQuestion(userQuestion: string) {
+  const lower = userQuestion.toLowerCase();
+  const mode = getRecommendationQuestionMode(lower);
+  const ownerName = getRequestedRecommendationOwner(lower);
+  const data = await loadRecommendationData();
+
+  const todayRecommendations = buildTodayRecommendations(data);
+  const atRiskRecommendations = buildAtRiskOpportunityRecommendations(data);
+  const coldCompanyRecommendations = buildColdCompanyRecommendations(data);
+  const coldContactRecommendations = buildColdContactRecommendations(data);
+  const callFirstRecommendations = buildCallFirstRecommendations(data);
+  const alphaRecommendations = buildAlphaCandidateRecommendations(data);
+  const painPointRecommendations = buildTrendingPainPointRecommendations(data);
+
+  const topPriorityRecommendations = [
+    ...todayRecommendations,
+    ...atRiskRecommendations,
+    ...callFirstRecommendations,
+    ...alphaRecommendations,
+    ...painPointRecommendations,
+  ].sort((a, b) => b.score - a.score);
+
+  if (mode === "owner_work" && ownerName) {
+    return answerOwnerRecommendations(data, ownerName, topPriorityRecommendations);
+  }
+
+  if (mode === "call_first") {
+    return formatRecommendationAnswer(
+      "Who I would call first",
+      callFirstRecommendations,
+      "I did not find a clear call-first recommendation. No hot/active opportunity, overdue contact task, or follow-up activity was strong enough."
+    );
+  }
+
+  if (mode === "at_risk") {
+    return formatRecommendationAnswer(
+      "Opportunities at risk",
+      atRiskRecommendations,
+      "I did not find any opportunities that look clearly at risk based on stale activity, missing next steps, or overdue related tasks."
+    );
+  }
+
+  if (mode === "cold_companies") {
+    return formatRecommendationAnswer(
+      "Companies that may have gone cold",
+      coldCompanyRecommendations,
+      "I did not find companies that appear cold based on the current activity history."
+    );
+  }
+
+  if (mode === "cold_contacts") {
+    return formatRecommendationAnswer(
+      "Contacts that may have gone cold",
+      coldContactRecommendations,
+      "I did not find contacts that appear cold based on the current activity history."
+    );
+  }
+
+  if (mode === "trending_pain_points") {
+    return `${formatRecommendationAnswer(
+      "Pain points with the strongest current signal",
+      painPointRecommendations,
+      "I did not find enough linked pain point data to identify trending pain points."
+    )}
+
+Note:
+Trending is based on linked Sell It records and recent activity/post signals. It is not a scheduled trend monitor yet.`;
+  }
+
+  if (mode === "alpha_candidates") {
+    return formatRecommendationAnswer(
+      "Alpha candidates to focus on",
+      alphaRecommendations,
+      "I did not find open opportunities clearly marked as alpha candidates."
+    );
+  }
+
+  if (mode === "today") {
+    return formatRecommendationAnswer(
+      "What I recommend doing today",
+      todayRecommendations,
+      "I did not find overdue tasks, tasks due today, follow-up activities, or urgent pipeline items."
+    );
+  }
+
+  return formatRecommendationAnswer(
+    "Top recommended priorities",
+    topPriorityRecommendations,
+    "I did not find enough current task, opportunity, activity, or pain point signals to recommend a clear priority."
+  );
+}
+
+
 type ReportDateRange = {
   label: string;
   start: string;
@@ -3850,6 +5030,10 @@ async function routeQuestion(userQuestion: string) {
   if (isComparisonQuestion(lower)) {
     return answerComparisonQuestion(userQuestion);
   }
+  if (isRecommendationQuestion(lower)) {
+    return answerRecommendationQuestion(userQuestion);
+  }
+
 
   if (
     lower.includes("business memory") ||
@@ -4044,9 +5228,10 @@ export default function AssistantPage() {
 
       <p style={{ color: "#aaa", marginBottom: "32px", maxWidth: "950px" }}>
         Ask natural language questions about your Sell It data. AI Assistant
-        V2 now supports conversational memory search across CRM records, tasks,
-        activities, notes, posts, communities, pain points, and attachment
-        metadata.
+        V3 now supports recommendation and proactive intelligence questions,
+        including what to do today, who to call first, which opportunities are
+        at risk, which companies have gone cold, and assigned work when data
+        exists.
       </p>
 
       <section style={{ maxWidth: "1000px" }}>
@@ -4058,7 +5243,7 @@ export default function AssistantPage() {
             <input
               value={question}
               onChange={(event) => setQuestion(event.target.value)}
-              placeholder="Example: Tell me everything we know about ABC Trucking"
+              placeholder="Example: What should I do today?"
               style={inputStyle}
             />
           </label>
@@ -4134,7 +5319,7 @@ export default function AssistantPage() {
         </div>
 
         <div style={cardStyle}>
-          <h2 style={{ marginTop: 0 }}>AI Business Memory V2 Examples</h2>
+          <h2 style={{ marginTop: 0 }}>AI Assistant V3 Examples</h2>
 
           <div
             style={{
@@ -4144,18 +5329,18 @@ export default function AssistantPage() {
             }}
           >
             {[
-              "Give me a weekly summary",
-              "Give me a sales summary",
-              "What happened this month?",
-              "Compare ABC Trucking and Three T Trucking",
-              "Compare Alpha Candidates",
+              "What should I do today?",
+              "Who should I call first?",
+              "What needs my attention?",
+              "Which opportunities are at risk?",
+              "Which companies have gone cold?",
+              "Which leads are going cold?",
+              "Which pain points are trending?",
+              "Which alpha candidates should I focus on?",
+              "What should Trent work on?",
+              "What should Angel work on?",
               "Tell me everything we know about ABC Trucking",
-              "Company memory for Three T Trucking",
-              "Contact memory for Joe Smith",
-              "Pain point memory for Need Trucks",
-              "Opportunity memory for Alpha Tester",
-              "Who needs follow-up?",
-              "Show me hot opportunities",
+              "Give me a weekly summary",
             ].map((example) => (
               <button
                 key={example}
@@ -4176,6 +5361,8 @@ export default function AssistantPage() {
     </main>
   );
 }
+
+
 
 
 
