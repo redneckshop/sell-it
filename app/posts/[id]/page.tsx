@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import AttachmentsSection from "../../components/AttachmentsSection";
 
@@ -110,6 +110,22 @@ export default async function PostDetailPage({ params }: PageProps) {
         >
           Add Post
         </Link>
+
+        {post && (
+          <Link
+            href={`/posts/${post.id}/edit`}
+            style={{
+              color: "black",
+              backgroundColor: "white",
+              padding: "10px 14px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+            }}
+          >
+            Edit Post
+          </Link>
+        )}
 
         {post && (
           <Link
@@ -303,3 +319,5 @@ export default async function PostDetailPage({ params }: PageProps) {
     </main>
   );
 }
+
+

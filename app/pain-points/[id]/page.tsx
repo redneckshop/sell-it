@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
@@ -247,7 +247,11 @@ export default function PainPointDetailPage() {
   }
 
   useEffect(() => {
-    loadEverything();
+    const timeoutId = window.setTimeout(() => {
+      loadEverything();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -396,6 +400,15 @@ export default function PainPointDetailPage() {
         <Link href="/pain-points/new" style={linkButtonStyle}>
           Add Pain Point
         </Link>
+
+        {painPoint && (
+          <Link
+            href={`/pain-points/${painPoint.id}/edit`}
+            style={linkButtonStyle}
+          >
+            Edit Pain Point
+          </Link>
+        )}
 
         {painPoint && (
           <Link
@@ -633,3 +646,6 @@ export default function PainPointDetailPage() {
     </main>
   );
 }
+
+
+

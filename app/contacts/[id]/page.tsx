@@ -233,6 +233,22 @@ export default async function ContactDetailPage({ params }: PageProps) {
           Back to Contacts
         </Link>
         {contact && (
+          <Link
+            href={`/contacts/${contact.id}/edit`}
+            style={{
+              color: "black",
+              backgroundColor: "white",
+              padding: "10px 14px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+            }}
+          >
+            Edit Contact
+          </Link>
+        )}
+
+        {contact && (
           <ArchiveRestoreButton
             tableName="contacts"
             recordId={contact.id}
@@ -517,3 +533,5 @@ export default async function ContactDetailPage({ params }: PageProps) {
     </main>
   );
 }
+
+

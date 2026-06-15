@@ -1,24 +1,5 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { supabase } from "../../lib/supabase";
-
-type Community = {
-  id: string;
-  workspace_id: string | null;
-  name: string;
-  platform: string;
-  url: string | null;
-  description: string | null;
-  member_count: number | null;
-  industry: string | null;
-  location_focus: string | null;
-  status: string;
-  joined_date: string | null;
-  rules_notes: string | null;
-  relevance_score: number | null;
-  tags: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-};
 
 type RelatedPost = {
   id: string;
@@ -121,6 +102,22 @@ export default async function CommunityDetailPage({ params }: PageProps) {
         >
           Add Post
         </Link>
+
+        {community && (
+          <Link
+            href={`/communities/${community.id}/edit`}
+            style={{
+              color: "black",
+              backgroundColor: "white",
+              padding: "10px 14px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+            }}
+          >
+            Edit Community
+          </Link>
+        )}
 
         {community && (
           <Link
@@ -336,3 +333,7 @@ export default async function CommunityDetailPage({ params }: PageProps) {
     </main>
   );
 }
+
+
+
+

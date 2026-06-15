@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import AttachmentsSection from "../../components/AttachmentsSection";
 
@@ -145,6 +145,22 @@ export default async function NoteDetailPage({ params }: PageProps) {
 
         {note && (
           <Link
+            href={`/notes/${note.id}/edit`}
+            style={{
+              color: "black",
+              backgroundColor: "white",
+              padding: "10px 14px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+            }}
+          >
+            Edit Note
+          </Link>
+        )}
+
+        {note && (
+          <Link
             href={`/notes/${note.id}/delete`}
             style={{
               color: "black",
@@ -269,3 +285,5 @@ export default async function NoteDetailPage({ params }: PageProps) {
     </main>
   );
 }
+
+
