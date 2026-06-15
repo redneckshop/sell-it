@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { supabase } from "../lib/supabase";
 
 type SupabaseRelation<T> = T | T[] | null;
@@ -27,8 +27,17 @@ type Opportunity = {
   company_id: string;
   primary_contact_id: string | null;
   created_at: string | null;
+  is_archived: boolean;
+  archived_at: string | null;
+  archive_reason: string | null;
   companies: SupabaseRelation<RelatedCompany>;
   primary_contact: SupabaseRelation<RelatedContact>;
+};
+
+type PageProps = {
+  searchParams?: Promise<{
+    archived?: string;
+  }>;
 };
 
 function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
@@ -46,8 +55,21 @@ function formatMoney(value: number | null) {
   return `$${Number(value).toLocaleString()}`;
 }
 
-export default async function OpportunitiesPage() {
-  const { data, error } = await supabase
+function formatDateTime(value: string | null) {
+  if (!value) return "Not available";
+
+  try {
+    return new Date(value).toLocaleString();
+  } catch {
+    return value;
+  }
+}
+
+export default async function OpportunitiesPage({ searchParams }: PageProps) {
+  const resolvedSearchParams = await searchParams;
+  const showArchived = resolvedSearchParams?.archived === "true";
+
+  let query = supabase
     .from("opportunities")
     .select(`
       id,
@@ -62,6 +84,9 @@ export default async function OpportunitiesPage() {
       company_id,
       primary_contact_id,
       created_at,
+      is_archived,
+      archived_at,
+      archive_reason,
       companies (
         id,
         name
@@ -71,8 +96,13 @@ export default async function OpportunitiesPage() {
         first_name,
         last_name
       )
-    `)
-    .order("created_at", { ascending: false });
+    `);
+
+  if (!showArchived) {
+    query = query.eq("is_archived", false);
+  }
+
+  const { data, error } = await query.order("created_at", { ascending: false });
 
   const opportunities = (data ?? []) as unknown as Opportunity[];
 
@@ -109,6 +139,20 @@ export default async function OpportunitiesPage() {
         </Link>
 
         <Link
+          href={showArchived ? "/opportunities" : "/opportunities?archived=true"}
+          style={{
+            color: "black",
+            backgroundColor: showArchived ? "#dddddd" : "#f5d76e",
+            padding: "10px 14px",
+            borderRadius: "6px",
+            textDecoration: "none",
+            fontWeight: "bold",
+          }}
+        >
+          {showArchived ? "Hide Archived" : "Show Archived"}
+        </Link>
+
+        <Link
           href="/opportunities/new"
           style={{
             color: "black",
@@ -125,8 +169,14 @@ export default async function OpportunitiesPage() {
 
       <h1>Opportunities</h1>
 
-      <p style={{ color: "#aaa", marginBottom: "32px" }}>
+      <p style={{ color: "#aaa", marginBottom: "8px" }}>
         Sales pipeline for Sell It and Knotty Logistics.
+      </p>
+
+      <p style={{ color: "#aaa", marginBottom: "32px" }}>
+        {showArchived
+          ? "Showing active and archived opportunities."
+          : "Archived opportunities are hidden by default."}
       </p>
 
       {error && (
@@ -134,7 +184,11 @@ export default async function OpportunitiesPage() {
       )}
 
       {!error && opportunities.length === 0 && (
-        <p>No opportunities found.</p>
+        <p>
+          {showArchived
+            ? "No opportunities found."
+            : "No active opportunities found."}
+        </p>
       )}
 
       {opportunities.map((opportunity) => {
@@ -147,16 +201,34 @@ export default async function OpportunitiesPage() {
             href={`/opportunities/${opportunity.id}`}
             style={{
               display: "block",
-              border: "1px solid #333",
+              border: opportunity.is_archived
+                ? "1px solid #d6a400"
+                : "1px solid #333",
               padding: "18px",
               marginBottom: "12px",
               borderRadius: "8px",
-              backgroundColor: "#1a1a1a",
+              backgroundColor: opportunity.is_archived ? "#211c0d" : "#1a1a1a",
               color: "white",
               textDecoration: "none",
               maxWidth: "900px",
             }}
           >
+            {opportunity.is_archived && (
+              <div
+                style={{
+                  display: "inline-block",
+                  backgroundColor: "#f5d76e",
+                  color: "black",
+                  padding: "4px 8px",
+                  borderRadius: "4px",
+                  fontWeight: "bold",
+                  marginBottom: "10px",
+                }}
+              >
+                ARCHIVED
+              </div>
+            )}
+
             <h2 style={{ marginTop: 0 }}>{opportunity.name}</h2>
 
             <p>Company: {company?.name || "Not linked"}</p>
@@ -189,9 +261,19 @@ export default async function OpportunitiesPage() {
             )}
 
             {opportunity.next_step && <p>Next Step: {opportunity.next_step}</p>}
+
+            {opportunity.is_archived && (
+              <>
+                <p>Archived: {formatDateTime(opportunity.archived_at)}</p>
+                {opportunity.archive_reason && (
+                  <p>Reason: {opportunity.archive_reason}</p>
+                )}
+              </>
+            )}
           </Link>
         );
       })}
     </main>
   );
 }
+

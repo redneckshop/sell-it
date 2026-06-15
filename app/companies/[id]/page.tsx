@@ -1,6 +1,7 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import AttachmentsSection from "../../components/AttachmentsSection";
+import ArchiveRestoreButton from "../../components/ArchiveRestoreButton";
 
 type SupabaseRelation<T> = T | T[] | null;
 
@@ -16,6 +17,10 @@ type Company = {
   assets_equipment: string | null;
   created_at: string | null;
   updated_at: string | null;
+  is_archived: boolean;
+  archived_at: string | null;
+  archived_by: string | null;
+  archive_reason: string | null;
 };
 
 type Contact = {
@@ -115,7 +120,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
   const { data: companyRow, error } = await supabase
     .from("companies")
     .select(
-      "id, workspace_id, name, website, phone, email, lead_temperature, operating_regions, assets_equipment, created_at, updated_at"
+      "id, workspace_id, name, website, phone, email, lead_temperature, operating_regions, assets_equipment, created_at, updated_at, is_archived, archived_at, archived_by, archive_reason"
     )
     .eq("id", id)
     .single();
@@ -124,6 +129,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
     .from("contacts")
     .select("id, first_name, last_name, email, phone, title")
     .eq("company_id", id)
+    .eq("is_archived", false)
     .order("first_name", { ascending: true });
 
   const { data: taskRows } = await supabase
@@ -156,6 +162,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
       )
     `)
     .eq("company_id", id)
+    .eq("is_archived", false)
     .order("created_at", { ascending: false });
 
   const { data: noteRows } = await supabase
@@ -250,6 +257,15 @@ export default async function CompanyDetailPage({ params }: PageProps) {
         )}
 
         {company && (
+          <ArchiveRestoreButton
+            tableName="companies"
+            recordId={company.id}
+            isArchived={company.is_archived}
+            returnPath={`/companies/${company.id}`}
+          />
+        )}
+
+        {company && (
           <Link
             href={`/companies/${company.id}/delete`}
             style={{
@@ -270,6 +286,23 @@ export default async function CompanyDetailPage({ params }: PageProps) {
 
       {company && (
         <>
+          {company.is_archived && (
+            <div
+              style={{
+                border: "1px solid #d6a400",
+                backgroundColor: "#211c0d",
+                color: "#f5d76e",
+                padding: "16px",
+                borderRadius: "8px",
+                maxWidth: "650px",
+                marginBottom: "24px",
+                fontWeight: "bold",
+              }}
+            >
+              ARCHIVED
+            </div>
+          )}
+
           <h1>{company.name}</h1>
 
           <div
@@ -317,6 +350,20 @@ export default async function CompanyDetailPage({ params }: PageProps) {
               <strong>Last Updated:</strong>{" "}
               {formatDateTime(company.updated_at)}
             </p>
+
+            {company.is_archived && (
+              <>
+                <p>
+                  <strong>Archived:</strong>{" "}
+                  {formatDateTime(company.archived_at)}
+                </p>
+
+                <p>
+                  <strong>Archive Reason:</strong>{" "}
+                  {company.archive_reason || "Not provided"}
+                </p>
+              </>
+            )}
           </div>
 
           <AttachmentsSection
@@ -531,3 +578,4 @@ export default async function CompanyDetailPage({ params }: PageProps) {
     </main>
   );
 }
+

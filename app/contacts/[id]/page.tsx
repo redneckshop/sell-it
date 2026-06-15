@@ -1,6 +1,7 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import AttachmentsSection from "../../components/AttachmentsSection";
+import ArchiveRestoreButton from "../../components/ArchiveRestoreButton";
 
 type SupabaseRelation<T> = T | T[] | null;
 
@@ -20,6 +21,10 @@ type Contact = {
   notes: string | null;
   company_id: string | null;
   created_at: string | null;
+  is_archived: boolean;
+  archived_at: string | null;
+  archived_by: string | null;
+  archive_reason: string | null;
   companies: SupabaseRelation<RelatedCompany>;
 };
 
@@ -109,6 +114,10 @@ export default async function ContactDetailPage({ params }: PageProps) {
       notes,
       company_id,
       created_at,
+      is_archived,
+      archived_at,
+      archived_by,
+      archive_reason,
       companies (
         id,
         name
@@ -134,6 +143,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
       )
     `)
     .eq("primary_contact_id", id)
+    .eq("is_archived", false)
     .order("created_at", { ascending: false });
 
   const { data: noteRows } = await supabase
@@ -223,6 +233,15 @@ export default async function ContactDetailPage({ params }: PageProps) {
           Back to Contacts
         </Link>
         {contact && (
+          <ArchiveRestoreButton
+            tableName="contacts"
+            recordId={contact.id}
+            isArchived={contact.is_archived}
+            returnPath={`/contacts/${contact.id}`}
+          />
+        )}
+
+        {contact && (
           <Link
             href={`/contacts/${contact.id}/delete`}
             style={{
@@ -243,6 +262,23 @@ export default async function ContactDetailPage({ params }: PageProps) {
 
       {contact && (
         <>
+          {contact.is_archived && (
+            <div
+              style={{
+                border: "1px solid #d6a400",
+                backgroundColor: "#211c0d",
+                color: "#f5d76e",
+                padding: "16px",
+                borderRadius: "8px",
+                maxWidth: "650px",
+                marginBottom: "24px",
+                fontWeight: "bold",
+              }}
+            >
+              ARCHIVED
+            </div>
+          )}
+
           <h1>
             {contact.first_name} {contact.last_name || ""}
           </h1>
@@ -291,6 +327,20 @@ export default async function ContactDetailPage({ params }: PageProps) {
             <p>
               <strong>Created:</strong> {formatDateTime(contact.created_at)}
             </p>
+
+            {contact.is_archived && (
+              <>
+                <p>
+                  <strong>Archived:</strong>{" "}
+                  {formatDateTime(contact.archived_at)}
+                </p>
+
+                <p>
+                  <strong>Archive Reason:</strong>{" "}
+                  {contact.archive_reason || "Not provided"}
+                </p>
+              </>
+            )}
           </div>
 
           <AttachmentsSection

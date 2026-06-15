@@ -429,10 +429,6 @@ function activityLine(activity: Activity) {
   ${shortText(activity.summary, 190) || "No summary saved."}`;
 }
 
-function noteLine(note: Note) {
-  return `- ${note.title}
-  ${shortText(note.body, 190) || "No note body saved."}`;
-}
 
 function painPointLine(painPoint: PainPoint) {
   return `- ${painPoint.name}
@@ -485,6 +481,7 @@ async function findCompanyByName(searchName: string) {
     .from("companies")
     .select("id, name, website, phone, email")
     .ilike("name", `%${searchName}%`)
+    .eq("is_archived", false)
     .limit(1);
 
   if (error) throw new Error(error.message);
@@ -531,6 +528,7 @@ async function findOpportunityByName(searchName: string) {
     `
     )
     .ilike("name", `%${searchName}%`)
+    .eq("is_archived", false)
     .limit(1);
 
   if (error) throw new Error(error.message);
@@ -546,6 +544,7 @@ async function findContactByName(searchName: string) {
     .select(
       "id, first_name, last_name, title, email, phone, company_id, companies(name)"
     )
+    .eq("is_archived", false)
     .limit(250);
 
   if (error) throw new Error(error.message);
@@ -568,6 +567,7 @@ async function loadContactsForCompany(companyId: string) {
       "id, first_name, last_name, title, email, phone, company_id, companies(name)"
     )
     .eq("company_id", companyId)
+    .eq("is_archived", false)
     .order("first_name", { ascending: true });
 
   if (error) throw new Error(error.message);
@@ -582,6 +582,7 @@ async function loadCompaniesByIds(ids: string[]) {
     .from("companies")
     .select("id, name, website, phone, email")
     .in("id", ids)
+    .eq("is_archived", false)
     .order("name", { ascending: true });
 
   if (error) throw new Error(error.message);
@@ -598,6 +599,7 @@ async function loadContactsByIds(ids: string[]) {
       "id, first_name, last_name, title, email, phone, company_id, companies(name)"
     )
     .in("id", ids)
+    .eq("is_archived", false)
     .order("first_name", { ascending: true });
 
   if (error) throw new Error(error.message);
@@ -630,6 +632,7 @@ async function loadOpportunitiesForCompany(companyId: string) {
     `
     )
     .eq("company_id", companyId)
+    .eq("is_archived", false)
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -668,6 +671,7 @@ async function loadOpportunitiesForCompanyOrContact(
       `
       )
       .in("company_id", companyIds)
+      .eq("is_archived", false)
       .order("created_at", { ascending: false });
 
     if (error) throw new Error(error.message);
@@ -699,6 +703,7 @@ async function loadOpportunitiesForCompanyOrContact(
       `
       )
       .in("primary_contact_id", contactIds)
+      .eq("is_archived", false)
       .order("created_at", { ascending: false });
 
     if (error) throw new Error(error.message);
@@ -1881,6 +1886,7 @@ async function answerHotOpportunities() {
     `
     )
     .or("lead_temperature.eq.Hot,lead_temperature.eq.Active")
+    .eq("is_archived", false)
     .order("estimated_monthly_value", { ascending: false, nullsFirst: false })
     .limit(10);
 
@@ -2109,6 +2115,7 @@ async function loadReportCompanies(range: ReportDateRange) {
     .select("id, name, website, phone, email, lead_temperature, created_at")
     .gte("created_at", range.start)
     .lte("created_at", range.end)
+    .eq("is_archived", false)
     .order("created_at", { ascending: false })
     .limit(50);
 
@@ -2125,6 +2132,7 @@ async function loadReportContacts(range: ReportDateRange) {
     )
     .gte("created_at", range.start)
     .lte("created_at", range.end)
+    .eq("is_archived", false)
     .order("created_at", { ascending: false })
     .limit(50);
 
@@ -2159,6 +2167,7 @@ async function loadReportOpportunities(range: ReportDateRange) {
     )
     .gte("created_at", range.start)
     .lte("created_at", range.end)
+    .eq("is_archived", false)
     .order("created_at", { ascending: false })
     .limit(50);
 
@@ -2208,6 +2217,7 @@ async function loadReportClosedOpportunities(range: ReportDateRange) {
     .in("stage", ["Customer", "Lost"])
     .gte("created_at", range.start)
     .lte("created_at", range.end)
+    .eq("is_archived", false)
     .order("created_at", { ascending: false })
     .limit(50);
 
@@ -2241,6 +2251,7 @@ async function loadReportHotOpportunities() {
     `
     )
     .or("lead_temperature.eq.Hot,lead_temperature.eq.Active")
+    .eq("is_archived", false)
     .order("created_at", { ascending: false })
     .limit(20);
 
@@ -2670,6 +2681,7 @@ async function loadAlphaCandidateOpportunities() {
       )
     `
     )
+    .eq("is_archived", false)
     .order("created_at", { ascending: false })
     .limit(250);
 
@@ -3050,11 +3062,4 @@ export default function AssistantPage() {
     </main>
   );
 }
-
-
-
-
-
-
-
 

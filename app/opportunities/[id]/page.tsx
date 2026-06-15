@@ -1,6 +1,7 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import AttachmentsSection from "../../components/AttachmentsSection";
+import ArchiveRestoreButton from "../../components/ArchiveRestoreButton";
 
 type SupabaseRelation<T> = T | T[] | null;
 
@@ -32,6 +33,10 @@ type Opportunity = {
   primary_contact_id: string | null;
   created_at: string | null;
   updated_at: string | null;
+  is_archived: boolean;
+  archived_at: string | null;
+  archived_by: string | null;
+  archive_reason: string | null;
   companies: SupabaseRelation<RelatedCompany>;
   primary_contact: SupabaseRelation<RelatedContact>;
 };
@@ -95,6 +100,10 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
       primary_contact_id,
       created_at,
       updated_at,
+      is_archived,
+      archived_at,
+      archived_by,
+      archive_reason,
       companies (
         id,
         name
@@ -199,6 +208,15 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
         )}
 
         {opportunity && (
+          <ArchiveRestoreButton
+            tableName="opportunities"
+            recordId={opportunity.id}
+            isArchived={opportunity.is_archived}
+            returnPath={`/opportunities/${opportunity.id}`}
+          />
+        )}
+
+        {opportunity && (
           <Link
             href={`/opportunities/${opportunity.id}/delete`}
             style={{
@@ -223,6 +241,23 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
 
       {opportunity && (
         <section style={{ marginTop: "32px" }}>
+          {opportunity.is_archived && (
+            <div
+              style={{
+                border: "1px solid #d6a400",
+                backgroundColor: "#211c0d",
+                color: "#f5d76e",
+                padding: "16px",
+                borderRadius: "8px",
+                maxWidth: "650px",
+                marginBottom: "24px",
+                fontWeight: "bold",
+              }}
+            >
+              ARCHIVED
+            </div>
+          )}
+
           <h1>{opportunity.name}</h1>
 
           <div
@@ -336,6 +371,20 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
               <strong>Last Updated:</strong>{" "}
               {formatDateTime(opportunity.updated_at)}
             </p>
+
+            {opportunity.is_archived && (
+              <>
+                <p>
+                  <strong>Archived:</strong>{" "}
+                  {formatDateTime(opportunity.archived_at)}
+                </p>
+
+                <p>
+                  <strong>Archive Reason:</strong>{" "}
+                  {opportunity.archive_reason || "Not provided"}
+                </p>
+              </>
+            )}
           </div>
 
           <AttachmentsSection

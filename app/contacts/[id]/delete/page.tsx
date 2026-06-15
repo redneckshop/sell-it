@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -499,11 +499,33 @@ export default function DeleteContactPage() {
 
       <h1>Delete Contact Review</h1>
 
+      <div
+        style={{
+          ...cardStyle,
+          borderColor: "#d6a400",
+          backgroundColor: "#211c0d",
+        }}
+      >
+        <h2 style={{ marginTop: 0 }}>Archive Recommended First</h2>
+
+        <p style={{ color: "#f5d76e", lineHeight: 1.5 }}>
+          Archive should be the normal workflow for old, inactive, duplicate, or
+          uncertain records. Permanent delete remains available, but should be
+          reserved for records you are sure should be removed from Sell It.
+        </p>
+
+        {contact && (
+          <Link href={`/contacts/${contact.id}`} style={buttonStyle}>
+            Go Back and Archive Instead
+          </Link>
+        )}
+      </div>
+
       <p style={{ color: "#aaa", maxWidth: "850px", lineHeight: 1.5 }}>
-        Review everything connected to this contact before deleting. Only checked
-        records are deleted. Unchecked related records are preserved. If the
-        contact itself is deleted, unchecked related records are safely unlinked
-        from the deleted contact when possible.
+        Review everything connected to this contact before permanently deleting.
+        Only checked records are deleted. Unchecked related records are preserved.
+        If the contact itself is deleted, unchecked related records are safely
+        unlinked from the deleted contact when possible.
       </p>
 
       {loading && <p>Loading delete review...</p>}
@@ -704,7 +726,7 @@ export default function DeleteContactPage() {
             </p>
 
             <p style={{ color: "#ffb3b3" }}>
-              This action cannot be undone from inside Sell It yet.
+              Permanent delete cannot be undone from inside Sell It. Use Archive first unless you are sure this record should be removed.
             </p>
 
             <button

@@ -714,11 +714,33 @@ export default function DeleteCompanyPage() {
 
       <h1>Delete Company Review</h1>
 
+      <div
+        style={{
+          ...cardStyle,
+          borderColor: "#d6a400",
+          backgroundColor: "#211c0d",
+        }}
+      >
+        <h2 style={{ marginTop: 0 }}>Archive Recommended First</h2>
+
+        <p style={{ color: "#f5d76e", lineHeight: 1.5 }}>
+          Archive should be the normal workflow for old, inactive, duplicate, or
+          uncertain records. Permanent delete remains available, but should be
+          reserved for records you are sure should be removed from Sell It.
+        </p>
+
+        {company && (
+          <Link href={`/companies/${company.id}`} style={buttonStyle}>
+            Go Back and Archive Instead
+          </Link>
+        )}
+      </div>
+
       <p style={{ color: "#aaa", maxWidth: "900px", lineHeight: 1.5 }}>
-        Review this company and its directly related records before deleting. Only checked
-        records are deleted. Unchecked related records are preserved. If the company itself
-        is deleted, unchecked related records are safely unlinked from the deleted company
-        when possible.
+        Review this company and its directly related records before permanently
+        deleting. Only checked records are deleted. Unchecked related records are
+        preserved. If the company itself is deleted, unchecked related records are
+        safely unlinked from the deleted company when possible.
       </p>
 
       {loading && <p>Loading delete review...</p>}
@@ -926,7 +948,7 @@ export default function DeleteCompanyPage() {
             </p>
 
             <p style={{ color: "#ffb3b3" }}>
-              This action cannot be undone from inside Sell It yet.
+              Permanent delete cannot be undone from inside Sell It. Use Archive first unless you are sure this record should be removed.
             </p>
 
             <button
