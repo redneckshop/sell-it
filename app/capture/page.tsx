@@ -364,6 +364,83 @@ function getNowForActivity() {
   return new Date().toISOString();
 }
 
+function normalizeDuplicateText(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[�']/g, "")
+    .replace(/&/g, " and ")
+    .replace(/\b(\d+)(st|nd|rd|th)\b/g, "$1")
+    .replace(/\bfollow[-\s]*up\b/g, "follow up")
+    .replace(/\b(the|a|an|and|for|to|with|about|on|at|of)\b/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function duplicateTextTokens(value: string) {
+  return normalizeDuplicateText(value)
+    .split(" ")
+    .map((token) => token.trim())
+    .filter((token) => token.length > 1);
+}
+
+function duplicateTextSimilarity(left: string, right: string) {
+  const leftTokens = duplicateTextTokens(left);
+  const rightTokens = duplicateTextTokens(right);
+
+  if (leftTokens.length === 0 || rightTokens.length === 0) return 0;
+
+  const leftSet = new Set(leftTokens);
+  const rightSet = new Set(rightTokens);
+  let sharedCount = 0;
+
+  leftSet.forEach((token) => {
+    if (rightSet.has(token)) {
+      sharedCount += 1;
+    }
+  });
+
+  return sharedCount / Math.max(leftSet.size, rightSet.size);
+}
+
+function duplicateTextContainmentSimilarity(left: string, right: string) {
+  const leftTokens = duplicateTextTokens(left);
+  const rightTokens = duplicateTextTokens(right);
+
+  if (leftTokens.length === 0 || rightTokens.length === 0) return 0;
+
+  const leftSet = new Set(leftTokens);
+  const rightSet = new Set(rightTokens);
+  let sharedCount = 0;
+
+  leftSet.forEach((token) => {
+    if (rightSet.has(token)) {
+      sharedCount += 1;
+    }
+  });
+
+  return sharedCount / Math.min(leftSet.size, rightSet.size);
+}
+
+function areLikelyDuplicateTexts(left: string, right: string) {
+  const normalizedLeft = normalizeDuplicateText(left);
+  const normalizedRight = normalizeDuplicateText(right);
+
+  if (!normalizedLeft || !normalizedRight) return false;
+  if (normalizedLeft === normalizedRight) return true;
+  if (normalizedLeft.includes(normalizedRight)) return true;
+  if (normalizedRight.includes(normalizedLeft)) return true;
+
+  return (
+    duplicateTextSimilarity(left, right) >= 0.72 ||
+    duplicateTextContainmentSimilarity(left, right) >= 0.72
+  );
+}
+
+function recentDuplicateCutoff(hours: number) {
+  return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+}
+
 function fileToDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -1019,19 +1096,38 @@ export default function CapturePage() {
 
     if (!cleanName) return null;
 
-    const { data: existingPainPoint, error: findError } = await supabase
+    const { data: exactPainPoint, error: exactFindError } = await supabase
       .from("pain_points")
       .select("id, name")
+      .eq("workspace_id", WORKSPACE_ID)
       .ilike("name", cleanName)
       .limit(1)
       .maybeSingle();
 
-    if (findError) {
-      throw new Error(`Pain point lookup failed: ${findError.message}`);
+    if (exactFindError) {
+      throw new Error(`Pain point lookup failed: ${exactFindError.message}`);
     }
 
-    if (existingPainPoint?.id) {
-      return existingPainPoint.id as string;
+    if (exactPainPoint?.id) {
+      return exactPainPoint.id as string;
+    }
+
+    const { data: existingPainPoints, error: similarFindError } = await supabase
+      .from("pain_points")
+      .select("id, name")
+      .eq("workspace_id", WORKSPACE_ID)
+      .limit(500);
+
+    if (similarFindError) {
+      throw new Error(`Pain point lookup failed: ${similarFindError.message}`);
+    }
+
+    const matchingPainPoint = (existingPainPoints || []).find((painPoint) =>
+      areLikelyDuplicateTexts(cleanName, painPoint.name || "")
+    );
+
+    if (matchingPainPoint?.id) {
+      return matchingPainPoint.id as string;
     }
 
     const { data: newPainPoint, error: insertError } = await supabase
@@ -1136,8 +1232,15 @@ export default function CapturePage() {
       const changedAt = new Date().toISOString();
       const shouldUpdateStage = shouldApplyCapturedStage(existingOpportunity.stage);
       const noteBlock = buildCaptureOpportunityNoteBlock(changedAt);
-      const nextNotes = noteBlock
-        ? [existingOpportunity.notes, noteBlock].filter(Boolean).join("\n\n")
+      const existingNotes = existingOpportunity.notes || "";
+      const shouldAppendNoteBlock =
+        Boolean(noteBlock) &&
+        !areLikelyDuplicateTexts(noteBlock, existingNotes) &&
+        !areLikelyDuplicateTexts(reviewNotes, existingNotes) &&
+        !areLikelyDuplicateTexts(reviewSummary, existingNotes);
+
+      const nextNotes = shouldAppendNoteBlock
+        ? [existingNotes, noteBlock].filter(Boolean).join("\n\n")
         : existingOpportunity.notes;
 
       const nextOpportunityType =
@@ -1145,21 +1248,45 @@ export default function CapturePage() {
           ? capturedType
           : existingOpportunity.opportunity_type || capturedType;
 
+      const nextOtherDescription =
+        nextOpportunityType === "Other"
+          ? existingOpportunity.opportunity_type_other_description ||
+            cleanOpportunity
+          : null;
+
+      const nextPrimaryContactId =
+        primaryContactId || existingOpportunity.primary_contact_id || null;
+      const nextLeadTemperature = existingOpportunity.lead_temperature || "Warm";
+      const nextEstimatedDriverCount =
+        capturedFleetSize ?? existingOpportunity.estimated_driver_count ?? null;
+      const nextNextStep = reviewTask.trim()
+        ? reviewTask.trim()
+        : existingOpportunity.next_step || null;
+
+      const shouldUpdateOpportunity =
+        shouldUpdateStage ||
+        nextPrimaryContactId !==
+          (existingOpportunity.primary_contact_id || null) ||
+        nextOpportunityType !== (existingOpportunity.opportunity_type || null) ||
+        nextOtherDescription !==
+          (existingOpportunity.opportunity_type_other_description || null) ||
+        nextLeadTemperature !== (existingOpportunity.lead_temperature || null) ||
+        nextEstimatedDriverCount !==
+          (existingOpportunity.estimated_driver_count ?? null) ||
+        nextNextStep !== (existingOpportunity.next_step || null) ||
+        (nextNotes || null) !== (existingOpportunity.notes || null);
+
+      if (!shouldUpdateOpportunity) {
+        return existingOpportunity.id;
+      }
+
       const updatePayload: Record<string, string | number | null> = {
-        primary_contact_id:
-          primaryContactId || existingOpportunity.primary_contact_id || null,
+        primary_contact_id: nextPrimaryContactId,
         opportunity_type: nextOpportunityType,
-        opportunity_type_other_description:
-          nextOpportunityType === "Other"
-            ? existingOpportunity.opportunity_type_other_description ||
-              cleanOpportunity
-            : null,
-        lead_temperature: existingOpportunity.lead_temperature || "Warm",
-        estimated_driver_count:
-          capturedFleetSize ?? existingOpportunity.estimated_driver_count ?? null,
-        next_step: reviewTask.trim()
-          ? reviewTask.trim()
-          : existingOpportunity.next_step || null,
+        opportunity_type_other_description: nextOtherDescription,
+        lead_temperature: nextLeadTemperature,
+        estimated_driver_count: nextEstimatedDriverCount,
+        next_step: nextNextStep,
         notes: nextNotes || null,
         updated_by: USER_ID,
         updated_at: changedAt,
@@ -1298,18 +1425,32 @@ export default function CapturePage() {
     primaryContactId: string | null,
     opportunityId: string | null
   ) {
+    type ExistingTaskForCapture = {
+      id: string;
+      title: string | null;
+      company_id: string | null;
+      contact_id: string | null;
+      opportunity_id: string | null;
+      status: string | null;
+    };
+
     const cleanTask = taskValue.trim();
 
     if (!cleanTask) return null;
 
     let query = supabase
       .from("tasks")
-      .select("id, title, company_id, contact_id, opportunity_id")
-      .ilike("title", cleanTask)
-      .limit(10);
+      .select("id, title, company_id, contact_id, opportunity_id, status")
+      .limit(100);
 
-    if (companyId) {
+    if (opportunityId) {
+      query = query.eq("opportunity_id", opportunityId);
+    } else if (companyId) {
       query = query.eq("company_id", companyId);
+    } else if (primaryContactId) {
+      query = query.eq("contact_id", primaryContactId);
+    } else {
+      query = query.ilike("title", cleanTask);
     }
 
     const { data: existingTasks, error: findError } = await query;
@@ -1318,15 +1459,50 @@ export default function CapturePage() {
       throw new Error(`Task lookup failed: ${findError.message}`);
     }
 
-    const matchingTask = (existingTasks || []).find((task) => {
-      const contactMatches = !primaryContactId || task.contact_id === primaryContactId;
+    const matchingTask = (
+      (existingTasks || []) as unknown as ExistingTaskForCapture[]
+    ).find((task) => {
+      const status = task.status || "";
+      const isOpen = status !== "Completed" && status !== "Cancelled";
+      const contactMatches =
+        !primaryContactId || !task.contact_id || task.contact_id === primaryContactId;
       const opportunityMatches =
-        !opportunityId || task.opportunity_id === opportunityId;
+        !opportunityId || !task.opportunity_id || task.opportunity_id === opportunityId;
 
-      return contactMatches && opportunityMatches;
+      return (
+        isOpen &&
+        contactMatches &&
+        opportunityMatches &&
+        areLikelyDuplicateTexts(cleanTask, task.title || "")
+      );
     });
 
     if (matchingTask?.id) {
+      const updatePayload: Record<string, string> = {
+        updated_by: USER_ID,
+      };
+
+      if (companyId && !matchingTask.company_id) {
+        updatePayload.company_id = companyId;
+      }
+
+      if (primaryContactId && !matchingTask.contact_id) {
+        updatePayload.contact_id = primaryContactId;
+      }
+
+      if (opportunityId && !matchingTask.opportunity_id) {
+        updatePayload.opportunity_id = opportunityId;
+      }
+
+      const { error: updateError } = await supabase
+        .from("tasks")
+        .update(updatePayload)
+        .eq("id", matchingTask.id);
+
+      if (updateError) {
+        throw new Error(`Task update failed: ${updateError.message}`);
+      }
+
       return matchingTask.id as string;
     }
 
@@ -1335,14 +1511,15 @@ export default function CapturePage() {
       .insert({
         workspace_id: WORKSPACE_ID,
         title: cleanTask,
-        description: `Created from AI Capture.\n\n${
-          reviewSummary || ""
-        }\n\nNotes:\n${reviewNotes || ""}\n\nContacts Mentioned:\n${parseContacts(
-          reviewContacts,
-          reviewContact
-        ).join("\n")}\n\nOriginal text:\n${
-          inputText || sourceFileText || "[Uploaded file capture]"
-        }`,
+        description:
+          `Created from AI Capture.\n\n${
+            reviewSummary || ""
+          }\n\nNotes:\n${reviewNotes || ""}\n\nContacts Mentioned:\n${parseContacts(
+            reviewContacts,
+            reviewContact
+          ).join("\n")}\n\nOriginal text:\n${
+            inputText || sourceFileText || "[Uploaded file capture]"
+          }`,
         due_date: null,
         priority: "Normal",
         status: "Open",
@@ -1370,7 +1547,20 @@ export default function CapturePage() {
     taskId: string | null,
     opportunityId: string | null
   ) {
+    type ExistingActivityForCapture = {
+      id: string;
+      subject: string | null;
+      company_id: string | null;
+      contact_id: string | null;
+      task_id: string | null;
+      opportunity_id: string | null;
+      activity_type: string | null;
+      outcome: string | null;
+    };
+
     const cleanActivity = activityValue.trim() || "AI Capture File Review";
+    const activityType = normalizeActivityType(cleanActivity);
+    const outcome = normalizeActivityOutcome(reviewOpportunity, reviewTask);
 
     const subjectParts = [];
 
@@ -1380,25 +1570,97 @@ export default function CapturePage() {
 
     const subject = subjectParts.join(" - ") || "AI Capture Activity";
 
+    let duplicateQuery = supabase
+      .from("activities")
+      .select(
+        "id, subject, company_id, contact_id, task_id, opportunity_id, activity_type, outcome"
+      )
+      .gte("activity_date", recentDuplicateCutoff(48))
+      .order("activity_date", { ascending: false })
+      .limit(100);
+
+    if (opportunityId) {
+      duplicateQuery = duplicateQuery.eq("opportunity_id", opportunityId);
+    } else if (companyId) {
+      duplicateQuery = duplicateQuery.eq("company_id", companyId);
+    } else if (primaryContactId) {
+      duplicateQuery = duplicateQuery.eq("contact_id", primaryContactId);
+    }
+
+    const { data: existingActivities, error: findError } = await duplicateQuery;
+
+    if (findError) {
+      throw new Error("Activity lookup failed: " + findError.message);
+    }
+
+    const matchingActivity = (
+      (existingActivities || []) as unknown as ExistingActivityForCapture[]
+    ).find((activity) => {
+      const sameType = !activity.activity_type || activity.activity_type === activityType;
+      const sameOutcome = !activity.outcome || activity.outcome === outcome;
+
+      return (
+        sameType &&
+        sameOutcome &&
+        (areLikelyDuplicateTexts(subject, activity.subject || "") ||
+          areLikelyDuplicateTexts(cleanActivity, activity.subject || ""))
+      );
+    });
+
+    if (matchingActivity?.id) {
+      const updatePayload: Record<string, string> = {
+        updated_by: USER_ID,
+      };
+
+      if (companyId && !matchingActivity.company_id) {
+        updatePayload.company_id = companyId;
+      }
+
+      if (primaryContactId && !matchingActivity.contact_id) {
+        updatePayload.contact_id = primaryContactId;
+      }
+
+      if (taskId && !matchingActivity.task_id) {
+        updatePayload.task_id = taskId;
+      }
+
+      if (opportunityId && !matchingActivity.opportunity_id) {
+        updatePayload.opportunity_id = opportunityId;
+      }
+
+      const { error: updateError } = await supabase
+        .from("activities")
+        .update(updatePayload)
+        .eq("id", matchingActivity.id);
+
+      if (updateError) {
+        throw new Error("Activity update failed: " + updateError.message);
+      }
+
+      return matchingActivity.id as string;
+    }
+
     const { data: newActivity, error: insertError } = await supabase
       .from("activities")
       .insert({
         workspace_id: WORKSPACE_ID,
-        activity_type: normalizeActivityType(cleanActivity),
+        activity_type: activityType,
         activity_date: getNowForActivity(),
         subject,
         summary:
-          `${reviewSummary || ""}\n\nNotes:\n${reviewNotes || ""}\n\nContacts Mentioned:\n${parseContacts(
-            reviewContacts,
-            reviewContact
-          ).join("\n")}\n\nLocation: ${
-            reviewLocation || "Not found"
-          }\nFleet Size: ${reviewFleetSize || "Not found"}\nPhone: ${
-            reviewPhone || "Not found"
-          }\nSource File: ${sourceFile?.name || "No source file"}`.trim() || null,
-        raw_notes: inputText || sourceFileText || null,
-        outcome: normalizeActivityOutcome(reviewOpportunity, reviewTask),
-        follow_up_needed: Boolean(reviewTask),
+          (reviewSummary || "") +
+          "\n\nNotes:\n" +
+          (reviewNotes || "") +
+          "\n\nContacts Mentioned:\n" +
+          parseContacts(reviewContacts, reviewContact).join("\n") +
+          "\n\nLocation: " +
+          (reviewLocation || "Not found") +
+          "\nFleet Size: " +
+          (reviewFleetSize || "Not found") +
+          "\n\nOriginal text:\n" +
+          (inputText || sourceFileText || "[Uploaded file capture]"),
+        outcome,
+        follow_up_needed: Boolean(reviewTask.trim()),
         company_id: companyId,
         contact_id: primaryContactId,
         task_id: taskId,
@@ -1410,7 +1672,7 @@ export default function CapturePage() {
       .single();
 
     if (insertError) {
-      throw new Error(`Activity save failed: ${insertError.message}`);
+      throw new Error("Activity save failed: " + insertError.message);
     }
 
     return newActivity.id as string;
