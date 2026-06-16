@@ -26,6 +26,7 @@ const navItems: NavItem[] = [
   { label: "Pain Points", href: "/pain-points" },
   { label: "Capture", href: "/capture" },
   { label: "Import", href: "/import" },
+  { label: "Import Leads", href: "/import-leads" },
   { label: "Assistant", href: "/assistant" },
 ];
 
@@ -132,3 +133,4 @@ export default function AppShell({ children }: AppShellProps) {
     </div>
   );
 }
+

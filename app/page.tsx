@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import type { CSSProperties } from "react";
 import { supabase } from "./lib/supabase";
 import HomeSearch from "./components/HomeSearch";
@@ -256,6 +256,7 @@ export default async function Home() {
     { title: "Pain Points", href: "/pain-points" },
     { title: "Capture", href: "/capture" },
     { title: "Import", href: "/import" },
+    { title: "Import Leads", href: "/import-leads" },
     { title: "Assistant", href: "/assistant" },
   ];
 
@@ -707,3 +708,4 @@ export default async function Home() {
     </main>
   );
 }
+
