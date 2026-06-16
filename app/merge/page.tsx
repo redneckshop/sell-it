@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { supabase } from "../lib/supabase";
+import UniversalDuplicateReview from "./UniversalDuplicateReview";
 
 const MERGE_SLIDE_COMPLETE_VALUE = 100;
 
@@ -697,6 +698,8 @@ export default function MergeManagerPage() {
         choose the surviving record, move related history, then archive the
         duplicate.
       </p>
+
+      <UniversalDuplicateReview />
 
       {loading && <p>Loading merge candidates...</p>}
 
