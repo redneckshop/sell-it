@@ -1,7 +1,13 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import AttachmentsSection from "../../components/AttachmentsSection";
 import ArchiveRestoreButton from "../../components/ArchiveRestoreButton";
+import RecordTimeline, {
+  type TimelineEvent,
+} from "../../components/RecordTimeline";
+import RelationshipSummaryPanel, {
+  type RelationshipSummaryItem,
+} from "../../components/RelationshipSummaryPanel";
 
 type SupabaseRelation<T> = T | T[] | null;
 
@@ -30,6 +36,7 @@ type Contact = {
   email: string | null;
   phone: string | null;
   title: string | null;
+  created_at: string | null;
 };
 
 type Task = {
@@ -37,6 +44,7 @@ type Task = {
   title: string;
   status: string;
   priority: string;
+  created_at: string | null;
 };
 
 type Activity = {
@@ -63,6 +71,7 @@ type Opportunity = {
   estimated_monthly_value: number | null;
   expected_close_date: string | null;
   next_step: string | null;
+  created_at: string | null;
   primary_contact: SupabaseRelation<PrimaryContact>;
 };
 
@@ -86,6 +95,25 @@ type Note = {
   created_at: string | null;
   contact: SupabaseRelation<NoteContact>;
   opportunity: SupabaseRelation<NoteOpportunity>;
+};
+
+type Attachment = {
+  id: string;
+  file_name: string | null;
+  created_at: string | null;
+};
+
+type PainPoint = {
+  id: string;
+  name: string;
+  category: string | null;
+};
+
+type PainPointCompany = {
+  id: string;
+  pain_point_id: string;
+  created_at: string | null;
+  pain_points: SupabaseRelation<PainPoint>;
 };
 
 type PageProps = {
@@ -114,6 +142,31 @@ function formatDateTime(value: string | null) {
   }
 }
 
+function shortText(value: string | null, maxLength = 160) {
+  if (!value) return null;
+
+  if (value.length <= maxLength) {
+    return value;
+  }
+
+  return `${value.slice(0, maxLength)}...`;
+}
+
+function contactName(contact: {
+  first_name: string;
+  last_name: string | null;
+}) {
+  return `${contact.first_name} ${contact.last_name || ""}`.trim();
+}
+
+function isOpenOpportunity(opportunity: Opportunity) {
+  return !["Customer", "Lost", "Paused"].includes(opportunity.stage);
+}
+
+function isCompletedTask(task: Task) {
+  return task.status.toLowerCase() === "completed";
+}
+
 export default async function CompanyDetailPage({ params }: PageProps) {
   const { id } = await params;
 
@@ -127,14 +180,14 @@ export default async function CompanyDetailPage({ params }: PageProps) {
 
   const { data: contactRows } = await supabase
     .from("contacts")
-    .select("id, first_name, last_name, email, phone, title")
+    .select("id, first_name, last_name, email, phone, title, created_at")
     .eq("company_id", id)
     .eq("is_archived", false)
     .order("first_name", { ascending: true });
 
   const { data: taskRows } = await supabase
     .from("tasks")
-    .select("id, title, status, priority")
+    .select("id, title, status, priority, created_at")
     .eq("company_id", id)
     .order("created_at", { ascending: false });
 
@@ -155,6 +208,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
       estimated_monthly_value,
       expected_close_date,
       next_step,
+      created_at,
       primary_contact:contacts!opportunities_primary_contact_id_fkey (
         id,
         first_name,
@@ -187,12 +241,187 @@ export default async function CompanyDetailPage({ params }: PageProps) {
     .eq("company_id", id)
     .order("created_at", { ascending: false });
 
+  const { data: attachmentRows } = await supabase
+    .from("attachments")
+    .select("id, file_name, created_at")
+    .eq("related_company_id", id)
+    .order("created_at", { ascending: false });
+
+  const { data: painPointRows } = await supabase
+    .from("pain_point_companies")
+    .select("id, pain_point_id, created_at, pain_points(id, name, category)")
+    .eq("company_id", id)
+    .order("created_at", { ascending: false });
+
   const company = companyRow as unknown as Company | null;
   const contacts = (contactRows ?? []) as unknown as Contact[];
   const tasks = (taskRows ?? []) as unknown as Task[];
   const activities = (activityRows ?? []) as unknown as Activity[];
   const opportunities = (opportunityRows ?? []) as unknown as Opportunity[];
   const notes = (noteRows ?? []) as unknown as Note[];
+  const attachments = (attachmentRows ?? []) as unknown as Attachment[];
+  const painPointLinks = (painPointRows ?? []) as unknown as PainPointCompany[];
+
+  const openOpportunities = opportunities.filter(isOpenOpportunity);
+  const completedTasks = tasks.filter(isCompletedTask);
+  const openTasks = tasks.filter((task) => !isCompletedTask(task));
+
+  const relationshipItems: RelationshipSummaryItem[] = [
+    {
+      label: "Contacts",
+      count: contacts.length,
+      href: `/companies/${id}#related-contacts`,
+    },
+    {
+      label: "Opportunities",
+      count: opportunities.length,
+      href: `/companies/${id}#related-opportunities`,
+    },
+    {
+      label: "Open Opportunities",
+      count: openOpportunities.length,
+      href: `/companies/${id}#related-opportunities`,
+    },
+    {
+      label: "Tasks",
+      count: tasks.length,
+      href: `/companies/${id}#related-tasks`,
+    },
+    {
+      label: "Open Tasks",
+      count: openTasks.length,
+      href: `/companies/${id}#related-tasks`,
+    },
+    {
+      label: "Completed Tasks",
+      count: completedTasks.length,
+      href: `/companies/${id}#related-tasks`,
+    },
+    {
+      label: "Activities",
+      count: activities.length,
+      href: `/companies/${id}#related-activities`,
+    },
+    {
+      label: "Notes",
+      count: notes.length,
+      href: `/companies/${id}#related-notes`,
+    },
+    {
+      label: "Pain Points",
+      count: painPointLinks.length,
+      href: `/companies/${id}#related-pain-points`,
+    },
+    {
+      label: "Attachments",
+      count: attachments.length,
+      href: `/companies/${id}#related-attachments`,
+    },
+  ];
+
+  const timelineEvents: TimelineEvent[] = [
+    ...(company
+      ? [
+          {
+            id: `company-created-${company.id}`,
+            title: `Company created: ${company.name}`,
+            occurredAt: company.created_at,
+            category: "Company",
+            description: "This company record was created in Sell It.",
+          },
+        ]
+      : []),
+
+    ...contacts.map((contact) => ({
+      id: `contact-added-${contact.id}`,
+      title: `Contact added: ${contactName(contact)}`,
+      occurredAt: contact.created_at,
+      category: "Contact",
+      href: `/contacts/${contact.id}`,
+      meta: [
+        contact.title ? `Title: ${contact.title}` : "No title",
+        contact.email ? `Email: ${contact.email}` : "No email",
+      ],
+    })),
+
+    ...opportunities.map((opportunity) => {
+      const primaryContact = singleRelation(opportunity.primary_contact);
+
+      return {
+        id: `opportunity-created-${opportunity.id}`,
+        title: `Opportunity created: ${opportunity.name}`,
+        occurredAt: opportunity.created_at,
+        category: "Opportunity",
+        href: `/opportunities/${opportunity.id}`,
+        meta: [
+          `Stage: ${opportunity.stage}`,
+          `Type: ${opportunity.opportunity_type}`,
+          `Temperature: ${opportunity.lead_temperature}`,
+          primaryContact ? `Primary Contact: ${contactName(primaryContact)}` : "",
+        ].filter(Boolean),
+      };
+    }),
+
+    ...tasks.map((task) => ({
+      id: `task-created-${task.id}`,
+      title: `Task created: ${task.title}`,
+      occurredAt: task.created_at,
+      category: "Task",
+      href: `/tasks/${task.id}`,
+      meta: [`Status: ${task.status}`, `Priority: ${task.priority}`],
+    })),
+
+    ...activities.map((activity) => ({
+      id: `activity-${activity.id}`,
+      title: `Activity: ${activity.subject}`,
+      occurredAt: activity.activity_date,
+      category: activity.activity_type,
+      href: `/activities/${activity.id}`,
+      description: activity.outcome ? `Outcome: ${activity.outcome}` : null,
+      meta: activity.follow_up_needed ? ["Follow Up Needed"] : [],
+    })),
+
+    ...notes.map((note) => {
+      const contact = singleRelation(note.contact);
+      const opportunity = singleRelation(note.opportunity);
+
+      return {
+        id: `note-${note.id}`,
+        title: `Note added: ${note.title}`,
+        occurredAt: note.created_at,
+        category: "Note",
+        href: `/notes/${note.id}`,
+        description: shortText(note.body),
+        meta: [
+          contact ? `Contact: ${contactName(contact)}` : "",
+          opportunity ? `Opportunity: ${opportunity.name}` : "",
+          note.source ? `Source: ${note.source}` : "",
+          note.tags ? `Tags: ${note.tags}` : "",
+        ].filter(Boolean),
+      };
+    }),
+
+    ...attachments.map((attachment) => ({
+      id: `attachment-${attachment.id}`,
+      title: `Attachment uploaded: ${attachment.file_name || "Unnamed file"}`,
+      occurredAt: attachment.created_at,
+      category: "Attachment",
+      description: "File attached to this company.",
+    })),
+
+    ...painPointLinks.map((painPointLink) => {
+      const painPoint = singleRelation(painPointLink.pain_points);
+
+      return {
+        id: `pain-point-linked-${painPointLink.id}`,
+        title: `Pain point linked: ${painPoint?.name || "Pain point"}`,
+        occurredAt: painPointLink.created_at,
+        category: "Pain Point",
+        href: `/pain-points/${painPointLink.pain_point_id}`,
+        meta: painPoint?.category ? [`Category: ${painPoint.category}`] : [],
+      };
+    }),
+  ];
 
   return (
     <main
@@ -312,7 +541,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
               borderRadius: "8px",
               backgroundColor: "#1a1a1a",
               maxWidth: "650px",
-              marginBottom: "40px",
+              marginBottom: "28px",
             }}
           >
             <p>
@@ -366,13 +595,29 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             )}
           </div>
 
-          <AttachmentsSection
-            workspaceId={company.workspace_id}
-            relationColumn="related_company_id"
-            relationId={company.id}
+          <RelationshipSummaryPanel
+            title={`${company.name} Relationship Summary`}
+            subtitle="Quick business-memory snapshot for this company."
+            items={relationshipItems}
           />
 
-          <h2 style={{ marginTop: "40px" }}>Related Opportunities</h2>
+          <RecordTimeline
+            title="Company Timeline"
+            subtitle="Newest first. Includes company history, contacts, opportunities, tasks, activities, notes, attachments, and pain point links."
+            events={timelineEvents}
+          />
+
+          <div id="related-attachments">
+            <AttachmentsSection
+              workspaceId={company.workspace_id}
+              relationColumn="related_company_id"
+              relationId={company.id}
+            />
+          </div>
+
+          <h2 id="related-opportunities" style={{ marginTop: "40px" }}>
+            Related Opportunities
+          </h2>
 
           {opportunities.length === 0 && (
             <p>No opportunities linked to this company.</p>
@@ -430,7 +675,9 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             );
           })}
 
-          <h2 style={{ marginTop: "40px" }}>Related Notes</h2>
+          <h2 id="related-notes" style={{ marginTop: "40px" }}>
+            Related Notes
+          </h2>
 
           {notes.length === 0 && <p>No notes linked to this company.</p>}
 
@@ -482,7 +729,9 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             );
           })}
 
-          <h2 style={{ marginTop: "40px" }}>Related Contacts</h2>
+          <h2 id="related-contacts" style={{ marginTop: "40px" }}>
+            Related Contacts
+          </h2>
 
           {contacts.length === 0 && <p>No contacts linked to this company.</p>}
 
@@ -512,7 +761,9 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             </Link>
           ))}
 
-          <h2 style={{ marginTop: "40px" }}>Related Tasks</h2>
+          <h2 id="related-tasks" style={{ marginTop: "40px" }}>
+            Related Tasks
+          </h2>
 
           {tasks.length === 0 && <p>No tasks linked to this company.</p>}
 
@@ -538,7 +789,9 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             </Link>
           ))}
 
-          <h2 style={{ marginTop: "40px" }}>Related Activities</h2>
+          <h2 id="related-activities" style={{ marginTop: "40px" }}>
+            Related Activities
+          </h2>
 
           {activities.length === 0 && (
             <p>No activities linked to this company.</p>
@@ -573,9 +826,46 @@ export default async function CompanyDetailPage({ params }: PageProps) {
               )}
             </Link>
           ))}
+
+          <h2 id="related-pain-points" style={{ marginTop: "40px" }}>
+            Related Pain Points
+          </h2>
+
+          {painPointLinks.length === 0 && (
+            <p>No pain points linked to this company.</p>
+          )}
+
+          {painPointLinks.map((painPointLink) => {
+            const painPoint = singleRelation(painPointLink.pain_points);
+
+            return (
+              <Link
+                key={painPointLink.id}
+                href={`/pain-points/${painPointLink.pain_point_id}`}
+                style={{
+                  display: "block",
+                  border: "1px solid #333",
+                  padding: "16px",
+                  marginBottom: "12px",
+                  borderRadius: "8px",
+                  backgroundColor: "#1a1a1a",
+                  color: "white",
+                  textDecoration: "none",
+                  maxWidth: "750px",
+                }}
+              >
+                <h3 style={{ marginTop: 0 }}>
+                  {painPoint?.name || "Pain Point"}
+                </h3>
+
+                {painPoint?.category && <p>Category: {painPoint.category}</p>}
+
+                <p>Linked: {formatDateTime(painPointLink.created_at)}</p>
+              </Link>
+            );
+          })}
         </>
       )}
     </main>
   );
 }
-

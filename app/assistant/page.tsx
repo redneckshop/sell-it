@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
@@ -3708,6 +3708,7 @@ function buildOpportunityRecommendation(
       daysInactive === null
         ? "No recent activity date was found."
         : `Last related activity was about ${daysInactive} day(s) ago.`,
+      `Relationship counts: ${relatedOpenTasks.length} open related task(s), ${lastActivity ? "1 recent related activity found" : "0 related activities found"}.`,
       noOpenTask ? "No open follow-up task was found for this opportunity." : "",
       opportunity.next_step ? `Saved next step: ${opportunity.next_step}.` : "No saved next step.",
       contactName ? `Primary contact: ${contactName}.` : "",
@@ -5714,6 +5715,7 @@ ${answer}`,
     </main>
   );
 }
+
 
 
 

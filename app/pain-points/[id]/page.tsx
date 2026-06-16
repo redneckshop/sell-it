@@ -1,9 +1,12 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "../../lib/supabase";
+import RelationshipSummaryPanel, {
+  type RelationshipSummaryItem,
+} from "../../components/RelationshipSummaryPanel";
 
 const WORKSPACE_ID = "ba491d9b-3b36-426d-b98a-f05b0bf271ed";
 const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
@@ -126,6 +129,10 @@ function formatDateTime(value: string | null) {
   } catch {
     return value;
   }
+}
+
+function contactName(contact: Contact) {
+  return `${contact.first_name} ${contact.last_name || ""}`.trim();
 }
 
 export default function PainPointDetailPage() {
@@ -355,6 +362,29 @@ export default function PainPointDetailPage() {
     await loadEverything();
   }
 
+  const relationshipItems: RelationshipSummaryItem[] = [
+    {
+      label: "Related Companies",
+      count: linkedCompanies.length,
+      href: `/pain-points/${id}#linked-companies`,
+    },
+    {
+      label: "Related Contacts",
+      count: linkedContacts.length,
+      href: `/pain-points/${id}#linked-contacts`,
+    },
+    {
+      label: "Related Activities",
+      count: linkedActivities.length,
+      href: `/pain-points/${id}#linked-activities`,
+    },
+    {
+      label: "Related Posts",
+      count: linkedPosts.length,
+      href: `/pain-points/${id}#linked-posts`,
+    },
+  ];
+
   if (loading) {
     return (
       <main
@@ -453,7 +483,7 @@ export default function PainPointDetailPage() {
               borderRadius: "8px",
               backgroundColor: "#1a1a1a",
               maxWidth: "850px",
-              marginBottom: "40px",
+              marginBottom: "28px",
             }}
           >
             <p>
@@ -478,8 +508,15 @@ export default function PainPointDetailPage() {
             </p>
           </div>
 
+          <RelationshipSummaryPanel
+            title={`${painPoint.name} Relationship Summary`}
+            subtitle="Quick business-memory snapshot for this pain point."
+            items={relationshipItems}
+            maxWidth="900px"
+          />
+
           <section style={{ maxWidth: "900px" }}>
-            <h2>Linked Companies</h2>
+            <h2 id="linked-companies">Linked Companies</h2>
 
             <form onSubmit={linkCompany} style={{ marginBottom: "18px" }}>
               <select
@@ -518,7 +555,9 @@ export default function PainPointDetailPage() {
               ) : null;
             })}
 
-            <h2 style={{ marginTop: "40px" }}>Linked Contacts</h2>
+            <h2 id="linked-contacts" style={{ marginTop: "40px" }}>
+              Linked Contacts
+            </h2>
 
             <form onSubmit={linkContact} style={{ marginBottom: "18px" }}>
               <select
@@ -529,7 +568,7 @@ export default function PainPointDetailPage() {
                 <option value="">Choose a contact</option>
                 {contacts.map((contact) => (
                   <option key={contact.id} value={contact.id}>
-                    {contact.first_name} {contact.last_name || ""}
+                    {contactName(contact)}
                   </option>
                 ))}
               </select>
@@ -552,14 +591,14 @@ export default function PainPointDetailPage() {
                   href={`/contacts/${linkedContact.contact_id}`}
                   style={{ ...cardStyle, display: "block" }}
                 >
-                  <strong>
-                    {contact.first_name} {contact.last_name || ""}
-                  </strong>
+                  <strong>{contactName(contact)}</strong>
                 </Link>
               ) : null;
             })}
 
-            <h2 style={{ marginTop: "40px" }}>Linked Activities</h2>
+            <h2 id="linked-activities" style={{ marginTop: "40px" }}>
+              Linked Activities
+            </h2>
 
             <form onSubmit={linkActivity} style={{ marginBottom: "18px" }}>
               <select
@@ -596,13 +635,15 @@ export default function PainPointDetailPage() {
                   <strong>{activity.subject}</strong>
                   <br />
                   <span style={{ color: "#aaa" }}>
-                    {activity.activity_date || "No date"}
+                    {formatDateTime(activity.activity_date)}
                   </span>
                 </Link>
               ) : null;
             })}
 
-            <h2 style={{ marginTop: "40px" }}>Linked Posts</h2>
+            <h2 id="linked-posts" style={{ marginTop: "40px" }}>
+              Linked Posts
+            </h2>
 
             <form onSubmit={linkPost} style={{ marginBottom: "18px" }}>
               <select
@@ -646,6 +687,3 @@ export default function PainPointDetailPage() {
     </main>
   );
 }
-
-
-
