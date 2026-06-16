@@ -719,9 +719,38 @@ export default function CapturePage() {
           ...(aiResult.contacts || []),
         ]);
 
-        setReviewCompany(aiResult.company || "");
-        setReviewContact(aiResult.contact || allContacts[0] || "");
-        setReviewContacts(allContacts.join("\n"));
+        let nextReviewCompany = aiResult.company || "";
+        let nextReviewContact = aiResult.contact || allContacts[0] || "";
+        let nextReviewContacts = allContacts;
+
+        if (!nextReviewCompany && aiResult.opportunity && allContacts.length > 0) {
+          const existingCompanyFromCapture =
+            await findExistingCompanyFromCaptureNames(allContacts);
+
+          if (existingCompanyFromCapture?.id) {
+            const matchedCompanyName =
+              existingCompanyFromCapture.name ||
+              existingCompanyFromCapture.matchedName;
+
+            nextReviewCompany = matchedCompanyName;
+            nextReviewContacts = allContacts.filter((contactName) => {
+              const lowerContactName = contactName.trim().toLowerCase();
+              const lowerMatchedName =
+                existingCompanyFromCapture.matchedName.trim().toLowerCase();
+              const lowerCompanyName = matchedCompanyName.trim().toLowerCase();
+
+              return (
+                lowerContactName !== lowerMatchedName &&
+                lowerContactName !== lowerCompanyName
+              );
+            });
+            nextReviewContact = nextReviewContacts[0] || "";
+          }
+        }
+
+        setReviewCompany(nextReviewCompany);
+        setReviewContact(nextReviewContact);
+        setReviewContacts(nextReviewContacts.join("\n"));
         setReviewPhone(aiResult.phone || "");
         setReviewLocation(aiResult.location || "");
         setReviewFleetSize(aiResult.fleet_size || "");
@@ -816,6 +845,40 @@ export default function CapturePage() {
 
   async function findOrCreateCompany(companyName: string) {
     return findOrCreateCompanyFromValues(companyName, reviewPhone);
+  }
+
+  async function findExistingCompanyByExactName(companyName: string) {
+    const cleanName = companyName.trim();
+
+    if (!cleanName) return null;
+
+    const { data: existingCompany, error: findError } = await supabase
+      .from("companies")
+      .select("id, name")
+      .ilike("name", cleanName)
+      .limit(1)
+      .maybeSingle();
+
+    if (findError) {
+      throw new Error(`Company lookup failed: ${findError.message}`);
+    }
+
+    return existingCompany as { id: string; name: string | null } | null;
+  }
+
+  async function findExistingCompanyFromCaptureNames(names: string[]) {
+    for (const name of names) {
+      const existingCompany = await findExistingCompanyByExactName(name);
+
+      if (existingCompany?.id) {
+        return {
+          ...existingCompany,
+          matchedName: name,
+        };
+      }
+    }
+
+    return null;
   }
 
   async function findOrCreateContactFromValues({
@@ -996,31 +1059,204 @@ export default function CapturePage() {
     companyId: string | null,
     primaryContactId: string | null
   ) {
+    type ExistingOpportunityForCapture = {
+      id: string;
+      name: string | null;
+      company_id: string | null;
+      primary_contact_id: string | null;
+      opportunity_type: string | null;
+      opportunity_type_other_description: string | null;
+      stage: string | null;
+      lead_temperature: string | null;
+      estimated_driver_count: number | null;
+      next_step: string | null;
+      notes: string | null;
+    };
+
     const cleanOpportunity = opportunityValue.trim();
 
     if (!cleanOpportunity || !companyId) return null;
 
-    const opportunityName = reviewCompany
-      ? `${reviewCompany} - ${cleanOpportunity}`
+    const companyNameForOpportunity = reviewCompany.trim();
+    const opportunityName = companyNameForOpportunity
+      ? `${companyNameForOpportunity} - ${cleanOpportunity}`
       : cleanOpportunity;
 
-    const { data: existingOpportunity, error: findError } = await supabase
+    const capturedStage = normalizeOpportunityStage(cleanOpportunity);
+    const capturedType = normalizeOpportunityType(cleanOpportunity);
+    const capturedFleetSize = reviewFleetSize
+      ? parseFleetSize(reviewFleetSize)
+      : null;
+
+    const opportunitySelect =
+      "id, name, company_id, primary_contact_id, opportunity_type, opportunity_type_other_description, stage, lead_temperature, estimated_driver_count, next_step, notes";
+
+    function shouldApplyCapturedStage(currentStage: string | null) {
+      if (capturedStage === "New Lead") {
+        return !currentStage;
+      }
+
+      return capturedStage !== currentStage;
+    }
+
+    function buildCaptureOpportunityNoteBlock(changedAt: string) {
+      const contactsMentioned = parseContacts(reviewContacts, reviewContact);
+      const parts: string[] = [];
+
+      if (reviewNotes.trim()) {
+        parts.push(`Notes: ${reviewNotes.trim()}`);
+      }
+
+      if (reviewSummary.trim()) {
+        parts.push(`Summary: ${reviewSummary.trim()}`);
+      }
+
+      if (reviewLocation.trim()) {
+        parts.push(`Location: ${reviewLocation.trim()}`);
+      }
+
+      if (reviewFleetSize.trim()) {
+        parts.push(`Fleet Size: ${reviewFleetSize.trim()}`);
+      }
+
+      if (contactsMentioned.length > 0) {
+        parts.push(`Contacts Mentioned:\n${contactsMentioned.join("\n")}`);
+      }
+
+      if (parts.length === 0) return "";
+
+      return `[AI Capture Update ${new Date(changedAt).toLocaleString()}]\n${parts.join(
+        "\n"
+      )}`;
+    }
+
+    async function updateExistingOpportunityFromCapture(
+      existingOpportunity: ExistingOpportunityForCapture
+    ) {
+      const changedAt = new Date().toISOString();
+      const shouldUpdateStage = shouldApplyCapturedStage(existingOpportunity.stage);
+      const noteBlock = buildCaptureOpportunityNoteBlock(changedAt);
+      const nextNotes = noteBlock
+        ? [existingOpportunity.notes, noteBlock].filter(Boolean).join("\n\n")
+        : existingOpportunity.notes;
+
+      const nextOpportunityType =
+        capturedType !== "Other"
+          ? capturedType
+          : existingOpportunity.opportunity_type || capturedType;
+
+      const updatePayload: Record<string, string | number | null> = {
+        primary_contact_id:
+          primaryContactId || existingOpportunity.primary_contact_id || null,
+        opportunity_type: nextOpportunityType,
+        opportunity_type_other_description:
+          nextOpportunityType === "Other"
+            ? existingOpportunity.opportunity_type_other_description ||
+              cleanOpportunity
+            : null,
+        lead_temperature: existingOpportunity.lead_temperature || "Warm",
+        estimated_driver_count:
+          capturedFleetSize ?? existingOpportunity.estimated_driver_count ?? null,
+        next_step: reviewTask.trim()
+          ? reviewTask.trim()
+          : existingOpportunity.next_step || null,
+        notes: nextNotes || null,
+        updated_by: USER_ID,
+        updated_at: changedAt,
+      };
+
+      if (shouldUpdateStage) {
+        updatePayload.stage = capturedStage;
+      }
+
+      const { error: updateError } = await supabase
+        .from("opportunities")
+        .update(updatePayload)
+        .eq("id", existingOpportunity.id);
+
+      if (updateError) {
+        throw new Error(`Opportunity update failed: ${updateError.message}`);
+      }
+
+      if (shouldUpdateStage) {
+        const { error: stageHistoryError } = await supabase
+          .from("opportunity_stage_history")
+          .insert({
+            workspace_id: WORKSPACE_ID,
+            opportunity_id: existingOpportunity.id,
+            old_stage: existingOpportunity.stage || null,
+            new_stage: capturedStage,
+            changed_by: USER_ID,
+            changed_at: changedAt,
+            notes: "Stage changed by AI Capture.",
+          });
+
+        if (stageHistoryError) {
+          throw new Error(
+            `Opportunity updated, but stage history failed: ${stageHistoryError.message}`
+          );
+        }
+      }
+
+      return existingOpportunity.id;
+    }
+
+    const { data: exactOpportunity, error: exactFindError } = await supabase
       .from("opportunities")
-      .select("id, name, company_id")
+      .select(opportunitySelect)
       .eq("company_id", companyId)
+      .eq("is_archived", false)
       .ilike("name", opportunityName)
       .limit(1)
       .maybeSingle();
 
-    if (findError) {
-      throw new Error(`Opportunity lookup failed: ${findError.message}`);
+    if (exactFindError) {
+      throw new Error(`Opportunity lookup failed: ${exactFindError.message}`);
     }
 
-    if (existingOpportunity?.id) {
-      return existingOpportunity.id as string;
+    if (exactOpportunity?.id) {
+      return updateExistingOpportunityFromCapture(
+        exactOpportunity as unknown as ExistingOpportunityForCapture
+      );
     }
 
-    const opportunityType = normalizeOpportunityType(cleanOpportunity);
+    const { data: existingOpportunities, error: activeFindError } = await supabase
+      .from("opportunities")
+      .select(opportunitySelect)
+      .eq("company_id", companyId)
+      .eq("is_archived", false)
+      .order("updated_at", { ascending: false, nullsFirst: false })
+      .limit(25);
+
+    if (activeFindError) {
+      throw new Error(`Opportunity lookup failed: ${activeFindError.message}`);
+    }
+
+    const activeOpportunities = (
+      (existingOpportunities ?? []) as unknown as ExistingOpportunityForCapture[]
+    ).filter((opportunity) => {
+      const stage = opportunity.stage || "";
+
+      return stage !== "Lost" && stage !== "Paused" && stage !== "Customer";
+    });
+
+    const sameTypeOpportunities =
+      capturedType === "Other"
+        ? []
+        : activeOpportunities.filter(
+            (opportunity) => opportunity.opportunity_type === capturedType
+          );
+
+    const reusableOpportunity =
+      sameTypeOpportunities.length === 1
+        ? sameTypeOpportunities[0]
+        : activeOpportunities.length === 1
+        ? activeOpportunities[0]
+        : null;
+
+    if (reusableOpportunity) {
+      return updateExistingOpportunityFromCapture(reusableOpportunity);
+    }
 
     const { data: newOpportunity, error: insertError } = await supabase
       .from("opportunities")
@@ -1029,14 +1265,12 @@ export default function CapturePage() {
         name: opportunityName,
         company_id: companyId,
         primary_contact_id: primaryContactId,
-        opportunity_type: opportunityType,
+        opportunity_type: capturedType,
         opportunity_type_other_description:
-          opportunityType === "Other" ? cleanOpportunity : null,
-        stage: normalizeOpportunityStage(cleanOpportunity),
+          capturedType === "Other" ? cleanOpportunity : null,
+        stage: capturedStage,
         lead_temperature: "Warm",
-        estimated_driver_count: reviewFleetSize
-          ? parseFleetSize(reviewFleetSize)
-          : null,
+        estimated_driver_count: capturedFleetSize,
         next_step: reviewTask || null,
         notes:
           `${reviewNotes || ""}\n\n${reviewSummary || ""}\n\nLocation: ${
