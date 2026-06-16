@@ -8,13 +8,15 @@ type ChatMessage = {
   role: "user" | "assistant";
   text: string;
 };
-const ASSISTANT_MESSAGES_STORAGE_KEY = "sell-it-assistant-v3-messages";
-const ASSISTANT_QUESTION_STORAGE_KEY = "sell-it-assistant-v3-question";
+const ASSISTANT_MESSAGES_STORAGE_KEY = "sell-it-assistant-v4-messages";
+const ASSISTANT_QUESTION_STORAGE_KEY = "sell-it-assistant-v4-question";
+const ASSISTANT_INSIGHTS_SUPPRESSED_STORAGE_KEY =
+  "sell-it-assistant-v4-insights-suppressed";
 
 const initialAssistantMessages: ChatMessage[] = [
   {
     role: "assistant",
-    text: "Ask me what to do next. Assistant V3 can recommend priorities, call order, at-risk opportunities, cold companies, trending pain points, and assigned work when assignment data exists.",
+    text: "AI Assistant V4 is watching for proactive insights. It can surface overdue follow-ups, cooling opportunities, cold companies, trending pain points, alpha candidates, assignment issues, and data quality cleanup recommendations.",
   },
 ];
 
@@ -3155,6 +3157,8 @@ type RecommendationQuestionMode =
   | "trending_pain_points"
   | "alpha_candidates"
   | "owner_work"
+  | "data_quality"
+  | "proactive_insights"
   | "top_priorities";
 
 type RecommendationTask = Task & Record<string, unknown>;
@@ -3191,12 +3195,25 @@ type RecommendationData = {
 
 function isRecommendationQuestion(lowerQuestion: string) {
   const recommendationSignals = [
-    "what should i do today",
+        "which pain points are trending",
+    "pain points are trending",
+"what should i do today",
     "what should i do",
+    "what should i focus on",
+    "what should we focus on",
     "what should we do today",
     "what needs my attention",
     "what needs attention",
     "what are my top priorities",
+    "what are the biggest risks",
+    "biggest risks",
+    "what is falling through the cracks",
+    "falling through the cracks",
+    "falling through cracks",
+    "what should we clean up",
+    "what should i clean up",
+    "data quality",
+    "clean up",
     "top priorities",
     "recommend",
     "recommendation",
@@ -3218,6 +3235,10 @@ function isRecommendationQuestion(lowerQuestion: string) {
     "what should angel work on",
     "what should charles work on",
     "what should charley work on",
+    "what should trent focus on",
+    "what should angel focus on",
+    "what should charles focus on",
+    "what should charley focus on",
     "what should",
     "who should",
   ];
@@ -3227,6 +3248,37 @@ function isRecommendationQuestion(lowerQuestion: string) {
 
 function getRecommendationQuestionMode(lowerQuestion: string): RecommendationQuestionMode {
   if (getRequestedRecommendationOwner(lowerQuestion)) return "owner_work";
+
+  if (
+    lowerQuestion.includes("which pain points are trending") ||
+    lowerQuestion.includes("pain points are trending") ||
+    lowerQuestion.includes("trending pain points")
+  ) {
+    return "trending_pain_points";
+  }
+
+  if (
+    lowerQuestion.includes("clean up") ||
+    lowerQuestion.includes("data quality") ||
+    lowerQuestion.includes("missing phone") ||
+    lowerQuestion.includes("missing contact")
+  ) {
+    return "data_quality";
+  }
+
+  if (
+    lowerQuestion.includes("what needs my attention") ||
+    lowerQuestion.includes("what needs attention") ||
+    lowerQuestion.includes("what should i focus on") ||
+    lowerQuestion.includes("what should we focus on") ||
+    lowerQuestion.includes("biggest risks") ||
+    lowerQuestion.includes("falling through the cracks") ||
+    lowerQuestion.includes("falling through cracks") ||
+    lowerQuestion.includes("proactive insight") ||
+    lowerQuestion.includes("ai insight")
+  ) {
+    return "proactive_insights";
+  }
 
   if (
     lowerQuestion.includes("call first") ||
@@ -3244,16 +3296,16 @@ function getRecommendationQuestionMode(lowerQuestion: string): RecommendationQue
     return "trending_pain_points";
   }
 
-  if (lowerQuestion.includes("at risk") || lowerQuestion.includes("going cold")) {
-    return "at_risk";
-  }
-
   if (lowerQuestion.includes("companies have gone cold") || lowerQuestion.includes("companies are cold")) {
     return "cold_companies";
   }
 
   if (lowerQuestion.includes("contacts have gone cold") || lowerQuestion.includes("contacts are cold")) {
     return "cold_contacts";
+  }
+
+  if (lowerQuestion.includes("at risk") || lowerQuestion.includes("going cold")) {
+    return "at_risk";
   }
 
   if (lowerQuestion.includes("what should i do today") || lowerQuestion.includes("do today")) {
@@ -3267,14 +3319,22 @@ function getRequestedRecommendationOwner(lowerQuestion: string) {
   const knownNames = ["trent", "angel", "charles", "charley"];
 
   for (const name of knownNames) {
-    if (lowerQuestion.includes(`what should ${name} work on`)) {
+    if (
+      lowerQuestion.includes(`what should ${name} work on`) ||
+      lowerQuestion.includes(`what should ${name} focus on`)
+    ) {
       return name;
     }
   }
 
-  const match = lowerQuestion.match(/what should ([a-z][a-z0-9_-]*) work on/);
+  const match = lowerQuestion.match(/what should ([a-z][a-z0-9_-]*) (?:work on|focus on)/);
+  const capturedName = match?.[1] ?? "";
 
-  return match?.[1] ?? "";
+  if (["i", "we", "me", "us"].includes(capturedName)) {
+    return "";
+  }
+
+  return capturedName;
 }
 
 function capitalizeName(value: string) {
@@ -3743,7 +3803,7 @@ function buildColdCompanyRecommendations(data: RecommendationData) {
         ownerRows: [company, ...relatedOpenOpportunities],
       } satisfies RecommendationItem;
     })
-    .filter((item): item is RecommendationItem => Boolean(item))
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
     .sort((a, b) => b.score - a.score);
 }
 
@@ -3789,7 +3849,7 @@ function buildColdContactRecommendations(data: RecommendationData) {
         ownerRows: [contact, ...relatedOpenOpportunities],
       } satisfies RecommendationItem;
     })
-    .filter((item): item is RecommendationItem => Boolean(item))
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
     .sort((a, b) => b.score - a.score);
 }
 
@@ -3830,7 +3890,7 @@ function buildAtRiskOpportunityRecommendations(data: RecommendationData) {
         ].filter(Boolean),
       } satisfies RecommendationItem;
     })
-    .filter((item): item is RecommendationItem => Boolean(item))
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
     .sort((a, b) => b.score - a.score);
 }
 
@@ -3994,10 +4054,182 @@ function buildTrendingPainPointRecommendations(data: RecommendationData) {
         ownerRows: [painPoint],
       } satisfies RecommendationItem;
     })
-    .filter((item): item is RecommendationItem => Boolean(item))
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
     .sort((a, b) => b.score - a.score);
 }
 
+function recommendationIdentity(item: RecommendationItem) {
+  return normalizeText(
+    [
+      item.category,
+      item.title,
+      ...item.links.map((link) => link.href),
+    ].join(" ")
+  );
+}
+
+function dedupeRecommendationItems(items: RecommendationItem[]) {
+  const seen = new Set<string>();
+  const result: RecommendationItem[] = [];
+
+  for (const item of items) {
+    const key = recommendationIdentity(item);
+
+    if (!key || seen.has(key)) continue;
+
+    seen.add(key);
+    result.push(item);
+  }
+
+  return result;
+}
+
+function buildDataQualityRecommendations(data: RecommendationData) {
+  const recommendations: RecommendationItem[] = [];
+  const contactsByCompanyId = new Map<string, RecommendationContact[]>();
+
+  for (const contact of data.contacts) {
+    if (!contact.company_id) continue;
+
+    const existing = contactsByCompanyId.get(contact.company_id) ?? [];
+    existing.push(contact);
+    contactsByCompanyId.set(contact.company_id, existing);
+  }
+
+  for (const company of data.companies) {
+    const missing: string[] = [];
+    const linkedContacts = contactsByCompanyId.get(company.id) ?? [];
+
+    if (!company.phone) missing.push("company phone is missing");
+    if (!company.email) missing.push("company email is missing");
+    if (linkedContacts.length === 0) missing.push("no contact is linked");
+    if (!company.website) missing.push("company website is missing");
+
+    if (missing.length === 0) continue;
+
+    recommendations.push({
+      title: `Clean up company record: ${company.name}`,
+      category: "Data Quality",
+      score: 45 + missing.length * 12 + opportunityTemperatureScore(company.lead_temperature),
+      reasons: [
+        `Data gaps found: ${missing.join(", ")}.`,
+        "Incomplete company records weaken follow-up and recommendations.",
+      ],
+      suggestedAction:
+        "Open the company, add missing phone/email/contact details, and create a follow-up task if this company still matters.",
+      links: recommendationLinks([{ label: "Company", href: `/companies/${company.id}` }]),
+      ownerRows: [company],
+    });
+  }
+
+  for (const contact of data.contacts) {
+    const missing: string[] = [];
+
+    if (!contact.email) missing.push("email is missing");
+    if (!contact.phone) missing.push("phone is missing");
+    if (!contact.company_id) missing.push("company link is missing");
+
+    if (missing.length === 0) continue;
+
+    recommendations.push({
+      title: `Clean up contact record: ${fullContactName(contact) || "Unnamed contact"}`,
+      category: "Data Quality",
+      score: 42 + missing.length * 12,
+      reasons: [
+        `Data gaps found: ${missing.join(", ")}.`,
+        contact.companies?.name ? `Company: ${contact.companies.name}.` : "No company context is linked.",
+      ],
+      suggestedAction:
+        "Open the contact and add enough phone/email/company detail so follow-up recommendations can be trusted.",
+      links: recommendationLinks([
+        { label: "Contact", href: `/contacts/${contact.id}` },
+        contact.company_id ? { label: "Company", href: `/companies/${contact.company_id}` } : { label: "", href: "" },
+      ]),
+      ownerRows: [contact],
+    });
+  }
+
+  for (const opportunity of data.opportunities.filter((row) => !isClosedOpportunity(row))) {
+    const missing: string[] = [];
+
+    if (!opportunity.primary_contact_id) missing.push("primary contact is missing");
+    if (!opportunity.company_id) missing.push("company is missing");
+    if (!opportunity.next_step) missing.push("next step is missing");
+    if (!opportunity.lead_temperature) missing.push("lead temperature is missing");
+
+    if (missing.length === 0) continue;
+
+    recommendations.push({
+      title: `Clean up opportunity record: ${opportunity.name}`,
+      category: "Data Quality",
+      score: 55 + missing.length * 12 + opportunityTemperatureScore(opportunity.lead_temperature),
+      reasons: [
+        `Data gaps found: ${missing.join(", ")}.`,
+        `Stage is ${opportunity.stage || "not set"}.`,
+        "Incomplete opportunity records make risk and priority scoring weaker.",
+      ],
+      suggestedAction:
+        "Open the opportunity, assign the primary contact, confirm the next step, and set the lead temperature.",
+      links: recommendationLinks([
+        { label: "Opportunity", href: `/opportunities/${opportunity.id}` },
+        opportunity.company_id ? { label: "Company", href: `/companies/${opportunity.company_id}` } : { label: "", href: "" },
+        opportunity.primary_contact_id ? { label: "Contact", href: `/contacts/${opportunity.primary_contact_id}` } : { label: "", href: "" },
+      ]),
+      ownerRows: [opportunity],
+    });
+  }
+
+  return recommendations.sort((a, b) => b.score - a.score);
+}
+
+function buildOverdueFollowUpInsights(data: RecommendationData) {
+  const overdueTasks = data.tasks
+    .filter((task) => {
+      const dueOffset = daysUntil(task.due_date);
+      return isOpenTask(task) && dueOffset !== null && dueOffset < 0;
+    })
+    .map((task) => buildTaskRecommendation(task, "Overdue Follow-Up"));
+
+  const followUpActivities = data.activities
+    .filter((activity) => activity.follow_up_needed)
+    .map(buildActivityFollowUpRecommendation);
+
+  return [...overdueTasks, ...followUpActivities].sort((a, b) => b.score - a.score);
+}
+
+function buildProactiveInsightRecommendations(data: RecommendationData) {
+  const overdueFollowUps = buildOverdueFollowUpInsights(data);
+  const coolingOpportunities = buildAtRiskOpportunityRecommendations(data);
+  const coolingCompanies = buildColdCompanyRecommendations(data);
+  const trendingPainPoints = buildTrendingPainPointRecommendations(data);
+  const alphaCandidates = buildAlphaCandidateRecommendations(data);
+  const dataQuality = buildDataQualityRecommendations(data);
+
+  return dedupeRecommendationItems([
+    ...overdueFollowUps.slice(0, 8),
+    ...coolingOpportunities.slice(0, 8),
+    ...coolingCompanies.slice(0, 6),
+    ...trendingPainPoints.slice(0, 6),
+    ...alphaCandidates.slice(0, 6),
+    ...dataQuality.slice(0, 8),
+  ]).sort((a, b) => b.score - a.score);
+}
+
+function formatProactiveInsightAnswer(
+  title: string,
+  recommendations: RecommendationItem[],
+  emptyText: string
+) {
+  return formatRecommendationAnswer(
+    `${title}
+
+Generated from current Sell It data: tasks, activities, opportunities, companies, contacts, pain points, posts, and assignment fields where present.
+
+This is insight generation only. No background alerts or external integrations were used.`,
+    recommendations,
+    emptyText
+  );
+}
 async function loadRecommendationData(): Promise<RecommendationData> {
   const [
     taskResult,
@@ -4164,6 +4396,8 @@ async function answerRecommendationQuestion(userQuestion: string) {
   const callFirstRecommendations = buildCallFirstRecommendations(data);
   const alphaRecommendations = buildAlphaCandidateRecommendations(data);
   const painPointRecommendations = buildTrendingPainPointRecommendations(data);
+  const dataQualityRecommendations = buildDataQualityRecommendations(data);
+  const proactiveInsightRecommendations = buildProactiveInsightRecommendations(data);
 
   const topPriorityRecommendations = [
     ...todayRecommendations,
@@ -4171,10 +4405,43 @@ async function answerRecommendationQuestion(userQuestion: string) {
     ...callFirstRecommendations,
     ...alphaRecommendations,
     ...painPointRecommendations,
+    ...dataQualityRecommendations.slice(0, 5),
   ].sort((a, b) => b.score - a.score);
 
   if (mode === "owner_work" && ownerName) {
-    return answerOwnerRecommendations(data, ownerName, topPriorityRecommendations);
+    return answerOwnerRecommendations(data, ownerName, proactiveInsightRecommendations);
+  }
+
+  if (mode === "data_quality") {
+    return formatProactiveInsightAnswer(
+      "Data quality cleanup recommendations",
+      dataQualityRecommendations,
+      "I did not find obvious data cleanup recommendations in the current records."
+    );
+  }
+
+  if (mode === "proactive_insights") {
+    const proactiveInsightTitle = lower.includes("risk")
+      ? "AI Insights - biggest risks"
+      : lower.includes("falling through") || lower.includes("cracks")
+        ? "AI Insights - falling through the cracks"
+        : lower.includes("focus")
+          ? "AI Insights - what to focus on"
+          : "AI Insights - what needs your attention";
+
+    const proactiveInsightEmptyMessage = lower.includes("risk")
+      ? "I did not find obvious high-risk items in the current records."
+      : lower.includes("falling through") || lower.includes("cracks")
+        ? "I did not find obvious items falling through the cracks in the current records."
+        : lower.includes("focus")
+          ? "I did not find obvious focus recommendations in the current records."
+          : "I did not find overdue follow-ups, cooling opportunities, cold companies, trending pain points, alpha candidates, or data quality issues strong enough to recommend.";
+
+    return formatProactiveInsightAnswer(
+      proactiveInsightTitle,
+      proactiveInsightRecommendations,
+      proactiveInsightEmptyMessage
+    );
   }
 
   if (mode === "call_first") {
@@ -4236,10 +4503,10 @@ Trending is based on linked Sell It records and recent activity/post signals. It
     );
   }
 
-  return formatRecommendationAnswer(
-    "Top recommended priorities",
+  return formatProactiveInsightAnswer(
+    "Top AI insight priorities",
     topPriorityRecommendations,
-    "I did not find enough current task, opportunity, activity, or pain point signals to recommend a clear priority."
+    "I did not find enough current task, opportunity, activity, pain point, or data quality signals to recommend a clear priority."
   );
 }
 
@@ -5013,8 +5280,22 @@ async function answerAlphaCandidateComparison() {
 async function answerComparisonQuestion(userQuestion: string) {
   const lower = userQuestion.toLowerCase();
 
-  if (lower.includes("alpha candidate") || lower.includes("alpha candidates")) {
+  const isAlphaCandidateQuestion =
+    lower.includes("alpha candidate") || lower.includes("alpha candidates");
+
+  const isExplicitAlphaComparison =
+    isAlphaCandidateQuestion &&
+    (lower.includes("compare") ||
+      lower.includes("comparison") ||
+      lower.includes("scoreboard") ||
+      lower.includes("report"));
+
+  if (isExplicitAlphaComparison) {
     return answerAlphaCandidateComparison();
+  }
+
+  if (isAlphaCandidateQuestion) {
+    return answerRecommendationQuestion(userQuestion);
   }
 
   return answerCompanyComparison(userQuestion);
@@ -5123,13 +5404,80 @@ export default function AssistantPage() {
   const [storageReady, setStorageReady] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     const timeoutId = window.setTimeout(() => {
-      setMessages(loadStoredMessages());
-      setQuestion(loadStoredQuestion());
+      const storedMessages = loadStoredMessages();
+      const storedQuestion = loadStoredQuestion();
+
+      if (cancelled) return;
+
+      setMessages(storedMessages);
+      setQuestion(storedQuestion);
       setStorageReady(true);
+
+      const autoInsightsSuppressed =
+        window.sessionStorage.getItem(ASSISTANT_INSIGHTS_SUPPRESSED_STORAGE_KEY) ===
+        "true";
+
+      const shouldAutoLoadInsights =
+        !autoInsightsSuppressed &&
+        storedMessages.length === 1 &&
+        storedMessages[0]?.role === "assistant" &&
+        storedMessages[0]?.text === initialAssistantMessages[0]?.text;
+
+      if (shouldAutoLoadInsights) {
+        window.setTimeout(async () => {
+          if (cancelled) return;
+
+          window.sessionStorage.removeItem(ASSISTANT_INSIGHTS_SUPPRESSED_STORAGE_KEY);
+    setThinking(true);
+          setErrorMessage("");
+
+          try {
+            const answer = await answerRecommendationQuestion(
+              "What needs my attention?"
+            );
+
+            if (cancelled) return;
+
+            setMessages([
+              ...initialAssistantMessages,
+              {
+                role: "assistant",
+                text: `PROACTIVE AI INSIGHTS
+Generated automatically when the Assistant opened.
+
+${answer}`,
+              },
+            ]);
+          } catch (error) {
+            if (cancelled) return;
+
+            const message =
+              error instanceof Error ? error.message : "Assistant lookup failed.";
+
+            setErrorMessage(message);
+            setMessages([
+              ...initialAssistantMessages,
+              {
+                role: "assistant",
+                text: `I could not load proactive insights automatically: ${message}`,
+              },
+            ]);
+          } finally {
+            if (!cancelled) {
+              setThinking(false);
+            }
+          }
+        }, 100);
+      }
     }, 0);
 
-    return () => window.clearTimeout(timeoutId);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
   }, []);
 
   useEffect(() => {
@@ -5152,8 +5500,15 @@ export default function AssistantPage() {
     setQuestion("");
     setErrorMessage("");
 
-    window.sessionStorage.removeItem(ASSISTANT_MESSAGES_STORAGE_KEY);
-    window.sessionStorage.removeItem(ASSISTANT_QUESTION_STORAGE_KEY);
+    window.sessionStorage.setItem(
+      ASSISTANT_MESSAGES_STORAGE_KEY,
+      JSON.stringify(initialAssistantMessages)
+    );
+    window.sessionStorage.setItem(ASSISTANT_QUESTION_STORAGE_KEY, "");
+    window.sessionStorage.setItem(
+      ASSISTANT_INSIGHTS_SUPPRESSED_STORAGE_KEY,
+      "true"
+    );
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -5163,6 +5518,7 @@ export default function AssistantPage() {
 
     if (!trimmedQuestion) return;
 
+    window.sessionStorage.removeItem(ASSISTANT_INSIGHTS_SUPPRESSED_STORAGE_KEY);
     setThinking(true);
     setErrorMessage("");
 
@@ -5228,10 +5584,7 @@ export default function AssistantPage() {
 
       <p style={{ color: "#aaa", marginBottom: "32px", maxWidth: "950px" }}>
         Ask natural language questions about your Sell It data. AI Assistant
-        V3 now supports recommendation and proactive intelligence questions,
-        including what to do today, who to call first, which opportunities are
-        at risk, which companies have gone cold, and assigned work when data
-        exists.
+        V4 now supports proactive alerts and insight generation, including what needs attention, what to focus on, biggest risks, falling-through-the-cracks items, trending pain points, data cleanup, and assigned work when data exists.
       </p>
 
       <section style={{ maxWidth: "1000px" }}>
@@ -5319,7 +5672,7 @@ export default function AssistantPage() {
         </div>
 
         <div style={cardStyle}>
-          <h2 style={{ marginTop: 0 }}>AI Assistant V3 Examples</h2>
+          <h2 style={{ marginTop: 0 }}>AI Assistant V4 Examples</h2>
 
           <div
             style={{
@@ -5329,16 +5682,16 @@ export default function AssistantPage() {
             }}
           >
             {[
-              "What should I do today?",
-              "Who should I call first?",
               "What needs my attention?",
-              "Which opportunities are at risk?",
-              "Which companies have gone cold?",
-              "Which leads are going cold?",
+              "What should I focus on?",
+              "What is falling through the cracks?",
+              "What are the biggest risks?",
+              "What should we clean up?",
               "Which pain points are trending?",
               "Which alpha candidates should I focus on?",
-              "What should Trent work on?",
-              "What should Angel work on?",
+              "What should Trent focus on?",
+              "What should Angel focus on?",
+              "Who should I call first?",
               "Tell me everything we know about ABC Trucking",
               "Give me a weekly summary",
             ].map((example) => (
@@ -5361,6 +5714,15 @@ export default function AssistantPage() {
     </main>
   );
 }
+
+
+
+
+
+
+
+
+
 
 
 
