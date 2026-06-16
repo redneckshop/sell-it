@@ -3166,6 +3166,14 @@ type RecommendationOpportunity = Opportunity & Record<string, unknown>;
 type RecommendationCompany = Company & Record<string, unknown>;
 type RecommendationContact = Contact & Record<string, unknown>;
 type RecommendationActivity = Activity & Record<string, unknown>;
+type RecommendationStageHistory = {
+  id: string;
+  opportunity_id: string;
+  old_stage: string | null;
+  new_stage: string;
+  changed_at: string | null;
+  notes: string | null;
+};
 type RecommendationPainPoint = PainPoint & { mentionCount?: number; recentMentionCount?: number };
 type RecommendationProfile = Record<string, unknown>;
 type RecommendationLink = {
@@ -3191,6 +3199,7 @@ type RecommendationData = {
   posts: Post[];
   profiles: RecommendationProfile[];
   painPointLinks: Record<string, Array<Record<string, unknown>>>;
+  stageHistory: RecommendationStageHistory[];
 };
 
 function isRecommendationQuestion(lowerQuestion: string) {
@@ -3671,6 +3680,33 @@ function buildTaskRecommendation(task: RecommendationTask, category: string) {
   };
 }
 
+function stageHistoryForOpportunity(opportunity: RecommendationOpportunity) {
+  const value = opportunity.stage_history;
+
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter((row): row is RecommendationStageHistory => {
+    if (!row || typeof row !== "object") return false;
+
+    const candidate = row as Partial<RecommendationStageHistory>;
+
+    return (
+      typeof candidate.id === "string" &&
+      typeof candidate.opportunity_id === "string" &&
+      typeof candidate.new_stage === "string"
+    );
+  });
+}
+
+function formatStageChangeDate(value: string) {
+  try {
+    return new Date(value).toLocaleDateString();
+  } catch {
+    return value;
+  }
+}
 function buildOpportunityRecommendation(
   opportunity: RecommendationOpportunity,
   tasks: RecommendationTask[],
@@ -3683,6 +3719,8 @@ function buildOpportunityRecommendation(
   const stale = daysInactive === null || daysInactive >= 10;
   const noOpenTask = relatedOpenTasks.length === 0;
   const temperatureScore = opportunityTemperatureScore(opportunity.lead_temperature);
+  const stageHistory = stageHistoryForOpportunity(opportunity);
+  const lastStageChange = stageHistory[0] ?? null;
 
   const score =
     62 +
@@ -3703,7 +3741,17 @@ function buildOpportunityRecommendation(
     category,
     score,
     reasons: [
-      `Stage is ${opportunity.stage || "not set"}.`,
+      `Current stage is ${opportunity.stage || "not set"}.`,
+      stageHistory.length > 0
+        ? `Opportunity has moved stages ${stageHistory.length} time(s).`
+        : "No stage history has been recorded yet.",
+      lastStageChange
+        ? `Last stage change: ${lastStageChange.old_stage || "None"} to ${lastStageChange.new_stage}${
+            lastStageChange.changed_at
+              ? ` on ${formatStageChangeDate(lastStageChange.changed_at)}`
+              : ""
+          }.`
+        : "",
       `Lead temperature is ${opportunity.lead_temperature || "not set"}.`,
       daysInactive === null
         ? "No recent activity date was found."
@@ -4244,6 +4292,7 @@ async function loadRecommendationData(): Promise<RecommendationData> {
     contactLinks,
     activityLinks,
     postLinks,
+    stageHistoryResult,
   ] = await Promise.all([
     supabase
       .from("tasks")
@@ -4289,6 +4338,11 @@ async function loadRecommendationData(): Promise<RecommendationData> {
     supabase.from("pain_point_contacts").select("*"),
     supabase.from("pain_point_activities").select("*"),
     supabase.from("pain_point_posts").select("*"),
+    supabase
+      .from("opportunity_stage_history")
+      .select("id, opportunity_id, old_stage, new_stage, changed_at, notes")
+      .order("changed_at", { ascending: false })
+      .limit(1000),
   ]);
 
   const firstError =
@@ -4302,7 +4356,8 @@ async function loadRecommendationData(): Promise<RecommendationData> {
     companyLinks.error ||
     contactLinks.error ||
     activityLinks.error ||
-    postLinks.error;
+    postLinks.error ||
+    stageHistoryResult.error;
 
   if (firstError) {
     throw new Error(firstError.message);
@@ -4313,9 +4368,19 @@ async function loadRecommendationData(): Promise<RecommendationData> {
     ? []
     : ((profileResult.data ?? []) as unknown as RecommendationProfile[]);
 
+  const stageHistoryRows = (stageHistoryResult.data ?? []) as unknown as
+    RecommendationStageHistory[];
+
   return {
     tasks: (taskResult.data ?? []) as unknown as RecommendationTask[],
-    opportunities: (opportunityResult.data ?? []) as unknown as RecommendationOpportunity[],
+    opportunities: ((opportunityResult.data ?? []) as unknown as RecommendationOpportunity[]).map(
+      (opportunity) => ({
+        ...opportunity,
+        stage_history: stageHistoryRows.filter(
+          (history) => history.opportunity_id === opportunity.id
+        ),
+      })
+    ),
     activities: (activityResult.data ?? []) as unknown as RecommendationActivity[],
     companies: (companyResult.data ?? []) as unknown as RecommendationCompany[],
     contacts: (contactResult.data ?? []) as unknown as RecommendationContact[],
@@ -4328,6 +4393,7 @@ async function loadRecommendationData(): Promise<RecommendationData> {
       activityLinks: (activityLinks.data ?? []) as Array<Record<string, unknown>>,
       postLinks: (postLinks.data ?? []) as Array<Record<string, unknown>>,
     },
+    stageHistory: stageHistoryRows,
   };
 }
 
@@ -5715,6 +5781,8 @@ ${answer}`,
     </main>
   );
 }
+
+
 
 
 

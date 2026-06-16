@@ -95,6 +95,15 @@ type PainPointActivity = {
   pain_points: SupabaseRelation<PainPoint>;
 };
 
+type StageHistory = {
+  id: string;
+  old_stage: string | null;
+  new_stage: string;
+  changed_by: string | null;
+  changed_at: string | null;
+  notes: string | null;
+};
+
 type PageProps = {
   params: Promise<{
     id: string;
@@ -230,11 +239,18 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
     .eq("related_opportunity_id", id)
     .order("created_at", { ascending: false });
 
+  const { data: stageHistoryRows } = await supabase
+    .from("opportunity_stage_history")
+    .select("id, old_stage, new_stage, changed_by, changed_at, notes")
+    .eq("opportunity_id", id)
+    .order("changed_at", { ascending: false });
+
   const opportunity = opportunityRow as unknown as Opportunity | null;
   const relatedNotes = (noteRows ?? []) as unknown as Note[];
   const relatedTasks = (taskRows ?? []) as unknown as Task[];
   const relatedActivities = (activityRows ?? []) as unknown as Activity[];
   const attachments = (attachmentRows ?? []) as unknown as Attachment[];
+  const stageHistory = (stageHistoryRows ?? []) as unknown as StageHistory[];
 
   const activityIds = relatedActivities.map((activity) => activity.id);
 
@@ -255,6 +271,7 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
 
   const completedTasks = relatedTasks.filter(isCompletedTask);
   const openTasks = relatedTasks.filter((task) => !isCompletedTask(task));
+  const lastStageChange = stageHistory[0] ?? null;
 
   const relationshipItems: RelationshipSummaryItem[] = [
     {
@@ -268,6 +285,14 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
       count: primaryContact ? 1 : 0,
       href: primaryContact ? `/contacts/${primaryContact.id}` : undefined,
       description: primaryContact ? contactName(primaryContact) : undefined,
+    },
+    {
+      label: "Stage Changes",
+      count: stageHistory.length,
+      href: `/opportunities/${id}#stage-history`,
+      description: lastStageChange
+        ? `Last: ${lastStageChange.old_stage || "None"} to ${lastStageChange.new_stage}`
+        : "No stage changes yet",
     },
     {
       label: "Tasks",
@@ -328,6 +353,17 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
           },
         ]
       : []),
+
+    ...stageHistory.map((history) => ({
+      id: `stage-history-${history.id}`,
+      title: `Stage changed: ${history.old_stage || "None"} to ${history.new_stage}`,
+      occurredAt: history.changed_at,
+      category: "Stage Change",
+      description: history.notes || null,
+      meta: compactStrings([
+        history.changed_by ? `Changed by: ${history.changed_by}` : null,
+      ]),
+    })),
 
     ...(opportunity &&
     isDifferentDate(opportunity.created_at, opportunity.updated_at)
@@ -666,9 +702,54 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
 
           <RecordTimeline
             title="Opportunity Timeline"
-            subtitle="Newest first. Includes opportunity history, tasks, activities, notes, attachments, and pain points linked through activities."
+            subtitle="Newest first. Includes opportunity history, stage changes, tasks, activities, notes, attachments, and pain points linked through activities."
             events={timelineEvents}
           />
+
+          <h2 id="stage-history" style={{ marginTop: "40px" }}>
+            Stage History
+          </h2>
+
+          {stageHistory.length === 0 && (
+            <p>No stage changes recorded yet.</p>
+          )}
+
+          {stageHistory.map((history) => (
+            <article
+              key={history.id}
+              style={{
+                display: "block",
+                border: "1px solid #333",
+                padding: "16px",
+                marginBottom: "12px",
+                borderRadius: "8px",
+                backgroundColor: "#1a1a1a",
+                color: "white",
+                maxWidth: "750px",
+              }}
+            >
+              <h3 style={{ marginTop: 0 }}>
+                {history.old_stage || "None"} to {history.new_stage}
+              </h3>
+
+              <p>
+                <strong>Changed:</strong>{" "}
+                {formatDateTime(history.changed_at)}
+              </p>
+
+              {history.changed_by && (
+                <p>
+                  <strong>Changed By:</strong> {history.changed_by}
+                </p>
+              )}
+
+              {history.notes && (
+                <p style={{ whiteSpace: "pre-wrap" }}>
+                  <strong>Notes:</strong> {history.notes}
+                </p>
+              )}
+            </article>
+          ))}
 
           <div id="related-attachments">
             <AttachmentsSection
@@ -852,3 +933,4 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
     </main>
   );
 }
+

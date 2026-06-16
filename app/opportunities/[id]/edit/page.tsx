@@ -21,6 +21,7 @@ type Contact = {
 
 type Opportunity = {
   id: string;
+  workspace_id: string;
   name: string;
   company_id: string | null;
   primary_contact_id: string | null;
@@ -49,6 +50,10 @@ const inputStyle: CSSProperties = {
   boxSizing: "border-box",
 };
 
+function stagesAreDifferent(oldStage: string, newStage: string) {
+  return oldStage.trim() !== newStage.trim();
+}
+
 export default function EditOpportunityPage() {
   const router = useRouter();
   const params = useParams();
@@ -61,6 +66,9 @@ export default function EditOpportunityPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  const [workspaceId, setWorkspaceId] = useState("");
+  const [originalStage, setOriginalStage] = useState("");
 
   const [name, setName] = useState("");
   const [companyId, setCompanyId] = useState("");
@@ -111,7 +119,7 @@ export default function EditOpportunityPage() {
       const { data, error } = await supabase
         .from("opportunities")
         .select(
-          "id, name, company_id, primary_contact_id, opportunity_type, opportunity_type_other_description, stage, lead_temperature, estimated_driver_count, estimated_monthly_value, expected_close_date, next_step, notes, updated_at"
+          "id, workspace_id, name, company_id, primary_contact_id, opportunity_type, opportunity_type_other_description, stage, lead_temperature, estimated_driver_count, estimated_monthly_value, expected_close_date, next_step, notes, updated_at"
         )
         .eq("id", opportunityId)
         .single();
@@ -124,6 +132,9 @@ export default function EditOpportunityPage() {
       }
 
       const opportunity = data as Opportunity;
+
+      setWorkspaceId(opportunity.workspace_id || "");
+      setOriginalStage(opportunity.stage || "New Lead");
 
       setName(opportunity.name || "");
       setCompanyId(opportunity.company_id || "");
@@ -161,6 +172,10 @@ export default function EditOpportunityPage() {
     setSaving(true);
     setErrorMessage("");
 
+    const changedAt = new Date().toISOString();
+    const shouldRecordStageHistory =
+      workspaceId && stagesAreDifferent(originalStage, stage);
+
     const { error } = await supabase
       .from("opportunities")
       .update({
@@ -184,16 +199,39 @@ export default function EditOpportunityPage() {
         next_step: nextStep || null,
         notes: notes || null,
         updated_by: USER_ID,
-        updated_at: new Date().toISOString(),
+        updated_at: changedAt,
       })
       .eq("id", opportunityId);
 
-    setSaving(false);
-
     if (error) {
+      setSaving(false);
       setErrorMessage(error.message);
       return;
     }
+
+    if (shouldRecordStageHistory) {
+      const { error: historyError } = await supabase
+        .from("opportunity_stage_history")
+        .insert({
+          workspace_id: workspaceId,
+          opportunity_id: opportunityId,
+          old_stage: originalStage || null,
+          new_stage: stage,
+          changed_by: USER_ID,
+          changed_at: changedAt,
+          notes: null,
+        });
+
+      if (historyError) {
+        setSaving(false);
+        setErrorMessage(
+          `Opportunity saved, but stage history failed: ${historyError.message}`
+        );
+        return;
+      }
+    }
+
+    setSaving(false);
 
     router.push(`/opportunities/${opportunityId}`);
     router.refresh();
