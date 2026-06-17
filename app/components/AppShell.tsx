@@ -1,8 +1,9 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { CSSProperties, ReactNode } from "react";
+import PageAssistant from "./PageAssistant";
 
 type AppShellProps = {
   children: ReactNode;
@@ -128,6 +129,8 @@ export default function AppShell({ children }: AppShellProps) {
             );
           })}
         </nav>
+
+        <PageAssistant />
       </aside>
 
       <div style={contentStyle}>{children}</div>
