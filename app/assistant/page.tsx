@@ -245,6 +245,51 @@ function buildAssistantActivityHref(text: string, links: AssistantActionLink[]) 
   return `/activities/new?${params.toString()}`;
 }
 
+function firstAssistantTaskCompleteLink(
+  text: string,
+  links: AssistantActionLink[]
+) {
+  const taskLink = firstAssistantLinkOfKind(links, "task");
+
+  if (!taskLink?.id) {
+    return null;
+  }
+
+  const mentionsOpenTask =
+    /\bopen task\b/i.test(text) ||
+    /\bopen tasks\b/i.test(text) ||
+    /\bopen related task(?:\(s\)|s)?\b/i.test(text) ||
+    /\bnext open task\b/i.test(text) ||
+    /status:\s*(open|in progress)/i.test(text);
+
+  const mentionsClosedTask =
+    /status:\s*(completed|cancelled)/i.test(text) ||
+    /\bcompleted task\b/i.test(text) ||
+    /\bcancelled task\b/i.test(text);
+
+  if (!mentionsOpenTask || mentionsClosedTask) {
+    return null;
+  }
+
+  return taskLink;
+}
+
+function buildAssistantTaskCompleteHref(link: AssistantActionLink) {
+  if (!link.id) {
+    return "/assistant";
+  }
+
+  return `/assistant/actions/tasks/${link.id}/complete`;
+}
+
+function buildAssistantOpportunityStageHref(link: AssistantActionLink) {
+  if (!link.id) {
+    return "/assistant";
+  }
+
+  return `/assistant/actions/opportunities/${link.id}/stage`;
+}
+
 function assistantActionButtonLabel(link: AssistantActionLink) {
   const labelByKind: Record<AssistantActionLink["kind"], string> = {
     company: "Open Company",
@@ -431,6 +476,8 @@ function renderAssistantActionCenter(messageText: string) {
       link.kind
     )
   );
+  const taskCompleteLink = firstAssistantTaskCompleteLink(messageText, links);
+  const opportunityStageLink = firstAssistantLinkOfKind(links, "opportunity");
 
   return (
     <div
@@ -580,6 +627,40 @@ function renderAssistantActionCenter(messageText: string) {
         >
           Log Completed Activity
         </Link>
+
+        {taskCompleteLink?.id && (
+          <Link
+            href={buildAssistantTaskCompleteHref(taskCompleteLink)}
+            style={{
+              backgroundColor: "#ffcc66",
+              color: "black",
+              padding: "9px 12px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+              fontSize: "14px",
+            }}
+          >
+            Mark Complete
+          </Link>
+        )}
+
+        {opportunityStageLink?.id && (
+          <Link
+            href={buildAssistantOpportunityStageHref(opportunityStageLink)}
+            style={{
+              backgroundColor: "#ffcc66",
+              color: "black",
+              padding: "9px 12px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+              fontSize: "14px",
+            }}
+          >
+            Move Stage
+          </Link>
+        )}
       </div>
 
       <p
@@ -590,7 +671,7 @@ function renderAssistantActionCenter(messageText: string) {
           marginBottom: "10px",
         }}
       >
-        Drafts are review-only. Sell It does not call, text, email, or save anything automatically.
+        Drafts are review-only. Sell It does not call, text, email, or save anything automatically. Mark Complete and Move Stage open confirmation screens before changing records.
       </p>
 
       <details style={{ marginTop: "8px" }}>
