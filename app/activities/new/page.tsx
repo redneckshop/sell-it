@@ -17,6 +17,8 @@ type Contact = {
   id: string;
   first_name: string;
   last_name: string | null;
+  phone: string | null;
+  email: string | null;
 };
 
 type Task = {
@@ -72,6 +74,38 @@ export default function NewActivityPage() {
 
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [prefilledFromAssistant, setPrefilledFromAssistant] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get("assistant_prefill") !== "true") return;
+
+    const prefillActivityType = params.get("activity_type");
+    const prefillSubject = params.get("subject");
+    const prefillSummary = params.get("summary");
+    const prefillRawNotes = params.get("raw_notes");
+    const prefillOutcome = params.get("outcome");
+    const prefillFollowUpNeeded = params.get("follow_up_needed");
+    const prefillCompanyId = params.get("company_id");
+    const prefillContactId = params.get("contact_id");
+    const prefillTaskId = params.get("task_id");
+    const prefillOpportunityId = params.get("opportunity_id");
+
+    if (prefillActivityType) setActivityType(prefillActivityType);
+    if (prefillSubject) setSubject(prefillSubject);
+    if (prefillSummary) setSummary(prefillSummary);
+    if (prefillRawNotes) setRawNotes(prefillRawNotes);
+    if (prefillOutcome) setOutcome(prefillOutcome);
+    if (prefillFollowUpNeeded === "true") setFollowUpNeeded(true);
+    if (prefillFollowUpNeeded === "false") setFollowUpNeeded(false);
+    if (prefillCompanyId) setCompanyId(prefillCompanyId);
+    if (prefillContactId) setContactId(prefillContactId);
+    if (prefillTaskId) setTaskId(prefillTaskId);
+    if (prefillOpportunityId) setOpportunityId(prefillOpportunityId);
+
+    setPrefilledFromAssistant(true);
+  }, []);
 
   useEffect(() => {
     async function loadOptions() {
@@ -89,7 +123,7 @@ export default function NewActivityPage() {
 
       const { data: contactRows, error: contactError } = await supabase
         .from("contacts")
-        .select("id, first_name, last_name")
+        .select("id, first_name, last_name, phone, email")
         .order("first_name", { ascending: true });
 
       if (contactError) {
@@ -168,6 +202,12 @@ export default function NewActivityPage() {
       )
     : opportunities;
 
+  const selectedContact =
+    contacts.find((contact) => contact.id === contactId) ?? null;
+  const selectedContactName = selectedContact
+    ? `${selectedContact.first_name} ${selectedContact.last_name || ""}`.trim()
+    : "";
+
   return (
     <main
       style={{
@@ -220,6 +260,76 @@ export default function NewActivityPage() {
       <p style={{ color: "#aaa", marginBottom: "32px" }}>
         Record a call, message, meeting, note, transcript, or follow-up activity.
       </p>
+
+      {prefilledFromAssistant && (
+        <div
+          style={{
+            border: "1px solid #f5d76e",
+            backgroundColor: "#211c0d",
+            color: "#ffcc66",
+            padding: "14px",
+            borderRadius: "8px",
+            marginBottom: "18px",
+            maxWidth: "900px",
+          }}
+        >
+          This activity was prefilled from an Assistant recommendation. Review it before saving.
+        </div>
+      )}
+
+      {prefilledFromAssistant && selectedContact && (
+        <div
+          style={{
+            border: "1px solid #333",
+            backgroundColor: "#181818",
+            color: "white",
+            padding: "14px",
+            borderRadius: "8px",
+            marginBottom: "18px",
+            maxWidth: "900px",
+          }}
+        >
+          <h2 style={{ marginTop: 0, marginBottom: "10px" }}>
+            Communication Details
+          </h2>
+
+          <p style={{ marginTop: 0 }}>
+            <strong>Contact:</strong> {selectedContactName || "Selected contact"}
+          </p>
+
+          <p>
+            <strong>Phone:</strong>{" "}
+            {selectedContact.phone ? (
+              <a
+                href={`tel:${selectedContact.phone}`}
+                style={{ color: "#8ab4ff", fontWeight: "bold" }}
+              >
+                {selectedContact.phone}
+              </a>
+            ) : (
+              <span style={{ color: "#ffcc66" }}>No phone number saved.</span>
+            )}
+          </p>
+
+          <p>
+            <strong>Email:</strong>{" "}
+            {selectedContact.email ? (
+              <a
+                href={`mailto:${selectedContact.email}`}
+                style={{ color: "#8ab4ff", fontWeight: "bold" }}
+              >
+                {selectedContact.email}
+              </a>
+            ) : (
+              <span style={{ color: "#ffcc66" }}>No email address saved.</span>
+            )}
+          </p>
+
+          <p style={{ color: "#aaa", marginBottom: 0 }}>
+            Current version prepares the call, text, or email draft only. It does not send, call, or text automatically yet.
+          </p>
+        </div>
+      )}
 
       <form
         onSubmit={handleSubmit}

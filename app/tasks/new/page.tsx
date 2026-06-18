@@ -64,6 +64,33 @@ export default function NewTaskPage() {
 
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [prefilledFromAssistant, setPrefilledFromAssistant] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get("assistant_prefill") !== "true") return;
+
+    const prefillTitle = params.get("title");
+    const prefillDescription = params.get("description");
+    const prefillDueDate = params.get("due_date");
+    const prefillPriority = params.get("priority");
+    const prefillStatus = params.get("status");
+    const prefillCompanyId = params.get("company_id");
+    const prefillContactId = params.get("contact_id");
+    const prefillOpportunityId = params.get("opportunity_id");
+
+    if (prefillTitle) setTitle(prefillTitle);
+    if (prefillDescription) setDescription(prefillDescription);
+    if (prefillDueDate) setDueDate(prefillDueDate);
+    if (prefillPriority) setPriority(prefillPriority);
+    if (prefillStatus) setStatus(prefillStatus);
+    if (prefillCompanyId) setCompanyId(prefillCompanyId);
+    if (prefillContactId) setContactId(prefillContactId);
+    if (prefillOpportunityId) setOpportunityId(prefillOpportunityId);
+
+    setPrefilledFromAssistant(true);
+  }, []);
 
   useEffect(() => {
     async function loadOptions() {
@@ -210,6 +237,22 @@ export default function NewTaskPage() {
       <p style={{ color: "#aaa", marginBottom: "32px" }}>
         Create a follow-up task connected to a company, contact, or opportunity.
       </p>
+
+      {prefilledFromAssistant && (
+        <div
+          style={{
+            border: "1px solid #f5d76e",
+            backgroundColor: "#211c0d",
+            color: "#ffcc66",
+            padding: "14px",
+            borderRadius: "8px",
+            marginBottom: "18px",
+            maxWidth: "900px",
+          }}
+        >
+          This task was prefilled from an Assistant recommendation. Review it before saving.
+        </div>
+      )}
 
       <form
         onSubmit={handleSubmit}

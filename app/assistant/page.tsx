@@ -8,10 +8,29 @@ type ChatMessage = {
   role: "user" | "assistant";
   text: string;
 };
+
+type AssistantActionLink = {
+  label: string;
+  href: string;
+  kind:
+    | "company"
+    | "contact"
+    | "opportunity"
+    | "task"
+    | "activity"
+    | "note"
+    | "community"
+    | "post"
+    | "pain_point"
+    | "unknown";
+  id: string;
+};
 const ASSISTANT_MESSAGES_STORAGE_KEY = "sell-it-assistant-v4-messages";
 const ASSISTANT_QUESTION_STORAGE_KEY = "sell-it-assistant-v4-question";
 const ASSISTANT_INSIGHTS_SUPPRESSED_STORAGE_KEY =
   "sell-it-assistant-v4-insights-suppressed";
+const ASSISTANT_OPEN_RECOMMENDATIONS_STORAGE_KEY =
+  "sell-it-assistant-v4-open-recommendations";
 
 const initialAssistantMessages: ChatMessage[] = [
   {
@@ -54,6 +73,566 @@ function loadStoredQuestion() {
   }
 
   return window.sessionStorage.getItem(ASSISTANT_QUESTION_STORAGE_KEY) || "";
+}
+
+function loadAssistantOpenRecommendationKeys() {
+  if (typeof window === "undefined") {
+    return new Set<string>();
+  }
+
+  const stored = window.sessionStorage.getItem(
+    ASSISTANT_OPEN_RECOMMENDATIONS_STORAGE_KEY
+  );
+
+  if (!stored) {
+    return new Set<string>();
+  }
+
+  try {
+    const parsed = JSON.parse(stored);
+
+    if (!Array.isArray(parsed)) {
+      return new Set<string>();
+    }
+
+    return new Set(parsed.filter((value) => typeof value === "string"));
+  } catch {
+    return new Set<string>();
+  }
+}
+
+function isAssistantRecommendationOpen(recommendationKey: string) {
+  return loadAssistantOpenRecommendationKeys().has(recommendationKey);
+}
+
+function saveAssistantRecommendationOpenState(
+  recommendationKey: string,
+  isOpen: boolean
+) {
+  if (typeof window === "undefined") return;
+
+  const openKeys = loadAssistantOpenRecommendationKeys();
+
+  if (isOpen) {
+    openKeys.add(recommendationKey);
+  } else {
+    openKeys.delete(recommendationKey);
+  }
+
+  window.sessionStorage.setItem(
+    ASSISTANT_OPEN_RECOMMENDATIONS_STORAGE_KEY,
+    JSON.stringify(Array.from(openKeys))
+  );
+}
+
+function assistantActionKindFromHref(href: string): AssistantActionLink["kind"] {
+  if (href.startsWith("/companies/")) return "company";
+  if (href.startsWith("/contacts/")) return "contact";
+  if (href.startsWith("/opportunities/")) return "opportunity";
+  if (href.startsWith("/tasks/")) return "task";
+  if (href.startsWith("/activities/")) return "activity";
+  if (href.startsWith("/notes/")) return "note";
+  if (href.startsWith("/communities/")) return "community";
+  if (href.startsWith("/posts/")) return "post";
+  if (href.startsWith("/pain-points/")) return "pain_point";
+
+  return "unknown";
+}
+
+function assistantActionIdFromHref(href: string) {
+  const parts = href.split("/").filter(Boolean);
+
+  return parts[1] || "";
+}
+
+function parseAssistantActionLinks(text: string) {
+  const links: AssistantActionLink[] = [];
+  const seen = new Set<string>();
+
+  const linkPattern =
+    /- ([A-Za-z ]+): (\/(?:companies|contacts|opportunities|tasks|activities|notes|communities|posts|pain-points)\/[a-zA-Z0-9-]+)/g;
+
+  for (const match of text.matchAll(linkPattern)) {
+    const label = match[1].trim();
+    const href = match[2].trim();
+
+    if (!href || seen.has(href)) continue;
+
+    seen.add(href);
+
+    links.push({
+      label,
+      href,
+      kind: assistantActionKindFromHref(href),
+      id: assistantActionIdFromHref(href),
+    });
+  }
+
+  return links;
+}
+
+function firstAssistantLinkOfKind(
+  links: AssistantActionLink[],
+  kind: AssistantActionLink["kind"]
+) {
+  return links.find((link) => link.kind === kind);
+}
+
+function recommendationTitleFromText(text: string) {
+  const numberedMatch = text.match(/\n\d+\.\s+(.+)/);
+
+  if (numberedMatch?.[1]) {
+    return numberedMatch[1].trim();
+  }
+
+  const lines = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return lines[0] || "Assistant recommendation";
+}
+
+function shortAssistantDescription(text: string) {
+  const cleaned = text.trim();
+
+  if (cleaned.length <= 600) {
+    return cleaned;
+  }
+
+  return `${cleaned.slice(0, 600)}...`;
+}
+
+function buildAssistantTaskHref(text: string, links: AssistantActionLink[]) {
+  const params = new URLSearchParams();
+
+  const company = firstAssistantLinkOfKind(links, "company");
+  const contact = firstAssistantLinkOfKind(links, "contact");
+  const opportunity = firstAssistantLinkOfKind(links, "opportunity");
+
+  params.set("assistant_prefill", "true");
+  params.set("title", `Follow up: ${recommendationTitleFromText(text)}`);
+  params.set("description", shortAssistantDescription(text));
+  params.set("priority", "High");
+  params.set("status", "Open");
+
+  if (company?.id) params.set("company_id", company.id);
+  if (contact?.id) params.set("contact_id", contact.id);
+  if (opportunity?.id) params.set("opportunity_id", opportunity.id);
+
+  return `/tasks/new?${params.toString()}`;
+}
+
+function buildAssistantActivityHref(text: string, links: AssistantActionLink[]) {
+  const params = new URLSearchParams();
+
+  const company = firstAssistantLinkOfKind(links, "company");
+  const contact = firstAssistantLinkOfKind(links, "contact");
+  const opportunity = firstAssistantLinkOfKind(links, "opportunity");
+  const task = firstAssistantLinkOfKind(links, "task");
+
+  params.set("assistant_prefill", "true");
+  params.set("activity_type", "Note");
+  params.set("subject", `Assistant action: ${recommendationTitleFromText(text)}`);
+  params.set("summary", shortAssistantDescription(text));
+  params.set("follow_up_needed", "true");
+
+  if (company?.id) params.set("company_id", company.id);
+  if (contact?.id) params.set("contact_id", contact.id);
+  if (opportunity?.id) params.set("opportunity_id", opportunity.id);
+  if (task?.id) params.set("task_id", task.id);
+
+  return `/activities/new?${params.toString()}`;
+}
+
+function assistantActionButtonLabel(link: AssistantActionLink) {
+  const labelByKind: Record<AssistantActionLink["kind"], string> = {
+    company: "Open Company",
+    contact: "Open Contact",
+    opportunity: "Open Opportunity",
+    task: "Open Task",
+    activity: "Open Activity",
+    note: "Open Note",
+    community: "Open Community",
+    post: "Open Post",
+    pain_point: "Open Pain Point",
+    unknown: "Open Record",
+  };
+
+  return labelByKind[link.kind] || `Open ${link.label}`;
+}
+
+function extractSuggestedActionFromRecommendation(text: string) {
+  const match = text.match(/Suggested action:\s*([\s\S]*?)(?:\n\nRelated record links:|$)/);
+
+  return match?.[1]?.trim() || recommendationTitleFromText(text);
+}
+
+function extractReasonLinesFromRecommendation(text: string) {
+  const match = text.match(/Reason:\s*([\s\S]*?)(?:\n\nSuggested action:|$)/);
+
+  if (!match?.[1]) return [];
+
+  return match[1]
+    .split("\n")
+    .map((line) => line.trim().replace(/^-+\s*/, ""))
+    .filter(Boolean)
+    .slice(0, 5);
+}
+
+function draftContactNameFromRecommendation(text: string) {
+  const primaryContactMatch = text.match(/Primary contact:\s*([^\n.]+)/i);
+  const contactLinkMatch = text.match(/- Contact:\s*\/contacts\//i);
+
+  if (primaryContactMatch?.[1]) {
+    return primaryContactMatch[1].trim();
+  }
+
+  if (contactLinkMatch) {
+    return "the contact";
+  }
+
+  return "the customer";
+}
+
+function draftOpportunityNameFromRecommendation(text: string) {
+  const title = recommendationTitleFromText(text);
+  const cleanedTitle = title.replace(/^\d+\.\s*/, "");
+
+  if (cleanedTitle.includes(":")) {
+    return cleanedTitle.split(":").slice(1).join(":").split("|")[0].trim();
+  }
+
+  return cleanedTitle.split("|")[0].trim() || "this opportunity";
+}
+
+function buildGuidedSummary(text: string, actionType: string) {
+  const suggestedAction = extractSuggestedActionFromRecommendation(text);
+  const reasons = extractReasonLinesFromRecommendation(text);
+
+  return [
+    `Assistant recommended action: ${suggestedAction}`,
+    "",
+    `Action type selected: ${actionType}`,
+    "",
+    "Why this matters:",
+    ...(reasons.length > 0 ? reasons.map((reason) => `- ${reason}`) : ["- Review the related record and complete the next practical step."]),
+  ].join("\n");
+}
+
+function buildManualTextDraft(text: string) {
+  const contactName = draftContactNameFromRecommendation(text);
+  const opportunityName = draftOpportunityNameFromRecommendation(text);
+  const suggestedAction = extractSuggestedActionFromRecommendation(text);
+
+  return `Draft text message:
+
+Hi ${contactName}, this is Charles with Knotty Logistics. I wanted to follow up on ${opportunityName}. The next step I have noted is: ${suggestedAction}
+
+Would you have time this week to talk through that?
+
+Review this draft before sending. This does not send automatically.`;
+}
+
+function buildManualEmailDraft(text: string) {
+  const contactName = draftContactNameFromRecommendation(text);
+  const opportunityName = draftOpportunityNameFromRecommendation(text);
+  const suggestedAction = extractSuggestedActionFromRecommendation(text);
+
+  return `Draft email:
+
+Subject: Follow-up on ${opportunityName}
+
+Hi ${contactName},
+
+I wanted to follow up on ${opportunityName}.
+
+The next step I have noted is:
+${suggestedAction}
+
+Would you have time this week to talk through this and confirm the best next step?
+
+Thanks,
+Charles
+
+Review this draft before sending. This does not send automatically.`;
+}
+
+function buildAssistantActivityHrefForMode(
+  text: string,
+  links: AssistantActionLink[],
+  mode: "call" | "text" | "email" | "completed"
+) {
+  const params = new URLSearchParams();
+
+  const company = firstAssistantLinkOfKind(links, "company");
+  const contact = firstAssistantLinkOfKind(links, "contact");
+  const opportunity = firstAssistantLinkOfKind(links, "opportunity");
+  const task = firstAssistantLinkOfKind(links, "task");
+
+  const suggestedAction = extractSuggestedActionFromRecommendation(text);
+
+  params.set("assistant_prefill", "true");
+
+  if (mode === "call") {
+    params.set("activity_type", "Call");
+    params.set("subject", `Call: ${suggestedAction}`);
+    params.set("summary", buildGuidedSummary(text, "Call contact"));
+    params.set("raw_notes", buildGuidedSummary(text, "Call contact"));
+    params.set("follow_up_needed", "true");
+  }
+
+  if (mode === "text") {
+    params.set("activity_type", "Text Message");
+    params.set("subject", `Text draft: ${suggestedAction}`);
+    params.set("summary", buildManualTextDraft(text));
+    params.set("raw_notes", buildManualTextDraft(text));
+    params.set("outcome", "Texted");
+    params.set("follow_up_needed", "true");
+  }
+
+  if (mode === "email") {
+    params.set("activity_type", "Email");
+    params.set("subject", `Email draft: ${suggestedAction}`);
+    params.set("summary", buildManualEmailDraft(text));
+    params.set("raw_notes", buildManualEmailDraft(text));
+    params.set("follow_up_needed", "true");
+  }
+
+  if (mode === "completed") {
+    params.set("activity_type", "Note");
+    params.set("subject", `Completed action: ${suggestedAction}`);
+    params.set("summary", buildGuidedSummary(text, "Completed / already handled"));
+    params.set("raw_notes", buildGuidedSummary(text, "Completed / already handled"));
+    params.set("follow_up_needed", "false");
+  }
+
+  if (company?.id) params.set("company_id", company.id);
+  if (contact?.id) params.set("contact_id", contact.id);
+  if (opportunity?.id) params.set("opportunity_id", opportunity.id);
+  if (task?.id) params.set("task_id", task.id);
+
+  return `/activities/new?${params.toString()}`;
+}
+
+function renderAssistantActionCenter(messageText: string) {
+  const links = parseAssistantActionLinks(messageText);
+
+  if (links.length === 0) {
+    return null;
+  }
+
+  const primaryLinks = links.slice(0, 4);
+  const suggestedAction = extractSuggestedActionFromRecommendation(messageText);
+  const reasons = extractReasonLinesFromRecommendation(messageText);
+  const hasContact = links.some((link) => link.kind === "contact");
+  const hasAnyWorkRecord = links.some((link) =>
+    ["company", "contact", "opportunity", "task", "activity", "pain_point"].includes(
+      link.kind
+    )
+  );
+
+  return (
+    <div
+      style={{
+        borderTop: "1px solid #333",
+        marginTop: "14px",
+        paddingTop: "12px",
+      }}
+    >
+      <p
+        style={{
+          color: "#ffcc66",
+          fontWeight: "bold",
+          marginTop: 0,
+          marginBottom: "8px",
+        }}
+      >
+        Recommended Next Action
+      </p>
+
+      <div
+        style={{
+          border: "1px solid #3a3a3a",
+          borderRadius: "8px",
+          padding: "12px",
+          backgroundColor: "#101010",
+          marginBottom: "12px",
+        }}
+      >
+        <p style={{ marginTop: 0, marginBottom: "8px", fontWeight: "bold" }}>
+          {suggestedAction}
+        </p>
+
+        {reasons.length > 0 && (
+          <>
+            <p
+              style={{
+                color: "#aaa",
+                marginTop: "10px",
+                marginBottom: "6px",
+                fontWeight: "bold",
+              }}
+            >
+              Why this matters
+            </p>
+
+            <ul style={{ marginTop: 0, marginBottom: 0, paddingLeft: "20px" }}>
+              {reasons.slice(0, 4).map((reason) => (
+                <li key={reason} style={{ marginBottom: "4px" }}>
+                  {reason}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </div>
+
+      <p
+        style={{
+          color: "#aaa",
+          marginTop: 0,
+          marginBottom: "8px",
+          fontWeight: "bold",
+        }}
+      >
+        Choose how to handle it
+      </p>
+
+      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+        {hasContact && (
+          <>
+            <Link
+              href={buildAssistantActivityHrefForMode(messageText, links, "call")}
+              style={{
+                backgroundColor: "#f5d76e",
+                color: "black",
+                padding: "9px 12px",
+                borderRadius: "6px",
+                textDecoration: "none",
+                fontWeight: "bold",
+                fontSize: "14px",
+              }}
+            >
+              Call Contact
+            </Link>
+
+            <Link
+              href={buildAssistantActivityHrefForMode(messageText, links, "text")}
+              style={{
+                backgroundColor: "#f5d76e",
+                color: "black",
+                padding: "9px 12px",
+                borderRadius: "6px",
+                textDecoration: "none",
+                fontWeight: "bold",
+                fontSize: "14px",
+              }}
+            >
+              Text Draft
+            </Link>
+
+            <Link
+              href={buildAssistantActivityHrefForMode(messageText, links, "email")}
+              style={{
+                backgroundColor: "#f5d76e",
+                color: "black",
+                padding: "9px 12px",
+                borderRadius: "6px",
+                textDecoration: "none",
+                fontWeight: "bold",
+                fontSize: "14px",
+              }}
+            >
+              Email Draft
+            </Link>
+          </>
+        )}
+
+        {hasAnyWorkRecord && (
+          <Link
+            href={buildAssistantTaskHref(messageText, links)}
+            style={{
+              backgroundColor: "#f5d76e",
+              color: "black",
+              padding: "9px 12px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+              fontSize: "14px",
+            }}
+          >
+            Create Task for Later
+          </Link>
+        )}
+
+        <Link
+          href={buildAssistantActivityHrefForMode(messageText, links, "completed")}
+          style={{
+            backgroundColor: "white",
+            color: "black",
+            padding: "9px 12px",
+            borderRadius: "6px",
+            textDecoration: "none",
+            fontWeight: "bold",
+            fontSize: "14px",
+          }}
+        >
+          Log Completed Activity
+        </Link>
+      </div>
+
+      <p
+        style={{
+          color: "#aaa",
+          fontSize: "13px",
+          marginTop: "10px",
+          marginBottom: "10px",
+        }}
+      >
+        Drafts are review-only. Sell It does not call, text, email, or save anything automatically.
+      </p>
+
+      <details style={{ marginTop: "8px" }}>
+        <summary
+          style={{
+            cursor: "pointer",
+            color: "#8ab4ff",
+            fontWeight: "bold",
+          }}
+        >
+          Related records
+        </summary>
+
+        <div
+          style={{
+            display: "flex",
+            gap: "10px",
+            flexWrap: "wrap",
+            marginTop: "10px",
+          }}
+        >
+          {primaryLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              style={{
+                backgroundColor: "white",
+                color: "black",
+                padding: "8px 10px",
+                borderRadius: "6px",
+                textDecoration: "none",
+                fontWeight: "bold",
+                fontSize: "13px",
+              }}
+            >
+              {assistantActionButtonLabel(link)}
+            </Link>
+          ))}
+        </div>
+      </details>
+    </div>
+  );
 }
 
 type Company = {
@@ -1569,9 +2148,19 @@ function renderMessageText(text: string) {
           ) : null}
 
           <div style={{ display: "grid", gap: "10px" }}>
-            {items.map((item, index) => (
+            {items.map((item, index) => {
+              const recommendationKey = `${index}:${recommendationSummary(item)}`;
+
+              return (
               <details
                 key={`recommendation-${index}`}
+                open={isAssistantRecommendationOpen(recommendationKey)}
+                onToggle={(event) =>
+                  saveAssistantRecommendationOpenState(
+                    recommendationKey,
+                    event.currentTarget.open
+                  )
+                }
                 style={{
                   border: "1px solid #333",
                   borderRadius: "8px",
@@ -1598,8 +2187,11 @@ function renderMessageText(text: string) {
                 >
                   {renderLinkedText(item, `recommendation-${index}`)}
                 </div>
+
+                {renderAssistantActionCenter(item)}
               </details>
-            ))}
+              );
+            })}
           </div>
         </>
       );
@@ -5498,6 +6090,9 @@ export default function AssistantPage() {
           if (cancelled) return;
 
           window.sessionStorage.removeItem(ASSISTANT_INSIGHTS_SUPPRESSED_STORAGE_KEY);
+    window.sessionStorage.removeItem(
+      ASSISTANT_OPEN_RECOMMENDATIONS_STORAGE_KEY
+    );
     setThinking(true);
           setErrorMessage("");
 
@@ -5576,6 +6171,9 @@ ${answer}`,
       ASSISTANT_INSIGHTS_SUPPRESSED_STORAGE_KEY,
       "true"
     );
+    window.sessionStorage.removeItem(
+      ASSISTANT_OPEN_RECOMMENDATIONS_STORAGE_KEY
+    );
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -5586,6 +6184,9 @@ ${answer}`,
     if (!trimmedQuestion) return;
 
     window.sessionStorage.removeItem(ASSISTANT_INSIGHTS_SUPPRESSED_STORAGE_KEY);
+    window.sessionStorage.removeItem(
+      ASSISTANT_OPEN_RECOMMENDATIONS_STORAGE_KEY
+    );
     setThinking(true);
     setErrorMessage("");
 
@@ -5730,6 +6331,7 @@ ${answer}`,
               <div style={{ whiteSpace: "pre-wrap", marginBottom: 0, lineHeight: 1.45 }}>
                 {renderMessageText(message.text)}
               </div>
+
             </div>
           ))}
 
