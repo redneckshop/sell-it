@@ -290,6 +290,25 @@ function buildAssistantOpportunityStageHref(link: AssistantActionLink) {
   return `/assistant/actions/opportunities/${link.id}/stage`;
 }
 
+function parseAssistantScheduleActionLinks(text: string): AssistantActionLink[] {
+  const matches = Array.from(
+    text.matchAll(/__ASSISTANT_SCHEDULE_TASK_LINK__(\/assistant\/actions\/tasks\/schedule\?[^\s\n]+)/g)
+  );
+
+  return matches.map((match) => ({
+    label: "Schedule Task",
+    href: match[1],
+    kind: "unknown" as const,
+    id: "",
+  }));
+}
+
+function firstAssistantScheduleTaskLink(links: AssistantActionLink[]) {
+  return links.find((link) =>
+    link.href.startsWith("/assistant/actions/tasks/schedule")
+  );
+}
+
 function assistantActionButtonLabel(link: AssistantActionLink) {
   const labelByKind: Record<AssistantActionLink["kind"], string> = {
     company: "Open Company",
@@ -461,7 +480,14 @@ function buildAssistantActivityHrefForMode(
 }
 
 function renderAssistantActionCenter(messageText: string) {
-  const links = parseAssistantActionLinks(messageText);
+  const scheduleLinks = parseAssistantScheduleActionLinks(messageText);
+  const recordLinks = parseAssistantActionLinks(messageText);
+  const links = [...scheduleLinks, ...recordLinks].filter(
+    (link, index, allLinks) =>
+      allLinks.findIndex((candidate) => candidate.href === link.href) === index
+  );
+  const isScheduleActionAnswer =
+    scheduleLinks.length > 0 || messageText.includes("Schedule Task Review");
 
   if (links.length === 0) {
     return null;
@@ -478,6 +504,8 @@ function renderAssistantActionCenter(messageText: string) {
   );
   const taskCompleteLink = firstAssistantTaskCompleteLink(messageText, links);
   const opportunityStageLink = firstAssistantLinkOfKind(links, "opportunity");
+  const scheduleTaskLink = firstAssistantScheduleTaskLink(links);
+  const showScheduleOnly = Boolean(scheduleTaskLink) && isScheduleActionAnswer;
 
   return (
     <div
@@ -547,7 +575,24 @@ function renderAssistantActionCenter(messageText: string) {
       </p>
 
       <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-        {hasContact && (
+        {scheduleTaskLink && (
+          <Link
+            href={scheduleTaskLink.href}
+            style={{
+              backgroundColor: "#ffcc66",
+              color: "black",
+              padding: "9px 12px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+              fontSize: "14px",
+            }}
+          >
+            Schedule Task
+          </Link>
+        )}
+
+        {hasContact && !showScheduleOnly && (
           <>
             <Link
               href={buildAssistantActivityHrefForMode(messageText, links, "call")}
@@ -596,7 +641,7 @@ function renderAssistantActionCenter(messageText: string) {
           </>
         )}
 
-        {hasAnyWorkRecord && (
+        {hasAnyWorkRecord && !showScheduleOnly && (
           <Link
             href={buildAssistantTaskHref(messageText, links)}
             style={{
@@ -613,22 +658,24 @@ function renderAssistantActionCenter(messageText: string) {
           </Link>
         )}
 
-        <Link
-          href={buildAssistantActivityHrefForMode(messageText, links, "completed")}
-          style={{
-            backgroundColor: "white",
-            color: "black",
-            padding: "9px 12px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-            fontSize: "14px",
-          }}
-        >
-          Log Completed Activity
-        </Link>
+        {!showScheduleOnly && (
+          <Link
+            href={buildAssistantActivityHrefForMode(messageText, links, "completed")}
+            style={{
+              backgroundColor: "white",
+              color: "black",
+              padding: "9px 12px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+              fontSize: "14px",
+            }}
+          >
+            Log Completed Activity
+          </Link>
+        )}
 
-        {taskCompleteLink?.id && (
+        {!showScheduleOnly && taskCompleteLink?.id && (
           <Link
             href={buildAssistantTaskCompleteHref(taskCompleteLink)}
             style={{
@@ -645,7 +692,7 @@ function renderAssistantActionCenter(messageText: string) {
           </Link>
         )}
 
-        {opportunityStageLink?.id && (
+        {!showScheduleOnly && opportunityStageLink?.id && (
           <Link
             href={buildAssistantOpportunityStageHref(opportunityStageLink)}
             style={{
@@ -671,7 +718,7 @@ function renderAssistantActionCenter(messageText: string) {
           marginBottom: "10px",
         }}
       >
-        Drafts are review-only. Sell It does not call, text, email, or save anything automatically. Mark Complete and Move Stage open confirmation screens before changing records.
+        Drafts are review-only. Sell It does not call, text, email, or save anything automatically. Schedule Task, Mark Complete, and Move Stage open confirmation screens before changing records.
       </p>
 
       <details style={{ marginTop: "8px" }}>
@@ -693,7 +740,7 @@ function renderAssistantActionCenter(messageText: string) {
             marginTop: "10px",
           }}
         >
-          {primaryLinks.map((link) => (
+          {primaryLinks.filter((link) => !link.href.startsWith("/assistant/actions/tasks/schedule")).map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -2161,6 +2208,12 @@ function communityLine(community: Community) {
 }
 
 function renderMessageText(text: string) {
+  const hiddenScheduleTaskMarker = "__ASSISTANT_SCHEDULE_TASK_LINK__";
+
+  text = text
+    .split("\n")
+    .filter((line) => !line.startsWith(hiddenScheduleTaskMarker))
+    .join("\n");
   const routeSplitPattern =
     /(\/(?:companies|contacts|opportunities|tasks|activities|notes|communities|posts|pain-points)\/[a-zA-Z0-9-]+)/g;
 
@@ -6041,10 +6094,408 @@ async function answerComparisonQuestion(userQuestion: string) {
   return answerCompanyComparison(userQuestion);
 }
 
+function isAssistantScheduleTaskRequest(lowerQuestion: string) {
+  return (
+    lowerQuestion.includes("schedule") ||
+    lowerQuestion.includes("remind me") ||
+    lowerQuestion.includes("add this to the planner") ||
+    lowerQuestion.includes("add it to the planner") ||
+    lowerQuestion.includes("add to planner") ||
+    lowerQuestion.includes("create a follow-up task") ||
+    lowerQuestion.includes("create follow-up task") ||
+    (lowerQuestion.includes("turn") && lowerQuestion.includes("task"))
+  );
+}
+
+function assistantScheduleNormalize(value: string | null | undefined) {
+  return (value ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function extractAssistantScheduleSearchName(userQuestion: string) {
+  const forMatch = userQuestion.match(
+    /\bfor\s+(.+?)(?:\s+for\s+|\s+on\s+|\s+next\s+|\s+this\s+|\s+today\b|\s+tomorrow\b|\s+monday\b|\s+tuesday\b|\s+wednesday\b|\s+thursday\b|\s+friday\b|\s+saturday\b|\s+sunday\b|$)/i
+  );
+
+  if (forMatch?.[1]) {
+    const explicitName = assistantScheduleNormalize(forMatch[1]);
+
+    if (explicitName && explicitName.length >= 3) {
+      return explicitName;
+    }
+  }
+
+  const callMatch = userQuestion.match(
+    /\bcall\s+(.+?)(?:\s+for\s+|\s+on\s+|\s+next\s+|\s+this\s+|\s+today\b|\s+tomorrow\b|\s+monday\b|\s+tuesday\b|\s+wednesday\b|\s+thursday\b|\s+friday\b|\s+saturday\b|\s+sunday\b|$)/i
+  );
+
+  if (callMatch?.[1]) {
+    const explicitName = assistantScheduleNormalize(callMatch[1]);
+
+    if (explicitName && explicitName.length >= 3) {
+      return explicitName;
+    }
+  }
+
+  const commonWords = new Set([
+    "schedule",
+    "scheduled",
+    "task",
+    "follow",
+    "up",
+    "followup",
+    "meeting",
+    "remind",
+    "me",
+    "to",
+    "call",
+    "text",
+    "email",
+    "add",
+    "this",
+    "that",
+    "it",
+    "the",
+    "planner",
+    "create",
+    "turn",
+    "into",
+    "for",
+    "on",
+    "next",
+    "today",
+    "tomorrow",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+    "week",
+    "month",
+    "a",
+    "an",
+    "and",
+  ]);
+
+  const tokens = assistantScheduleNormalize(userQuestion)
+    .split(" ")
+    .filter((token) => token.length >= 3 && !commonWords.has(token));
+
+  return tokens[0] || "";
+}
+
+function inferAssistantScheduleDate(userQuestion: string) {
+  const lower = userQuestion.toLowerCase();
+  const today = new Date();
+  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+  function toKey(date: Date) {
+    return [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0"),
+    ].join("-");
+  }
+
+  const explicitDate = lower.match(/\b(20\d{2})-(\d{2})-(\d{2})\b/);
+
+  if (explicitDate?.[0]) {
+    return explicitDate[0];
+  }
+
+  const dayOfMonth = lower.match(/\b(?:on\s+)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)?\s*(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)\b/);
+
+  if (dayOfMonth?.[1]) {
+    const day = Number(dayOfMonth[1]);
+    const candidate = new Date(start.getFullYear(), start.getMonth(), day);
+
+    if (candidate < start) {
+      candidate.setMonth(candidate.getMonth() + 1);
+    }
+
+    return toKey(candidate);
+  }
+
+  if (lower.includes("today")) {
+    return toKey(start);
+  }
+
+  if (lower.includes("tomorrow")) {
+    const candidate = new Date(start);
+    candidate.setDate(candidate.getDate() + 1);
+    return toKey(candidate);
+  }
+
+  if (lower.includes("next week")) {
+    const candidate = new Date(start);
+    candidate.setDate(candidate.getDate() + 7);
+    return toKey(candidate);
+  }
+
+  const weekdays = [
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+  ];
+
+  const requestedWeekday = weekdays.find((day) => lower.includes(day));
+
+  if (requestedWeekday) {
+    const requestedIndex = weekdays.indexOf(requestedWeekday);
+    const candidate = new Date(start);
+    let daysToAdd = requestedIndex - candidate.getDay();
+
+    if (daysToAdd <= 0 || lower.includes(`next ${requestedWeekday}`)) {
+      daysToAdd += 7;
+    }
+
+    candidate.setDate(candidate.getDate() + daysToAdd);
+
+    return toKey(candidate);
+  }
+
+  return "";
+}
+
+type AssistantScheduleTaskRow = {
+  id?: string | null;
+  title?: string | null;
+  description?: string | null;
+  due_date?: string | null;
+  priority?: string | null;
+  status?: string | null;
+  assigned_to?: string | null;
+  company_id?: string | null;
+  contact_id?: string | null;
+  opportunity_id?: string | null;
+  companies?: unknown;
+  contacts?: unknown;
+  opportunities?: unknown;
+};
+
+type AssistantScheduleOpportunityRow = {
+  id?: string | null;
+  name?: string | null;
+  company_id?: string | null;
+  primary_contact_id?: string | null;
+  next_step?: string | null;
+  notes?: string | null;
+};
+
+function assistantScheduleRelationText(value: unknown) {
+  const relation = Array.isArray(value) ? value[0] : value;
+
+  if (!relation || typeof relation !== "object") {
+    return "";
+  }
+
+  const record = relation as Record<string, unknown>;
+
+  return [
+    String(record.name ?? ""),
+    String(record.first_name ?? ""),
+    String(record.last_name ?? ""),
+    String(record.email ?? ""),
+    String(record.phone ?? ""),
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function assistantScheduleTaskSearchText(task: AssistantScheduleTaskRow) {
+  return assistantScheduleNormalize(
+    [
+      task.title || "",
+      task.description || "",
+      assistantScheduleRelationText(task.companies),
+      assistantScheduleRelationText(task.contacts),
+      assistantScheduleRelationText(task.opportunities),
+    ].join(" ")
+  );
+}
+
+function assistantScheduleOpportunitySearchText(opportunity: AssistantScheduleOpportunityRow) {
+  return assistantScheduleNormalize(
+    [
+      opportunity.name || "",
+      opportunity.next_step || "",
+      opportunity.notes || "",
+    ].join(" ")
+  );
+}
+
+function isAssistantScheduleOpenTask(task: AssistantScheduleTaskRow) {
+  const status = assistantScheduleNormalize(task.status);
+
+  return status !== "completed" && status !== "cancelled";
+}
+
+function buildAssistantScheduleReviewHref(input: {
+  userQuestion: string;
+  sourceTask: AssistantScheduleTaskRow | null;
+  opportunity: AssistantScheduleOpportunityRow | null;
+  searchName: string;
+}) {
+  const params = new URLSearchParams();
+  const dueDate = inferAssistantScheduleDate(input.userQuestion);
+  const lower = input.userQuestion.toLowerCase();
+  const displayName = input.searchName || input.opportunity?.name || "follow-up";
+
+  const fallbackTitle = lower.includes("call")
+    ? `Call ${displayName}`
+    : lower.includes("meeting")
+      ? `Meeting with ${displayName}`
+      : `Follow up with ${displayName}`;
+
+  params.set("title", input.sourceTask?.title || fallbackTitle);
+  params.set(
+    "description",
+    [
+      `Scheduled from Assistant request: ${input.userQuestion}`,
+      input.sourceTask?.id ? `Source task: ${input.sourceTask.id}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n")
+  );
+  params.set("priority", input.sourceTask?.priority || "Normal");
+  params.set("status", "Open");
+  params.set(
+    "assigned_to",
+    input.sourceTask?.assigned_to || "a840f813-aba5-44f7-bf20-5f1e5a91e832"
+  );
+
+  if (dueDate) params.set("due_date", dueDate);
+  if (input.sourceTask?.id) params.set("source_task_id", input.sourceTask.id);
+
+  const companyId = input.sourceTask?.company_id || input.opportunity?.company_id || "";
+  const contactId =
+    input.sourceTask?.contact_id || input.opportunity?.primary_contact_id || "";
+  const opportunityId =
+    input.sourceTask?.opportunity_id || input.opportunity?.id || "";
+
+  if (companyId) params.set("company_id", companyId);
+  if (contactId) params.set("contact_id", contactId);
+  if (opportunityId) params.set("opportunity_id", opportunityId);
+
+  return `/assistant/actions/tasks/schedule?${params.toString()}`;
+}
+
+async function answerAssistantScheduleTaskRequest(userQuestion: string) {
+  const searchName = extractAssistantScheduleSearchName(userQuestion);
+  const normalizedSearchName = assistantScheduleNormalize(searchName);
+  const dueDate = inferAssistantScheduleDate(userQuestion);
+
+  const { data: taskRows, error: taskError } = await supabase
+    .from("tasks")
+    .select(`
+      id,
+      title,
+      description,
+      due_date,
+      priority,
+      status,
+      assigned_to,
+      company_id,
+      contact_id,
+      opportunity_id,
+      companies (
+        id,
+        name
+      ),
+      contacts (
+        id,
+        first_name,
+        last_name
+      ),
+      opportunities (
+        id,
+        name
+      )
+    `)
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (taskError) {
+    throw new Error(taskError.message);
+  }
+
+  const { data: opportunityRows, error: opportunityError } = await supabase
+    .from("opportunities")
+    .select("id, name, company_id, primary_contact_id, next_step, notes")
+    .order("updated_at", { ascending: false })
+    .limit(200);
+
+  if (opportunityError) {
+    throw new Error(opportunityError.message);
+  }
+
+  const tasks = (taskRows ?? []) as unknown as AssistantScheduleTaskRow[];
+  const opportunities = (opportunityRows ?? []) as unknown as AssistantScheduleOpportunityRow[];
+
+  const matchingTasks = normalizedSearchName
+    ? tasks.filter((task) =>
+        assistantScheduleTaskSearchText(task).includes(normalizedSearchName)
+      )
+    : [];
+
+  const matchingOpportunity = normalizedSearchName
+    ? opportunities.find((opportunity) =>
+        assistantScheduleOpportunitySearchText(opportunity).includes(normalizedSearchName)
+      ) || null
+    : null;
+
+  const sourceTask =
+    matchingTasks.find((task) => isAssistantScheduleOpenTask(task) && !task.due_date) ||
+    matchingTasks.find((task) => isAssistantScheduleOpenTask(task)) ||
+    null;
+
+  const scheduleHref = buildAssistantScheduleReviewHref({
+    userQuestion,
+    sourceTask,
+    opportunity: matchingOpportunity,
+    searchName,
+  });
+
+  return [
+    "Schedule Task Review",
+    "",
+    sourceTask
+      ? `I found an existing open task: ${sourceTask.title}`
+      : `I prepared a new scheduled task draft${searchName ? ` for ${searchName}` : ""}.`,
+    dueDate
+      ? `I inferred the due date as ${dueDate}.`
+      : "I could not confidently infer a due date. Pick one on the review screen before saving.",
+    "Nothing has been saved yet.",
+    "",
+    "__ASSISTANT_SCHEDULE_TASK_LINK__" + scheduleHref,
+    "",
+    "Recommended next action:",
+    "Review the scheduled task details, adjust anything needed, then confirm to save it to the Planner.",
+    "",
+    "Related record links:",
+    sourceTask?.id ? `- Task: /tasks/${sourceTask.id}` : "",
+    matchingOpportunity?.id ? `- Opportunity: /opportunities/${matchingOpportunity.id}` : "",
+  ]
+    .filter((line) => line !== "")
+    .join("\n");
+}
+
 async function routeQuestion(userQuestion: string) {
   const lower = userQuestion.toLowerCase();
 
-  if (isExecutiveReportQuestion(lower)) {
+  if (isAssistantScheduleTaskRequest(lower)) {
+    return answerAssistantScheduleTaskRequest(userQuestion);
+  }
+if (isExecutiveReportQuestion(lower)) {
     return answerExecutiveReport(userQuestion);
   }
 
@@ -6411,6 +6862,10 @@ ${answer}`,
 
               <div style={{ whiteSpace: "pre-wrap", marginBottom: 0, lineHeight: 1.45 }}>
                 {renderMessageText(message.text)}
+
+                  {message.role === "assistant" &&
+                    message.text.includes("__ASSISTANT_SCHEDULE_TASK_LINK__") &&
+                    renderAssistantActionCenter(message.text)}
               </div>
 
             </div>
