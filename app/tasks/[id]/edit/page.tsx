@@ -43,6 +43,8 @@ type Task = {
   contact_id: string | null;
   opportunity_id: string | null;
   updated_at: string | null;
+  completed_at: string | null;
+  completed_by: string | null;
 };
 
 const inputStyle: CSSProperties = {
@@ -78,6 +80,9 @@ export default function EditTaskPage() {
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState("Normal");
   const [status, setStatus] = useState("Open");
+  const [originalStatus, setOriginalStatus] = useState("Open");
+  const [completedAt, setCompletedAt] = useState<string | null>(null);
+  const [completedBy, setCompletedBy] = useState<string | null>(null);
   const [assignedTo, setAssignedTo] = useState("");
   const [companyId, setCompanyId] = useState("");
   const [contactId, setContactId] = useState("");
@@ -144,7 +149,7 @@ export default function EditTaskPage() {
       const { data, error } = await supabase
         .from("tasks")
         .select(
-          "id, title, description, due_date, priority, status, assigned_to, company_id, contact_id, opportunity_id, updated_at"
+          "id, title, description, due_date, priority, status, assigned_to, company_id, contact_id, opportunity_id, updated_at, completed_at, completed_by"
         )
         .eq("id", taskId)
         .single();
@@ -163,6 +168,9 @@ export default function EditTaskPage() {
       setDueDate(task.due_date ? task.due_date.slice(0, 10) : "");
       setPriority(task.priority || "Normal");
       setStatus(task.status || "Open");
+      setOriginalStatus(task.status || "Open");
+      setCompletedAt(task.completed_at);
+      setCompletedBy(task.completed_by);
       setAssignedTo(task.assigned_to || "");
       setCompanyId(task.company_id || "");
       setContactId(task.contact_id || "");
@@ -181,6 +189,11 @@ export default function EditTaskPage() {
     setSaving(true);
     setErrorMessage("");
 
+    const changedAt = new Date().toISOString();
+    const isCompleted = status === "Completed";
+    const nextCompletedAt = isCompleted ? completedAt || changedAt : null;
+    const nextCompletedBy = isCompleted ? completedBy || USER_ID : null;
+
     const { error } = await supabase
       .from("tasks")
       .update({
@@ -193,8 +206,10 @@ export default function EditTaskPage() {
         company_id: companyId || null,
         contact_id: contactId || null,
         opportunity_id: opportunityId || null,
+        completed_at: nextCompletedAt,
+        completed_by: nextCompletedBy,
         updated_by: USER_ID,
-        updated_at: new Date().toISOString(),
+        updated_at: changedAt,
       })
       .eq("id", taskId);
 
@@ -348,6 +363,36 @@ export default function EditTaskPage() {
               <option value="Cancelled">Cancelled</option>
             </select>
           </label>
+
+          {status === "Completed" && (
+            <div
+              style={{
+                border: "1px solid #333",
+                borderRadius: "8px",
+                padding: "12px",
+                backgroundColor: "#151515",
+                color: "#aaa",
+              }}
+            >
+              Completion metadata will be saved when this task is saved.
+              Completed At:{" "}
+              {completedAt ? new Date(completedAt).toLocaleString() : "On save"}
+            </div>
+          )}
+
+          {originalStatus === "Completed" && status !== "Completed" && (
+            <div
+              style={{
+                border: "1px solid #f5d76e",
+                borderRadius: "8px",
+                padding: "12px",
+                backgroundColor: "#211c0d",
+                color: "#ffcc66",
+              }}
+            >
+              Saving this task as {status} will clear Completed At and Completed By.
+            </div>
+          )}
 
           <label>
             Assigned To

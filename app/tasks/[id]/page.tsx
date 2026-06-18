@@ -40,10 +40,13 @@ type Task = {
   opportunity_id: string | null;
   created_at: string | null;
   updated_at: string | null;
+  completed_at: string | null;
+  completed_by: string | null;
   companies: SupabaseRelation<RelatedCompany>;
   contacts: SupabaseRelation<RelatedContact>;
   opportunities: SupabaseRelation<RelatedOpportunity>;
   assigned_profile: SupabaseRelation<AssignedProfile>;
+  completed_profile: SupabaseRelation<AssignedProfile>;
 };
 
 type PageProps = {
@@ -91,6 +94,8 @@ export default async function TaskDetailPage({ params }: PageProps) {
       opportunity_id,
       created_at,
       updated_at,
+      completed_at,
+      completed_by,
       companies (
         id,
         name
@@ -108,6 +113,11 @@ export default async function TaskDetailPage({ params }: PageProps) {
         id,
         full_name,
         email
+      ),
+      completed_profile:profiles!tasks_completed_by_fkey (
+        id,
+        full_name,
+        email
       )
     `)
     .eq("id", id)
@@ -119,6 +129,7 @@ export default async function TaskDetailPage({ params }: PageProps) {
   const contact = singleRelation(task?.contacts);
   const opportunity = singleRelation(task?.opportunities);
   const assignedProfile = singleRelation(task?.assigned_profile);
+  const completedProfile = singleRelation(task?.completed_profile);
 
   return (
     <main
@@ -222,6 +233,22 @@ export default async function TaskDetailPage({ params }: PageProps) {
             <p>
               <strong>Status:</strong> {task.status}
             </p>
+
+            {task.status === "Completed" && (
+              <>
+                <p>
+                  <strong>Completed At:</strong>{" "}
+                  {formatDateTime(task.completed_at)}
+                </p>
+
+                <p>
+                  <strong>Completed By:</strong>{" "}
+                  {completedProfile?.full_name ||
+                    completedProfile?.email ||
+                    "Not available"}
+                </p>
+              </>
+            )}
 
             <p>
               <strong>Priority:</strong> {task.priority}

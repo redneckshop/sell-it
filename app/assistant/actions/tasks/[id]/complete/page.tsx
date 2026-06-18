@@ -18,6 +18,8 @@ type Task = {
   contact_id: string | null;
   opportunity_id: string | null;
   updated_at: string | null;
+  completed_at: string | null;
+  completed_by: string | null;
 };
 
 type SupabaseLikeError = {
@@ -95,7 +97,7 @@ export default function AssistantCompleteTaskPage() {
       const { data, error } = await supabase
         .from("tasks")
         .select(
-          "id, title, description, due_date, priority, status, company_id, contact_id, opportunity_id, updated_at"
+          "id, title, description, due_date, priority, status, company_id, contact_id, opportunity_id, updated_at, completed_at, completed_by"
         )
         .eq("id", taskId)
         .single();
@@ -142,6 +144,8 @@ export default function AssistantCompleteTaskPage() {
       .from("tasks")
       .update({
         status: "Completed",
+        completed_at: changedAt,
+        completed_by: USER_ID,
         updated_by: USER_ID,
         updated_at: changedAt,
       })
@@ -164,6 +168,8 @@ export default function AssistantCompleteTaskPage() {
     setTask({
       ...task,
       status: "Completed",
+      completed_at: changedAt,
+      completed_by: USER_ID,
       updated_at: changedAt,
     });
 
@@ -189,7 +195,7 @@ export default function AssistantCompleteTaskPage() {
         "Task marked Completed. This database does not appear to have completed_at/completed_by fields yet, so only status and updated fields were saved."
       );
     } else {
-      setSuccessMessage("Task marked Completed. Completion metadata was saved too.");
+      setSuccessMessage("Task marked Completed. Completed At and Completed By were saved.");
     }
 
     router.refresh();
@@ -206,7 +212,7 @@ export default function AssistantCompleteTaskPage() {
   return (
     <main style={{ padding: "24px", color: "white" }}>
       <Link href="/assistant" style={{ color: "#8ab4ff" }}>
-        ← Back to Assistant
+        â† Back to Assistant
       </Link>
 
       <h1>Assistant Action: Mark Task Complete</h1>
@@ -267,6 +273,22 @@ export default function AssistantCompleteTaskPage() {
             <p>
               <strong>Current Status:</strong> {task.status}
             </p>
+
+            {task.status === "Completed" && (
+              <>
+                <p>
+                  <strong>Completed At:</strong>{" "}
+                  {task.completed_at
+                    ? new Date(task.completed_at).toLocaleString()
+                    : "Not saved yet"}
+                </p>
+
+                <p>
+                  <strong>Completed By:</strong>{" "}
+                  {task.completed_by || "Not saved yet"}
+                </p>
+              </>
+            )}
 
             <p>
               <strong>Priority:</strong> {task.priority}
