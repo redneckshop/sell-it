@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import type { CSSProperties } from "react";
 import { supabase } from "./lib/supabase";
 import HomeSearch from "./components/HomeSearch";
@@ -249,6 +249,7 @@ export default async function Home() {
     { title: "Contacts", href: "/contacts" },
     { title: "Opportunities", href: "/opportunities" },
     { title: "Tasks", href: "/tasks" },
+    { title: "Planner", href: "/planner" },
     { title: "Activities", href: "/activities" },
     { title: "Notes", href: "/notes" },
     { title: "Communities", href: "/communities" },
@@ -463,6 +464,25 @@ export default async function Home() {
               <h2 style={{ fontSize: "34px", margin: 0 }}>
                 {openTasks.length}
               </h2>
+            </Link>
+
+            <Link
+              href="/planner"
+              style={{
+                ...cardStyle(),
+                color: "white",
+                textDecoration: "none",
+              }}
+            >
+              <p style={{ color: "#aaa", margin: "0 0 8px 0" }}>
+                Planner Today
+              </p>
+              <h2 style={{ fontSize: "34px", margin: 0 }}>
+                {tasksDueToday.length}
+              </h2>
+              <p style={{ color: "#aaa", margin: "8px 0 0 0" }}>
+                {overdueTasks.length} overdue
+              </p>
             </Link>
           </div>
 

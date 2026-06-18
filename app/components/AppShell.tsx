@@ -20,6 +20,7 @@ const navItems: NavItem[] = [
   { label: "Contacts", href: "/contacts" },
   { label: "Opportunities", href: "/opportunities" },
   { label: "Tasks", href: "/tasks" },
+  { label: "Planner", href: "/planner" },
   { label: "Activities", href: "/activities" },
   { label: "Notes", href: "/notes" },
   { label: "Communities", href: "/communities" },
