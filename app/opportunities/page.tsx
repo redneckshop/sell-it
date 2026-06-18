@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { supabase } from "../lib/supabase";
 
 type SupabaseRelation<T> = T | T[] | null;
@@ -24,6 +24,7 @@ type Opportunity = {
   estimated_monthly_value: number | null;
   expected_close_date: string | null;
   next_step: string | null;
+  notes: string | null;
   company_id: string;
   primary_contact_id: string | null;
   created_at: string | null;
@@ -36,6 +37,10 @@ type Opportunity = {
 
 type PageProps = {
   searchParams?: Promise<{
+    q?: string;
+    stage?: string;
+    lead_temperature?: string;
+    opportunity_type?: string;
     archived?: string;
   }>;
 };
@@ -48,6 +53,36 @@ function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
   }
 
   return value;
+}
+
+function textValue(value: string | null | undefined) {
+  return (value ?? "").toLowerCase();
+}
+
+function matchesOpportunitySearch(opportunity: Opportunity, search: string) {
+  if (!search) return true;
+
+  const searchable = [
+    opportunity.name,
+    opportunity.stage,
+    opportunity.opportunity_type,
+    opportunity.next_step,
+    opportunity.notes,
+  ]
+    .map((value) => textValue(value))
+    .join(" ");
+
+  return searchable.includes(search);
+}
+
+function uniqueValues(values: Array<string | null | undefined>) {
+  return Array.from(
+    new Set(
+      values
+        .map((value) => (value ?? "").trim())
+        .filter(Boolean)
+    )
+  ).sort((a, b) => a.localeCompare(b));
 }
 
 function formatMoney(value: number | null) {
@@ -66,10 +101,15 @@ function formatDateTime(value: string | null) {
 }
 
 export default async function OpportunitiesPage({ searchParams }: PageProps) {
-  const resolvedSearchParams = await searchParams;
-  const showArchived = resolvedSearchParams?.archived === "true";
+  const params = searchParams ? await searchParams : {};
 
-  let query = supabase
+  const search = (params.q ?? "").trim().toLowerCase();
+  const stageFilter = (params.stage ?? "").trim();
+  const leadTemperatureFilter = (params.lead_temperature ?? "").trim();
+  const opportunityTypeFilter = (params.opportunity_type ?? "").trim();
+  const archivedFilter = (params.archived ?? "active").trim();
+
+  const { data, error } = await supabase
     .from("opportunities")
     .select(`
       id,
@@ -81,6 +121,7 @@ export default async function OpportunitiesPage({ searchParams }: PageProps) {
       estimated_monthly_value,
       expected_close_date,
       next_step,
+      notes,
       company_id,
       primary_contact_id,
       created_at,
@@ -96,15 +137,61 @@ export default async function OpportunitiesPage({ searchParams }: PageProps) {
         first_name,
         last_name
       )
-    `);
+    `)
+    .order("created_at", { ascending: false });
 
-  if (!showArchived) {
-    query = query.eq("is_archived", false);
-  }
+  const allOpportunities = (data ?? []) as unknown as Opportunity[];
 
-  const { data, error } = await query.order("created_at", { ascending: false });
+  const opportunities = allOpportunities.filter((opportunity) => {
+    const matchesArchive =
+      archivedFilter === "all"
+        ? true
+        : archivedFilter === "archived"
+          ? opportunity.is_archived
+          : !opportunity.is_archived;
 
-  const opportunities = (data ?? []) as unknown as Opportunity[];
+    return (
+      matchesArchive &&
+      matchesOpportunitySearch(opportunity, search) &&
+      (!stageFilter || opportunity.stage === stageFilter) &&
+      (!leadTemperatureFilter ||
+        opportunity.lead_temperature === leadTemperatureFilter) &&
+      (!opportunityTypeFilter ||
+        opportunity.opportunity_type === opportunityTypeFilter)
+    );
+  });
+
+  const stages = uniqueValues(
+    allOpportunities.map((opportunity) => opportunity.stage)
+  );
+
+  const leadTemperatures = uniqueValues(
+    allOpportunities.map((opportunity) => opportunity.lead_temperature)
+  );
+
+  const opportunityTypes = uniqueValues(
+    allOpportunities.map((opportunity) => opportunity.opportunity_type)
+  );
+
+  const hasFilters =
+    Boolean(search) ||
+    Boolean(stageFilter) ||
+    Boolean(leadTemperatureFilter) ||
+    Boolean(opportunityTypeFilter) ||
+    archivedFilter !== "active";
+
+  const resultCountLabel =
+    archivedFilter === "all"
+      ? `Showing ${opportunities.length} opportunities out of ${allOpportunities.length} total opportunities${
+          hasFilters ? " with current filters" : ""
+        }`
+      : archivedFilter === "archived"
+        ? `Showing ${opportunities.length} archived opportunities out of ${allOpportunities.length} total opportunities${
+            hasFilters ? " with current filters" : ""
+          }`
+        : `Showing ${opportunities.length} active opportunities out of ${allOpportunities.length} total opportunities${
+            hasFilters ? " with current filters" : ""
+          }`;
 
   return (
     <main
@@ -139,20 +226,6 @@ export default async function OpportunitiesPage({ searchParams }: PageProps) {
         </Link>
 
         <Link
-          href={showArchived ? "/opportunities" : "/opportunities?archived=true"}
-          style={{
-            color: "black",
-            backgroundColor: showArchived ? "#dddddd" : "#f5d76e",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          {showArchived ? "Hide Archived" : "Show Archived"}
-        </Link>
-
-        <Link
           href="/opportunities/new"
           style={{
             color: "black",
@@ -169,26 +242,185 @@ export default async function OpportunitiesPage({ searchParams }: PageProps) {
 
       <h1>Opportunities</h1>
 
-      <p style={{ color: "#aaa", marginBottom: "8px" }}>
+      <p style={{ color: "#aaa", marginBottom: "24px" }}>
         Sales pipeline for Sell It and Knotty Logistics.
       </p>
 
-      <p style={{ color: "#aaa", marginBottom: "32px" }}>
-        {showArchived
-          ? "Showing active and archived opportunities."
-          : "Archived opportunities are hidden by default."}
+      <form
+        action="/opportunities"
+        style={{
+          border: "1px solid #333",
+          backgroundColor: "#181818",
+          padding: "16px",
+          borderRadius: "10px",
+          marginBottom: "18px",
+          display: "grid",
+          gap: "12px",
+        }}
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            gap: "12px",
+          }}
+        >
+          <label>
+            <span style={{ display: "block", marginBottom: "6px" }}>
+              Search
+            </span>
+            <input
+              name="q"
+              defaultValue={params.q ?? ""}
+              placeholder="Keyword"
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                padding: "10px",
+                borderRadius: "6px",
+                border: "1px solid #555",
+              }}
+            />
+          </label>
+
+          <label>
+            <span style={{ display: "block", marginBottom: "6px" }}>
+              Stage
+            </span>
+            <select
+              name="stage"
+              defaultValue={stageFilter}
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                padding: "10px",
+                borderRadius: "6px",
+                border: "1px solid #555",
+              }}
+            >
+              <option value="">All</option>
+              {stages.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            <span style={{ display: "block", marginBottom: "6px" }}>
+              Lead Temperature
+            </span>
+            <select
+              name="lead_temperature"
+              defaultValue={leadTemperatureFilter}
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                padding: "10px",
+                borderRadius: "6px",
+                border: "1px solid #555",
+              }}
+            >
+              <option value="">All</option>
+              {leadTemperatures.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            <span style={{ display: "block", marginBottom: "6px" }}>
+              Opportunity Type
+            </span>
+            <select
+              name="opportunity_type"
+              defaultValue={opportunityTypeFilter}
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                padding: "10px",
+                borderRadius: "6px",
+                border: "1px solid #555",
+              }}
+            >
+              <option value="">All</option>
+              {opportunityTypes.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            <span style={{ display: "block", marginBottom: "6px" }}>
+              Archived
+            </span>
+            <select
+              name="archived"
+              defaultValue={archivedFilter}
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                padding: "10px",
+                borderRadius: "6px",
+                border: "1px solid #555",
+              }}
+            >
+              <option value="active">Active only</option>
+              <option value="archived">Archived only</option>
+              <option value="all">All records</option>
+            </select>
+          </label>
+        </div>
+
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <button
+            type="submit"
+            style={{
+              backgroundColor: "#f5d76e",
+              color: "black",
+              padding: "10px 14px",
+              borderRadius: "6px",
+              border: "none",
+              fontWeight: "bold",
+              cursor: "pointer",
+            }}
+          >
+            Apply Filters
+          </button>
+
+          <a
+            href="/opportunities"
+            style={{
+              color: "white",
+              border: "1px solid #555",
+              padding: "10px 14px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+            }}
+          >
+            Clear Filters
+          </a>
+        </div>
+      </form>
+
+      <p style={{ color: "#aaa", marginBottom: "18px" }}>
+        {resultCountLabel}
       </p>
 
       {error && (
         <p style={{ color: "red" }}>Database error: {error.message}</p>
       )}
 
-      {!error && opportunities.length === 0 && (
-        <p>
-          {showArchived
-            ? "No opportunities found."
-            : "No active opportunities found."}
-        </p>
+      {!error && allOpportunities.length === 0 && <p>No opportunities found.</p>}
+
+      {!error && allOpportunities.length > 0 && opportunities.length === 0 && (
+        <p>No opportunities match the current filters.</p>
       )}
 
       {opportunities.map((opportunity) => {
@@ -262,6 +494,15 @@ export default async function OpportunitiesPage({ searchParams }: PageProps) {
 
             {opportunity.next_step && <p>Next Step: {opportunity.next_step}</p>}
 
+            {opportunity.notes && (
+              <p style={{ color: "#aaa" }}>
+                Notes:{" "}
+                {opportunity.notes.length > 180
+                  ? `${opportunity.notes.slice(0, 180)}...`
+                  : opportunity.notes}
+              </p>
+            )}
+
             {opportunity.is_archived && (
               <>
                 <p>Archived: {formatDateTime(opportunity.archived_at)}</p>
@@ -276,4 +517,3 @@ export default async function OpportunitiesPage({ searchParams }: PageProps) {
     </main>
   );
 }
-

@@ -32,6 +32,14 @@ type Note = {
   opportunity: SupabaseRelation<RelatedOpportunity>;
 };
 
+type PageProps = {
+  searchParams?: Promise<{
+    q?: string;
+    source?: string;
+    tags?: string;
+  }>;
+};
+
 function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
   if (!value) return null;
 
@@ -40,6 +48,40 @@ function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
   }
 
   return value;
+}
+
+function textValue(value: string | null | undefined) {
+  return (value ?? "").toLowerCase();
+}
+
+function includesText(value: string | null | undefined, search: string) {
+  if (!search) return true;
+
+  return textValue(value).includes(search);
+}
+
+function matchesNoteSearch(note: Note, search: string) {
+  if (!search) return true;
+
+  const company = singleRelation(note.company);
+  const contact = singleRelation(note.contact);
+  const opportunity = singleRelation(note.opportunity);
+
+  const searchable = [
+    note.title,
+    note.body,
+    note.source,
+    note.source_url,
+    note.tags,
+    company?.name,
+    contact?.first_name,
+    contact?.last_name,
+    opportunity?.name,
+  ]
+    .map((value) => textValue(value))
+    .join(" ");
+
+  return searchable.includes(search);
 }
 
 function formatDateTime(value: string | null) {
@@ -62,7 +104,13 @@ function previewText(value: string | null) {
   return value;
 }
 
-export default async function NotesPage() {
+export default async function NotesPage({ searchParams }: PageProps) {
+  const params = searchParams ? await searchParams : {};
+
+  const search = (params.q ?? "").trim().toLowerCase();
+  const sourceSearch = (params.source ?? "").trim().toLowerCase();
+  const tagsSearch = (params.tags ?? "").trim().toLowerCase();
+
   const { data, error } = await supabase
     .from("notes")
     .select(`
@@ -89,7 +137,21 @@ export default async function NotesPage() {
     `)
     .order("created_at", { ascending: false });
 
-  const notes = (data ?? []) as unknown as Note[];
+  const allNotes = (data ?? []) as unknown as Note[];
+
+  const notes = allNotes.filter((note) => {
+    return (
+      matchesNoteSearch(note, search) &&
+      includesText(note.source, sourceSearch) &&
+      includesText(note.tags, tagsSearch)
+    );
+  });
+
+  const hasFilters = Boolean(search) || Boolean(sourceSearch) || Boolean(tagsSearch);
+
+  const resultCountLabel = `Showing ${notes.length} notes out of ${allNotes.length} total notes${
+    hasFilters ? " with current filters" : ""
+  }`;
 
   return (
     <main
@@ -140,15 +202,130 @@ export default async function NotesPage() {
 
       <h1>Notes</h1>
 
-      <p style={{ color: "#aaa", marginBottom: "32px" }}>
+      <p style={{ color: "#aaa", marginBottom: "24px" }}>
         Notes connected to companies, contacts, and opportunities.
+      </p>
+
+      <form
+        action="/notes"
+        style={{
+          border: "1px solid #333",
+          backgroundColor: "#181818",
+          padding: "16px",
+          borderRadius: "10px",
+          marginBottom: "18px",
+          display: "grid",
+          gap: "12px",
+          maxWidth: "900px",
+        }}
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            gap: "12px",
+          }}
+        >
+          <label>
+            <span style={{ display: "block", marginBottom: "6px" }}>
+              Search
+            </span>
+            <input
+              name="q"
+              defaultValue={params.q ?? ""}
+              placeholder="Keyword"
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                padding: "10px",
+                borderRadius: "6px",
+                border: "1px solid #555",
+              }}
+            />
+          </label>
+
+          <label>
+            <span style={{ display: "block", marginBottom: "6px" }}>
+              Source
+            </span>
+            <input
+              name="source"
+              defaultValue={params.source ?? ""}
+              placeholder="Call, meeting, capture..."
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                padding: "10px",
+                borderRadius: "6px",
+                border: "1px solid #555",
+              }}
+            />
+          </label>
+
+          <label>
+            <span style={{ display: "block", marginBottom: "6px" }}>
+              Tags
+            </span>
+            <input
+              name="tags"
+              defaultValue={params.tags ?? ""}
+              placeholder="Tags"
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                padding: "10px",
+                borderRadius: "6px",
+                border: "1px solid #555",
+              }}
+            />
+          </label>
+        </div>
+
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <button
+            type="submit"
+            style={{
+              backgroundColor: "#f5d76e",
+              color: "black",
+              padding: "10px 14px",
+              borderRadius: "6px",
+              border: "none",
+              fontWeight: "bold",
+              cursor: "pointer",
+            }}
+          >
+            Apply Filters
+          </button>
+
+          <a
+            href="/notes"
+            style={{
+              color: "white",
+              border: "1px solid #555",
+              padding: "10px 14px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+            }}
+          >
+            Clear Filters
+          </a>
+        </div>
+      </form>
+
+      <p style={{ color: "#aaa", marginBottom: "18px" }}>
+        {resultCountLabel}
       </p>
 
       {error && (
         <p style={{ color: "red" }}>Database error: {error.message}</p>
       )}
 
-      {!error && notes.length === 0 && <p>No notes found.</p>}
+      {!error && allNotes.length === 0 && <p>No notes found.</p>}
+
+      {!error && allNotes.length > 0 && notes.length === 0 && (
+        <p>No notes match the current filters.</p>
+      )}
 
       {notes.map((note) => {
         const company = singleRelation(note.company);
