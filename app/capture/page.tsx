@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import {
@@ -70,61 +70,68 @@ type MultiSaveSummary = {
 const inputStyle: CSSProperties = {
   display: "block",
   width: "100%",
-  padding: "14px",
+  padding: "12px 14px",
   marginTop: "8px",
-  backgroundColor: "white",
-  color: "black",
-  border: "1px solid #555",
-  borderRadius: "6px",
-  fontSize: "16px",
+  marginBottom: "16px",
+  backgroundColor: "#0f172a",
+  color: "#f8fafc",
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+  borderRadius: "12px",
+  fontSize: "15px",
   boxSizing: "border-box",
+  outline: "none",
 };
 
 const buttonStyle: CSSProperties = {
-  color: "black",
-  backgroundColor: "white",
+  color: "white",
+  background:
+    "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
   padding: "12px 18px",
-  borderRadius: "6px",
-  fontWeight: "bold",
-  border: "none",
+  borderRadius: "999px",
+  fontWeight: 800,
+  border: "1px solid rgba(167, 139, 250, 0.45)",
   cursor: "pointer",
+  boxShadow: "0 16px 36px rgba(79, 70, 229, 0.28)",
 };
 
 const secondaryButtonStyle: CSSProperties = {
-  color: "white",
-  backgroundColor: "#333",
+  color: "#e2e8f0",
+  backgroundColor: "rgba(15, 23, 42, 0.74)",
   padding: "10px 14px",
-  borderRadius: "6px",
-  fontWeight: "bold",
-  border: "1px solid #555",
+  borderRadius: "999px",
+  fontWeight: 800,
+  border: "1px solid rgba(148, 163, 184, 0.25)",
   cursor: "pointer",
 };
 
 const linkButtonStyle: CSSProperties = {
-  color: "black",
-  backgroundColor: "white",
+  color: "#e2e8f0",
+  backgroundColor: "rgba(15, 23, 42, 0.74)",
   padding: "10px 14px",
-  borderRadius: "6px",
+  borderRadius: "999px",
   textDecoration: "none",
-  fontWeight: "bold",
+  fontWeight: 800,
+  border: "1px solid rgba(148, 163, 184, 0.25)",
 };
 
 const cardStyle: CSSProperties = {
-  border: "1px solid #333",
-  padding: "18px",
-  borderRadius: "10px",
-  backgroundColor: "#1a1a1a",
-  marginBottom: "16px",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  padding: "20px",
+  borderRadius: "20px",
+  background:
+    "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
+  marginBottom: "18px",
+  boxShadow: "0 20px 70px rgba(2, 6, 23, 0.24)",
 };
 
 const dropZoneStyle: CSSProperties = {
-  border: "2px dashed #555",
-  borderRadius: "10px",
-  padding: "24px",
-  backgroundColor: "#181818",
+  border: "1px dashed rgba(148, 163, 184, 0.35)",
+  borderRadius: "20px",
+  padding: "26px",
+  backgroundColor: "rgba(15, 23, 42, 0.56)",
   textAlign: "center",
-  marginTop: "12px",
-  marginBottom: "16px",
+  marginTop: "14px",
+  marginBottom: "18px",
 };
 
 const imageTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
@@ -367,7 +374,7 @@ function getNowForActivity() {
 function normalizeDuplicateText(value: string) {
   return value
     .toLowerCase()
-    .replace(/[�']/g, "")
+    .replace(/[ï¿½']/g, "")
     .replace(/&/g, " and ")
     .replace(/\b(\d+)(st|nd|rd|th)\b/g, "$1")
     .replace(/\bfollow[-\s]*up\b/g, "follow up")
@@ -1683,9 +1690,9 @@ export default function CapturePage() {
       .slice(0, 50)
       .map((record, index) => {
         return `${index + 1}. ${record.company || "No company"}${
-          record.contact ? ` — ${record.contact}` : ""
-        }${record.phone ? ` — ${record.phone}` : ""}${
-          record.email ? ` — ${record.email}` : ""
+          record.contact ? ` â€” ${record.contact}` : ""
+        }${record.phone ? ` â€” ${record.phone}` : ""}${
+          record.email ? ` â€” ${record.email}` : ""
         }\n${record.summary || record.notes || ""}`;
       })
       .join("\n\n");
@@ -1983,33 +1990,60 @@ export default function CapturePage() {
     <main
       style={{
         minHeight: "100vh",
-        backgroundColor: "#111",
-        color: "white",
-        padding: "40px",
+        color: "#f8fafc",
+        padding: "28px",
         fontFamily: "Arial, sans-serif",
       }}
     >
-      <div
+      <header
         style={{
-          display: "flex",
-          gap: "12px",
-          marginBottom: "32px",
-          flexWrap: "wrap",
+          maxWidth: "1120px",
+          marginBottom: "24px",
+          border: "1px solid rgba(148, 163, 184, 0.16)",
+          borderRadius: "24px",
+          padding: "24px",
+          background:
+            "radial-gradient(circle at top left, rgba(124, 58, 237, 0.24), transparent 32%), linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.72))",
+          boxShadow: "0 24px 80px rgba(2, 6, 23, 0.28)",
         }}
       >
-        <Link href="/" style={linkButtonStyle}>
-          Home
-        </Link>
-      </div>
+        <p
+          style={{
+            margin: "0 0 8px",
+            color: "#a78bfa",
+            fontSize: "13px",
+            fontWeight: 900,
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+          }}
+        >
+          Capture
+        </p>
 
-      <h1>AI Capture</h1>
+        <h1
+          style={{
+            margin: "0 0 10px",
+            fontSize: "34px",
+            lineHeight: 1.05,
+            letterSpacing: "-0.04em",
+          }}
+        >
+          AI Capture
+        </h1>
 
-      <p style={{ color: "#aaa", marginBottom: "32px", maxWidth: "900px" }}>
-        Paste text, upload any source file, drag and drop a file, paste a
-        screenshot, or combine them. Images, text/CSV files, PDFs, and common
-        documents can be analyzed. AI Capture V5 can extract one lead, multiple
-        records, or carrier/contact information from scanned documents.
-      </p>
+        <p
+          style={{
+            color: "#cbd5e1",
+            margin: 0,
+            maxWidth: "860px",
+            lineHeight: 1.65,
+          }}
+        >
+          Paste text, upload source files, drag and drop documents, or paste a
+          screenshot. AI Capture can extract one lead, multiple records, or
+          carrier/contact information from scanned documents.
+        </p>
+      </header>
 
       <form
         onSubmit={handleAnalyze}
@@ -2062,9 +2096,10 @@ export default function CapturePage() {
             style={{
               width: "100%",
               padding: "10px",
-              backgroundColor: "white",
-              color: "black",
-              borderRadius: "6px",
+              backgroundColor: "#0f172a",
+              color: "#f8fafc",
+              border: "1px solid rgba(148, 163, 184, 0.28)",
+              borderRadius: "12px",
             }}
           />
         </div>
@@ -2183,7 +2218,7 @@ export default function CapturePage() {
 
       {multiRecords.length > 0 && (
         <section style={{ maxWidth: "1100px", marginBottom: "40px" }}>
-          <h2>AI Capture V5 — Multi-Record Review</h2>
+          <h2>AI Capture V5 â€” Multi-Record Review</h2>
 
           <p style={{ color: "#aaa" }}>
             Source Type: {sourceType || "Unknown"} | Records Found:{" "}
@@ -2719,3 +2754,6 @@ export default function CapturePage() {
     </main>
   );
 }
+
+
+
