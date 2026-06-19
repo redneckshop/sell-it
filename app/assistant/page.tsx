@@ -2386,6 +2386,91 @@ function renderMessageText(text: string) {
   return renderLinkedText(text, "message");
 }
 
+
+type AssistantConversationDisplayMessage = {
+  message: ChatMessage;
+  originalIndex: number;
+};
+
+type AssistantConversationDisplayItem = {
+  key: string;
+  kind: "intro" | "exchange";
+  messages: AssistantConversationDisplayMessage[];
+};
+
+function isInitialAssistantIntro(message: ChatMessage, index: number) {
+  return (
+    index === 0 &&
+    message.role === "assistant" &&
+    message.text === initialAssistantMessages[0]?.text
+  );
+}
+
+function buildAssistantConversationDisplayItems(messages: ChatMessage[]) {
+  const introItems: AssistantConversationDisplayItem[] = [];
+  const exchanges: AssistantConversationDisplayItem[] = [];
+  let pendingUserMessage: AssistantConversationDisplayMessage | null = null;
+
+  for (let index = 0; index < messages.length; index += 1) {
+    const message = messages[index];
+
+    if (!message) continue;
+
+    const displayMessage: AssistantConversationDisplayMessage = {
+      message,
+      originalIndex: index,
+    };
+
+    if (isInitialAssistantIntro(message, index)) {
+      introItems.push({
+        key: `intro-${index}`,
+        kind: "intro",
+        messages: [displayMessage],
+      });
+      continue;
+    }
+
+    if (message.role === "user") {
+      if (pendingUserMessage !== null) {
+        exchanges.push({
+          key: `exchange-${pendingUserMessage.originalIndex}`,
+          kind: "exchange",
+          messages: [pendingUserMessage],
+        });
+      }
+
+      pendingUserMessage = displayMessage;
+      continue;
+    }
+
+    if (pendingUserMessage !== null) {
+      exchanges.push({
+        key: `exchange-${pendingUserMessage.originalIndex}-${index}`,
+        kind: "exchange",
+        messages: [pendingUserMessage, displayMessage],
+      });
+      pendingUserMessage = null;
+      continue;
+    }
+
+    exchanges.push({
+      key: `assistant-${index}`,
+      kind: "exchange",
+      messages: [displayMessage],
+    });
+  }
+
+  if (pendingUserMessage !== null) {
+    exchanges.push({
+      key: `exchange-${pendingUserMessage.originalIndex}`,
+      kind: "exchange",
+      messages: [pendingUserMessage],
+    });
+  }
+
+  return [...exchanges.reverse(), ...introItems];
+}
+
 function dataGapLine(label: string, isMissing: boolean) {
   return isMissing ? `- ${label}` : "";
 }
@@ -7667,46 +7752,85 @@ ${answer}`,
           </div>
         </form>
 
-<div style={cardStyle}>
+        <div style={cardStyle}>
           <h2 style={{ marginTop: 0 }}>Conversation</h2>
 
-          {messages.map((message, index) => (
-            <div
-              key={`${message.role}-${index}`}
-              style={{
-                border: "1px solid #333",
-                borderRadius: "8px",
-                padding: "14px",
-                marginBottom: "12px",
-                backgroundColor: message.role === "user" ? "#222" : "#151515",
-              }}
-            >
-              <p
-                style={{
-                  marginTop: 0,
-                  marginBottom: "8px",
-                  color: message.role === "user" ? "#fff" : "#ffcc66",
-                  fontWeight: "bold",
-                }}
-              >
-                {message.role === "user" ? "You" : "Assistant"}
-              </p>
-
-              <div style={{ whiteSpace: "pre-wrap", marginBottom: 0, lineHeight: 1.45 }}>
-                {renderMessageText(message.text)}
-
-                  {message.role === "assistant" &&
-                    (message.text.includes("__ASSISTANT_SCHEDULE_TASK_LINK__") ||
-                      message.text.includes("__ASSISTANT_ASSIGN_TASK_LINK__")) &&
-                    renderAssistantActionCenter(message.text)}
-              </div>
-
-            </div>
-          ))}
+          <p style={{ color: "#aaa", marginTop: 0 }}>
+            Newest result appears first. Older questions and answers stay below
+            so history is preserved without extra scrolling.
+          </p>
 
           {thinking && <p style={{ color: "#aaa" }}>Checking Sell It data...</p>}
 
           {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}
+
+          {buildAssistantConversationDisplayItems(messages).map((item, itemIndex) => (
+            <div key={item.key} style={{ marginBottom: "16px" }}>
+              {item.kind === "exchange" && (
+                <p
+                  style={{
+                    color: itemIndex === 0 ? "#f5d76e" : "#8ab4ff",
+                    fontWeight: "bold",
+                    margin: "0 0 8px 0",
+                  }}
+                >
+                  {itemIndex === 0 ? "Latest Result" : "Previous Result"}
+                </p>
+              )}
+
+              {item.kind === "intro" && (
+                <p
+                  style={{
+                    color: "#aaa",
+                    fontWeight: "bold",
+                    margin: "0 0 8px 0",
+                  }}
+                >
+                  Assistant Intro
+                </p>
+              )}
+
+              {item.messages.map(({ message, originalIndex }) => (
+                <div
+                  key={`${message.role}-${originalIndex}`}
+                  style={{
+                    border: "1px solid #333",
+                    borderRadius: "8px",
+                    padding: "14px",
+                    marginBottom: "12px",
+                    backgroundColor:
+                      message.role === "user" ? "#222" : "#151515",
+                  }}
+                >
+                  <p
+                    style={{
+                      marginTop: 0,
+                      marginBottom: "8px",
+                      color: message.role === "user" ? "#fff" : "#ffcc66",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {message.role === "user" ? "You" : "Assistant"}
+                  </p>
+
+                  <div
+                    style={{
+                      whiteSpace: "pre-wrap",
+                      marginBottom: 0,
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    {renderMessageText(message.text)}
+
+                    {message.role === "assistant" &&
+                      (message.text.includes("__ASSISTANT_SCHEDULE_TASK_LINK__") ||
+                        message.text.includes("__ASSISTANT_ASSIGN_TASK_LINK__")) &&
+                      renderAssistantActionCenter(message.text)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
 
         <div style={cardStyle}>
@@ -7752,6 +7876,8 @@ ${answer}`,
     </main>
   );
 }
+
+
 
 
 
