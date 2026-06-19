@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { supabase } from "../lib/supabase";
 
 type Attachment = {
@@ -38,6 +38,93 @@ const fileTypes = [
   "Audio",
   "Other",
 ];
+
+const sectionStyle: CSSProperties = {
+  marginTop: "10px",
+  maxWidth: "860px",
+};
+
+const uploadCardStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "18px",
+  padding: "18px",
+  background:
+    "linear-gradient(180deg, rgba(15, 23, 42, 0.86), rgba(15, 23, 42, 0.66))",
+  marginBottom: "18px",
+};
+
+const attachmentCardStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "16px",
+  padding: "16px",
+  marginBottom: "12px",
+  background: "rgba(15, 23, 42, 0.72)",
+};
+
+const labelStyle: CSSProperties = {
+  display: "block",
+  marginBottom: "6px",
+  color: "#cbd5e1",
+  fontWeight: 800,
+};
+
+const inputStyle: CSSProperties = {
+  width: "100%",
+  padding: "12px 14px",
+  backgroundColor: "#0f172a",
+  color: "#f8fafc",
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+  borderRadius: "12px",
+  boxSizing: "border-box",
+  outline: "none",
+};
+
+const buttonStyle: CSSProperties = {
+  color: "white",
+  background:
+    "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
+  border: "1px solid rgba(167, 139, 250, 0.45)",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  fontWeight: 900,
+  cursor: "pointer",
+  boxShadow: "0 16px 36px rgba(79, 70, 229, 0.22)",
+};
+
+const disabledButtonStyle: CSSProperties = {
+  ...buttonStyle,
+  opacity: 0.55,
+  cursor: "not-allowed",
+};
+
+const secondaryButtonStyle: CSSProperties = {
+  color: "#f8fafc",
+  background: "rgba(15, 23, 42, 0.74)",
+  border: "1px solid rgba(148, 163, 184, 0.25)",
+  padding: "10px 14px",
+  borderRadius: "999px",
+  fontWeight: 800,
+  cursor: "pointer",
+};
+
+const messageStyle: CSSProperties = {
+  border: "1px solid rgba(167, 139, 250, 0.32)",
+  background: "rgba(88, 28, 135, 0.18)",
+  color: "#ddd6fe",
+  padding: "12px",
+  borderRadius: "14px",
+  marginTop: "12px",
+};
+
+const emptyStyle: CSSProperties = {
+  color: "#94a3b8",
+  marginBottom: 0,
+};
+
+const metaStyle: CSSProperties = {
+  color: "#94a3b8",
+  margin: "6px 0",
+};
 
 export default function AttachmentsSection({
   workspaceId,
@@ -116,10 +203,7 @@ export default function AttachmentsSection({
       file_type: fileType,
       file_url: signedUrlData.signedUrl,
       storage_path: storagePath,
-
-      // This supports the older column that already existed in your database.
       file_path: storagePath,
-
       description: description || null,
       uploaded_by: null,
     };
@@ -160,52 +244,28 @@ export default function AttachmentsSection({
   }
 
   return (
-    <section style={{ marginTop: "40px", maxWidth: "750px" }}>
-      <h2>Attachments</h2>
-
-      <div
-        style={{
-          border: "1px solid #333",
-          padding: "20px",
-          borderRadius: "8px",
-          backgroundColor: "#1a1a1a",
-          marginBottom: "20px",
-        }}
-      >
-        <h3 style={{ marginTop: 0 }}>Upload File</h3>
+    <section style={sectionStyle}>
+      <div style={uploadCardStyle}>
+        <h3 style={{ marginTop: 0, marginBottom: "16px" }}>Upload File</h3>
 
         <form onSubmit={handleUpload}>
-          <div style={{ marginBottom: "12px" }}>
-            <label style={{ display: "block", marginBottom: "6px" }}>
-              File
-            </label>
+          <div style={{ marginBottom: "14px" }}>
+            <label style={labelStyle}>File</label>
 
             <input
               type="file"
               onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-              style={{
-                width: "100%",
-                padding: "10px",
-                backgroundColor: "white",
-                color: "black",
-                borderRadius: "6px",
-              }}
+              style={inputStyle}
             />
           </div>
 
-          <div style={{ marginBottom: "12px" }}>
-            <label style={{ display: "block", marginBottom: "6px" }}>
-              File Type
-            </label>
+          <div style={{ marginBottom: "14px" }}>
+            <label style={labelStyle}>File Type</label>
 
             <select
               value={fileType}
               onChange={(event) => setFileType(event.target.value)}
-              style={{
-                width: "100%",
-                padding: "10px",
-                borderRadius: "6px",
-              }}
+              style={inputStyle}
             >
               {fileTypes.map((type) => (
                 <option key={type} value={type}>
@@ -215,10 +275,8 @@ export default function AttachmentsSection({
             </select>
           </div>
 
-          <div style={{ marginBottom: "12px" }}>
-            <label style={{ display: "block", marginBottom: "6px" }}>
-              Description
-            </label>
+          <div style={{ marginBottom: "16px" }}>
+            <label style={labelStyle}>Description</label>
 
             <textarea
               value={description}
@@ -226,9 +284,9 @@ export default function AttachmentsSection({
               placeholder="What is this file?"
               rows={3}
               style={{
-                width: "100%",
-                padding: "10px",
-                borderRadius: "6px",
+                ...inputStyle,
+                resize: "vertical",
+                minHeight: "96px",
               }}
             />
           </div>
@@ -236,46 +294,37 @@ export default function AttachmentsSection({
           <button
             type="submit"
             disabled={isUploading}
-            style={{
-              color: "black",
-              backgroundColor: "white",
-              padding: "10px 14px",
-              borderRadius: "6px",
-              border: "none",
-              fontWeight: "bold",
-              cursor: "pointer",
-            }}
+            style={isUploading ? disabledButtonStyle : buttonStyle}
           >
             {isUploading ? "Uploading..." : "Upload Attachment"}
           </button>
         </form>
 
-        {message && <p style={{ marginTop: "12px" }}>{message}</p>}
+        {message && <div style={messageStyle}>{message}</div>}
       </div>
 
-      {attachments.length === 0 && <p>No attachments uploaded yet.</p>}
+      {attachments.length === 0 && (
+        <p style={emptyStyle}>No attachments uploaded yet.</p>
+      )}
 
       {attachments.map((attachment) => (
-        <div
-          key={attachment.id}
-          style={{
-            border: "1px solid #333",
-            padding: "16px",
-            marginBottom: "12px",
-            borderRadius: "8px",
-            backgroundColor: "#1a1a1a",
-          }}
-        >
-          <h3 style={{ marginTop: 0 }}>{attachment.file_name}</h3>
+        <div key={attachment.id} style={attachmentCardStyle}>
+          <h3 style={{ marginTop: 0, marginBottom: "8px" }}>
+            {attachment.file_name}
+          </h3>
 
-          <p>Type: {attachment.file_type}</p>
+          <p style={metaStyle}>
+            <strong>Type:</strong> {attachment.file_type}
+          </p>
 
           {attachment.description && (
-            <p>Description: {attachment.description}</p>
+            <p style={metaStyle}>
+              <strong>Description:</strong> {attachment.description}
+            </p>
           )}
 
-          <p>
-            Uploaded:{" "}
+          <p style={metaStyle}>
+            <strong>Uploaded:</strong>{" "}
             {attachment.created_at
               ? new Date(attachment.created_at).toLocaleString()
               : "Not available"}
@@ -284,15 +333,7 @@ export default function AttachmentsSection({
           <button
             type="button"
             onClick={() => openAttachment(attachment)}
-            style={{
-              color: "black",
-              backgroundColor: "white",
-              padding: "8px 12px",
-              borderRadius: "6px",
-              border: "none",
-              fontWeight: "bold",
-              cursor: "pointer",
-            }}
+            style={secondaryButtonStyle}
           >
             Open / Download
           </button>
