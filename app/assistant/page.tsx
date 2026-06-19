@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
@@ -538,15 +538,15 @@ function renderAssistantActionCenter(messageText: string) {
   return (
     <div
       style={{
-        borderTop: "1px solid #333",
+        borderTop: "1px solid rgba(148, 163, 184, 0.16)",
         marginTop: "14px",
         paddingTop: "12px",
       }}
     >
       <p
         style={{
-          color: "#ffcc66",
-          fontWeight: "bold",
+          color: "#c4b5fd",
+          fontWeight: 800,
           marginTop: 0,
           marginBottom: "8px",
         }}
@@ -556,14 +556,14 @@ function renderAssistantActionCenter(messageText: string) {
 
       <div
         style={{
-          border: "1px solid #3a3a3a",
-          borderRadius: "8px",
+          border: "1px solid rgba(148, 163, 184, 0.18)",
+          borderRadius: "16px",
           padding: "12px",
-          backgroundColor: "#101010",
+          background: "rgba(15, 23, 42, 0.72)",
           marginBottom: "12px",
         }}
       >
-        <p style={{ marginTop: 0, marginBottom: "8px", fontWeight: "bold" }}>
+        <p style={{ marginTop: 0, marginBottom: "8px", fontWeight: 800 }}>
           {suggestedAction}
         </p>
 
@@ -571,10 +571,10 @@ function renderAssistantActionCenter(messageText: string) {
           <>
             <p
               style={{
-                color: "#aaa",
+                color: "#94a3b8",
                 marginTop: "10px",
                 marginBottom: "6px",
-                fontWeight: "bold",
+                fontWeight: 800,
               }}
             >
               Why this matters
@@ -593,10 +593,10 @@ function renderAssistantActionCenter(messageText: string) {
 
       <p
         style={{
-          color: "#aaa",
+          color: "#94a3b8",
           marginTop: 0,
           marginBottom: "8px",
-          fontWeight: "bold",
+          fontWeight: 800,
         }}
       >
         Choose how to handle it
@@ -608,12 +608,12 @@ function renderAssistantActionCenter(messageText: string) {
             key={assignmentLink.href}
             href={assignmentLink.href}
             style={{
-              backgroundColor: "#ffcc66",
-              color: "black",
+              background: "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
+              color: "#f8fafc",
               padding: "9px 12px",
-              borderRadius: "6px",
+              borderRadius: "999px",
               textDecoration: "none",
-              fontWeight: "bold",
+              fontWeight: 800,
               fontSize: "14px",
             }}
           >
@@ -625,12 +625,12 @@ function renderAssistantActionCenter(messageText: string) {
           <Link
             href={scheduleTaskLink.href}
             style={{
-              backgroundColor: "#ffcc66",
-              color: "black",
+              background: "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
+              color: "#f8fafc",
               padding: "9px 12px",
-              borderRadius: "6px",
+              borderRadius: "999px",
               textDecoration: "none",
-              fontWeight: "bold",
+              fontWeight: 800,
               fontSize: "14px",
             }}
           >
@@ -643,12 +643,12 @@ function renderAssistantActionCenter(messageText: string) {
             <Link
               href={buildAssistantActivityHrefForMode(messageText, links, "call")}
               style={{
-                backgroundColor: "#f5d76e",
-                color: "black",
+                background: "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
+                color: "#f8fafc",
                 padding: "9px 12px",
-                borderRadius: "6px",
+                borderRadius: "999px",
                 textDecoration: "none",
-                fontWeight: "bold",
+                fontWeight: 800,
                 fontSize: "14px",
               }}
             >
@@ -658,12 +658,12 @@ function renderAssistantActionCenter(messageText: string) {
             <Link
               href={buildAssistantActivityHrefForMode(messageText, links, "text")}
               style={{
-                backgroundColor: "#f5d76e",
-                color: "black",
+                background: "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
+                color: "#f8fafc",
                 padding: "9px 12px",
-                borderRadius: "6px",
+                borderRadius: "999px",
                 textDecoration: "none",
-                fontWeight: "bold",
+                fontWeight: 800,
                 fontSize: "14px",
               }}
             >
@@ -673,12 +673,12 @@ function renderAssistantActionCenter(messageText: string) {
             <Link
               href={buildAssistantActivityHrefForMode(messageText, links, "email")}
               style={{
-                backgroundColor: "#f5d76e",
-                color: "black",
+                background: "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
+                color: "#f8fafc",
                 padding: "9px 12px",
-                borderRadius: "6px",
+                borderRadius: "999px",
                 textDecoration: "none",
-                fontWeight: "bold",
+                fontWeight: 800,
                 fontSize: "14px",
               }}
             >
@@ -691,12 +691,12 @@ function renderAssistantActionCenter(messageText: string) {
           <Link
             href={buildAssistantTaskHref(messageText, links)}
             style={{
-              backgroundColor: "#f5d76e",
-              color: "black",
+              background: "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
+              color: "#f8fafc",
               padding: "9px 12px",
-              borderRadius: "6px",
+              borderRadius: "999px",
               textDecoration: "none",
-              fontWeight: "bold",
+              fontWeight: 800,
               fontSize: "14px",
             }}
           >
@@ -708,12 +708,12 @@ function renderAssistantActionCenter(messageText: string) {
           <Link
             href={buildAssistantActivityHrefForMode(messageText, links, "completed")}
             style={{
-              backgroundColor: "white",
-              color: "black",
+              background: "rgba(15, 23, 42, 0.88)",
+              color: "#f8fafc",
               padding: "9px 12px",
-              borderRadius: "6px",
+              borderRadius: "999px",
               textDecoration: "none",
-              fontWeight: "bold",
+              fontWeight: 800,
               fontSize: "14px",
             }}
           >
@@ -725,12 +725,12 @@ function renderAssistantActionCenter(messageText: string) {
           <Link
             href={buildAssistantTaskCompleteHref(taskCompleteLink)}
             style={{
-              backgroundColor: "#ffcc66",
-              color: "black",
+              background: "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
+              color: "#f8fafc",
               padding: "9px 12px",
-              borderRadius: "6px",
+              borderRadius: "999px",
               textDecoration: "none",
-              fontWeight: "bold",
+              fontWeight: 800,
               fontSize: "14px",
             }}
           >
@@ -742,12 +742,12 @@ function renderAssistantActionCenter(messageText: string) {
           <Link
             href={buildAssistantOpportunityStageHref(opportunityStageLink)}
             style={{
-              backgroundColor: "#ffcc66",
-              color: "black",
+              background: "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
+              color: "#f8fafc",
               padding: "9px 12px",
-              borderRadius: "6px",
+              borderRadius: "999px",
               textDecoration: "none",
-              fontWeight: "bold",
+              fontWeight: 800,
               fontSize: "14px",
             }}
           >
@@ -758,7 +758,7 @@ function renderAssistantActionCenter(messageText: string) {
 
       <p
         style={{
-          color: "#aaa",
+          color: "#94a3b8",
           fontSize: "13px",
           marginTop: "10px",
           marginBottom: "10px",
@@ -771,8 +771,8 @@ function renderAssistantActionCenter(messageText: string) {
         <summary
           style={{
             cursor: "pointer",
-            color: "#8ab4ff",
-            fontWeight: "bold",
+            color: "#c4b5fd",
+            fontWeight: 800,
           }}
         >
           Related records
@@ -791,12 +791,12 @@ function renderAssistantActionCenter(messageText: string) {
               key={link.href}
               href={link.href}
               style={{
-                backgroundColor: "white",
-                color: "black",
+                background: "rgba(15, 23, 42, 0.88)",
+                color: "#f8fafc",
                 padding: "8px 10px",
-                borderRadius: "6px",
+                borderRadius: "999px",
                 textDecoration: "none",
-                fontWeight: "bold",
+                fontWeight: 800,
                 fontSize: "13px",
               }}
             >
@@ -1918,44 +1918,93 @@ function isConversationalMemoryQuestion(lowerQuestion: string) {
 }
 
 
+const pageStyle: CSSProperties = {
+  minHeight: "100vh",
+  color: "#f8fafc",
+  padding: "28px",
+  fontFamily: "Arial, sans-serif",
+};
+
 const inputStyle: CSSProperties = {
   display: "block",
   width: "100%",
-  padding: "14px",
+  padding: "14px 16px",
   marginTop: "8px",
-  backgroundColor: "white",
-  color: "black",
-  border: "1px solid #555",
-  borderRadius: "6px",
+  backgroundColor: "#0f172a",
+  color: "#f8fafc",
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+  borderRadius: "14px",
   fontSize: "16px",
   boxSizing: "border-box",
+  outline: "none",
 };
 
 const buttonStyle: CSSProperties = {
-  color: "black",
-  backgroundColor: "white",
+  color: "#f8fafc",
+  background:
+    "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
   padding: "12px 18px",
-  borderRadius: "6px",
-  fontWeight: "bold",
-  border: "none",
+  borderRadius: "999px",
+  fontWeight: 800,
+  border: "1px solid rgba(167, 139, 250, 0.45)",
   cursor: "pointer",
+  boxShadow: "0 16px 36px rgba(79, 70, 229, 0.28)",
 };
 
 const linkButtonStyle: CSSProperties = {
-  color: "black",
-  backgroundColor: "white",
+  color: "#f8fafc",
+  background:
+    "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
   padding: "10px 14px",
-  borderRadius: "6px",
+  borderRadius: "999px",
   textDecoration: "none",
-  fontWeight: "bold",
+  fontWeight: 800,
+  border: "1px solid rgba(167, 139, 250, 0.45)",
+  boxShadow: "0 16px 36px rgba(79, 70, 229, 0.28)",
 };
 
 const cardStyle: CSSProperties = {
-  border: "1px solid #333",
-  padding: "18px",
-  borderRadius: "10px",
-  backgroundColor: "#1a1a1a",
-  marginBottom: "16px",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  padding: "20px",
+  borderRadius: "20px",
+  background:
+    "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
+  marginBottom: "18px",
+  boxShadow: "0 20px 70px rgba(2, 6, 23, 0.24)",
+};
+
+const headerStyle: CSSProperties = {
+  maxWidth: "1120px",
+  marginBottom: "24px",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "24px",
+  padding: "24px",
+  background:
+    "radial-gradient(circle at top left, rgba(124, 58, 237, 0.24), transparent 32%), linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.72))",
+  boxShadow: "0 24px 80px rgba(2, 6, 23, 0.28)",
+};
+
+const eyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  color: "#a78bfa",
+  fontSize: "13px",
+  fontWeight: 900,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+};
+
+const titleStyle: CSSProperties = {
+  margin: "0 0 10px",
+  fontSize: "34px",
+  lineHeight: 1.05,
+  letterSpacing: "-0.04em",
+};
+
+const mutedTextStyle: CSSProperties = {
+  color: "#cbd5e1",
+  margin: 0,
+  maxWidth: "930px",
+  lineHeight: 1.65,
 };
 
 function todayIsoDate() {
@@ -2279,9 +2328,9 @@ function renderMessageText(text: string) {
             key={`${keyPrefix}-${part}-${index}`}
             href={part}
             style={{
-              color: "#8ab4ff",
+              color: "#c4b5fd",
               textDecoration: "underline",
-              fontWeight: "bold",
+              fontWeight: 800,
             }}
           >
             {part}
@@ -2347,17 +2396,17 @@ function renderMessageText(text: string) {
                   )
                 }
                 style={{
-                  border: "1px solid #333",
-                  borderRadius: "8px",
+                  border: "1px solid rgba(148, 163, 184, 0.16)",
+                  borderRadius: "16px",
                   padding: "12px",
-                  backgroundColor: "#151515",
+                  background: "rgba(15, 23, 42, 0.72)",
                 }}
               >
                 <summary
                   style={{
                     cursor: "pointer",
-                    fontWeight: "bold",
-                    color: "white",
+                    fontWeight: 800,
+                    color: "#f8fafc",
                   }}
                 >
                   {recommendationSummary(item)}
@@ -2366,7 +2415,7 @@ function renderMessageText(text: string) {
                 <div
                   style={{
                     marginTop: "12px",
-                    lineHeight: 1.45,
+                    lineHeight: 1.6,
                     whiteSpace: "pre-wrap",
                   }}
                 >
@@ -7675,36 +7724,19 @@ ${answer}`,
   }
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#111",
-        color: "white",
-        padding: "40px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          gap: "12px",
-          marginBottom: "32px",
-          flexWrap: "wrap",
-        }}
-      >
-        <Link href="/" style={linkButtonStyle}>
-          Home
-        </Link>
-      </div>
+    <main style={pageStyle}>
+      <header style={headerStyle}>
+        <p style={eyebrowStyle}>Assistant</p>
 
-      <h1>AI Assistant</h1>
+        <h1 style={titleStyle}>AI Assistant</h1>
 
-      <p style={{ color: "#aaa", marginBottom: "32px", maxWidth: "950px" }}>
-        Ask natural language questions about your Sell It data. AI Assistant
-        V4 now supports proactive alerts and insight generation, including what needs attention, what to focus on, biggest risks, falling-through-the-cracks items, trending pain points, data cleanup, and assigned work when data exists.
-      </p>
-
-      <section style={{ maxWidth: "1000px" }}>
+        <p style={mutedTextStyle}>
+          Ask natural language questions about your Sell It data. AI Assistant
+          V4 supports proactive alerts and insight generation, including what
+          needs attention, what to focus on, biggest risks, falling-through-the-cracks
+          items, trending pain points, data cleanup, and assigned work when data exists.
+        </p>
+      </header><section style={{ maxWidth: "1120px" }}>
         
 
         <form onSubmit={handleSubmit} style={{ ...cardStyle, position: "sticky", top: "16px", zIndex: 20 }}>
@@ -7743,7 +7775,7 @@ ${answer}`,
               disabled={thinking}
               style={{
                 ...buttonStyle,
-                backgroundColor: "#dddddd",
+                background: "rgba(30, 41, 59, 0.92)",
                 opacity: thinking ? 0.7 : 1,
               }}
             >
@@ -7755,22 +7787,22 @@ ${answer}`,
         <div style={cardStyle}>
           <h2 style={{ marginTop: 0 }}>Conversation</h2>
 
-          <p style={{ color: "#aaa", marginTop: 0 }}>
+          <p style={{ color: "#94a3b8", marginTop: 0 }}>
             Newest result appears first. Older questions and answers stay below
             so history is preserved without extra scrolling.
           </p>
 
-          {thinking && <p style={{ color: "#aaa" }}>Checking Sell It data...</p>}
+          {thinking && <p style={{ color: "#94a3b8" }}>Checking Sell It data...</p>}
 
-          {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}
+          {errorMessage && <p style={{ color: "#fca5a5" }}>{errorMessage}</p>}
 
           {buildAssistantConversationDisplayItems(messages).map((item, itemIndex) => (
             <div key={item.key} style={{ marginBottom: "16px" }}>
               {item.kind === "exchange" && (
                 <p
                   style={{
-                    color: itemIndex === 0 ? "#f5d76e" : "#8ab4ff",
-                    fontWeight: "bold",
+                    color: itemIndex === 0 ? "#c4b5fd" : "#a78bfa",
+                    fontWeight: 800,
                     margin: "0 0 8px 0",
                   }}
                 >
@@ -7781,8 +7813,8 @@ ${answer}`,
               {item.kind === "intro" && (
                 <p
                   style={{
-                    color: "#aaa",
-                    fontWeight: "bold",
+                    color: "#94a3b8",
+                    fontWeight: 800,
                     margin: "0 0 8px 0",
                   }}
                 >
@@ -7794,20 +7826,22 @@ ${answer}`,
                 <div
                   key={`${message.role}-${originalIndex}`}
                   style={{
-                    border: "1px solid #333",
-                    borderRadius: "8px",
+                    border: "1px solid rgba(148, 163, 184, 0.16)",
+                    borderRadius: "16px",
                     padding: "14px",
                     marginBottom: "12px",
-                    backgroundColor:
-                      message.role === "user" ? "#222" : "#151515",
+                    background:
+                      message.role === "user"
+                        ? "rgba(30, 41, 59, 0.72)"
+                        : "rgba(15, 23, 42, 0.72)",
                   }}
                 >
                   <p
                     style={{
                       marginTop: 0,
                       marginBottom: "8px",
-                      color: message.role === "user" ? "#fff" : "#ffcc66",
-                      fontWeight: "bold",
+                      color: message.role === "user" ? "#f8fafc" : "#c4b5fd",
+                      fontWeight: 800,
                     }}
                   >
                     {message.role === "user" ? "You" : "Assistant"}
@@ -7817,7 +7851,7 @@ ${answer}`,
                     style={{
                       whiteSpace: "pre-wrap",
                       marginBottom: 0,
-                      lineHeight: 1.45,
+                      lineHeight: 1.6,
                     }}
                   >
                     {renderMessageText(message.text)}
@@ -7876,6 +7910,8 @@ ${answer}`,
     </main>
   );
 }
+
+
 
 
 
