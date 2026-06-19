@@ -29,30 +29,121 @@ type SupabaseLikeError = {
   hint?: string | null;
 };
 
+const pageStyle: CSSProperties = {
+  minHeight: "100vh",
+  color: "#f8fafc",
+  padding: "28px",
+  fontFamily: "Arial, sans-serif",
+};
+
 const cardStyle: CSSProperties = {
-  border: "1px solid #333",
-  borderRadius: "10px",
-  padding: "18px",
-  backgroundColor: "#151515",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "20px",
+  padding: "20px",
+  background:
+    "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
   maxWidth: "900px",
   marginBottom: "18px",
+  boxShadow: "0 20px 70px rgba(2, 6, 23, 0.24)",
 };
 
 const buttonStyle: CSSProperties = {
-  backgroundColor: "#f5d76e",
-  color: "black",
-  border: "none",
-  borderRadius: "8px",
+  background:
+    "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
+  color: "white",
+  border: "1px solid rgba(167, 139, 250, 0.45)",
+  borderRadius: "999px",
   padding: "12px 16px",
-  fontWeight: "bold",
+  fontWeight: 800,
   fontSize: "15px",
   cursor: "pointer",
+  boxShadow: "0 16px 36px rgba(79, 70, 229, 0.28)",
 };
 
 const disabledButtonStyle: CSSProperties = {
   ...buttonStyle,
   opacity: 0.55,
   cursor: "not-allowed",
+};
+
+const linkStyle: CSSProperties = {
+  color: "#c4b5fd",
+  textDecoration: "none",
+  fontWeight: 800,
+};
+
+const secondaryLinkButtonStyle: CSSProperties = {
+  color: "#f8fafc",
+  border: "1px solid rgba(148, 163, 184, 0.25)",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 800,
+  background: "rgba(15, 23, 42, 0.74)",
+};
+
+const headerStyle: CSSProperties = {
+  maxWidth: "900px",
+  marginBottom: "24px",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "24px",
+  padding: "24px",
+  background:
+    "radial-gradient(circle at top left, rgba(124, 58, 237, 0.24), transparent 32%), linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.72))",
+  boxShadow: "0 24px 80px rgba(2, 6, 23, 0.28)",
+};
+
+const eyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  color: "#a78bfa",
+  fontSize: "13px",
+  fontWeight: 900,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+};
+
+const titleStyle: CSSProperties = {
+  margin: "0 0 10px",
+  fontSize: "34px",
+  lineHeight: 1.05,
+  letterSpacing: "-0.04em",
+};
+
+const mutedTextStyle: CSSProperties = {
+  color: "#cbd5e1",
+  margin: 0,
+  maxWidth: "820px",
+  lineHeight: 1.65,
+};
+
+const noticeStyle: CSSProperties = {
+  border: "1px solid rgba(167, 139, 250, 0.32)",
+  background: "rgba(88, 28, 135, 0.22)",
+  color: "#ddd6fe",
+  padding: "14px",
+  borderRadius: "16px",
+  marginBottom: "18px",
+  maxWidth: "900px",
+};
+
+const errorStyle: CSSProperties = {
+  border: "1px solid rgba(248, 113, 113, 0.36)",
+  background: "rgba(127, 29, 29, 0.22)",
+  color: "#fecaca",
+  padding: "14px",
+  borderRadius: "16px",
+  marginBottom: "18px",
+  maxWidth: "900px",
+};
+
+const successStyle: CSSProperties = {
+  border: "1px solid rgba(34, 197, 94, 0.32)",
+  background: "rgba(20, 83, 45, 0.22)",
+  color: "#bbf7d0",
+  padding: "14px",
+  borderRadius: "16px",
+  marginBottom: "18px",
+  maxWidth: "900px",
 };
 
 function isMissingOptionalCompletionColumn(error: SupabaseLikeError | null) {
@@ -195,7 +286,9 @@ export default function AssistantCompleteTaskPage() {
         "Task marked Completed. This database does not appear to have completed_at/completed_by fields yet, so only status and updated fields were saved."
       );
     } else {
-      setSuccessMessage("Task marked Completed. Completed At and Completed By were saved.");
+      setSuccessMessage(
+        "Task marked Completed. Completed At and Completed By were saved."
+      );
     }
 
     router.refresh();
@@ -203,65 +296,52 @@ export default function AssistantCompleteTaskPage() {
 
   if (loading) {
     return (
-      <main style={{ padding: "24px", color: "white" }}>
+      <main style={pageStyle}>
         <p>Loading task...</p>
       </main>
     );
   }
 
   return (
-    <main style={{ padding: "24px", color: "white" }}>
-      <Link href="/assistant" style={{ color: "#8ab4ff" }}>
-        â† Back to Assistant
-      </Link>
-
-      <h1>Assistant Action: Mark Task Complete</h1>
-
+    <main style={pageStyle}>
       <div
         style={{
-          border: "1px solid #f5d76e",
-          backgroundColor: "#211c0d",
-          color: "#ffcc66",
-          padding: "14px",
-          borderRadius: "8px",
+          display: "flex",
+          gap: "12px",
+          flexWrap: "wrap",
           marginBottom: "18px",
-          maxWidth: "900px",
         }}
       >
-        This action will update the database only after you confirm and press the button below.
+        <Link href="/assistant" style={linkStyle}>
+          Back to Assistant
+        </Link>
+
+        {task && (
+          <Link href={`/tasks/${task.id}`} style={linkStyle}>
+            Open Task
+          </Link>
+        )}
       </div>
 
-      {errorMessage && (
-        <div
-          style={{
-            border: "1px solid #ff6b6b",
-            backgroundColor: "#2a1111",
-            color: "#ff9999",
-            padding: "14px",
-            borderRadius: "8px",
-            marginBottom: "18px",
-            maxWidth: "900px",
-          }}
-        >
-          {errorMessage}
-        </div>
-      )}
+      <header style={headerStyle}>
+        <p style={eyebrowStyle}>Assistant Action</p>
 
-      {successMessage && (
-        <div
-          style={{
-            border: "1px solid #46d369",
-            backgroundColor: "#102414",
-            color: "#8ff0a4",
-            padding: "14px",
-            borderRadius: "8px",
-            marginBottom: "18px",
-            maxWidth: "900px",
-          }}
-        >
-          {successMessage}
-        </div>
-      )}
+        <h1 style={titleStyle}>Complete Task</h1>
+
+        <p style={mutedTextStyle}>
+          Review this task before marking it complete. Sell It will not update
+          the task until you confirm and press Mark Task Complete.
+        </p>
+      </header>
+
+      <div style={noticeStyle}>
+        This action will update the database only after you confirm and press
+        the button below.
+      </div>
+
+      {errorMessage && <div style={errorStyle}>{errorMessage}</div>}
+
+      {successMessage && <div style={successStyle}>{successMessage}</div>}
 
       {!task ? (
         <div style={cardStyle}>Task not found.</div>
@@ -300,14 +380,14 @@ export default function AssistantCompleteTaskPage() {
             </p>
 
             {task.description && (
-              <p style={{ whiteSpace: "pre-wrap" }}>
+              <p style={{ whiteSpace: "pre-wrap", color: "#cbd5e1" }}>
                 <strong>Description:</strong>
                 <br />
                 {task.description}
               </p>
             )}
 
-            <p style={{ color: "#aaa", marginBottom: 0 }}>
+            <p style={{ color: "#94a3b8", marginBottom: 0 }}>
               This will change the task status to Completed.
             </p>
           </div>
@@ -327,30 +407,34 @@ export default function AssistantCompleteTaskPage() {
                 onChange={(event) => setConfirmed(event.target.checked)}
                 disabled={saving || task.status === "Completed"}
               />
-              <span>I confirm I want to mark this task Completed.</span>
+              <span>
+                I confirm I want to mark this task{" "}
+                <strong>Completed</strong>.
+              </span>
             </label>
 
-            <button
-              type="submit"
-              disabled={!confirmed || saving || task.status === "Completed"}
-              style={
-                !confirmed || saving || task.status === "Completed"
-                  ? disabledButtonStyle
-                  : buttonStyle
-              }
-            >
-              {saving ? "Completing..." : "Mark Complete"}
-            </button>
-          </form>
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+              <button
+                type="submit"
+                disabled={!confirmed || saving || task.status === "Completed"}
+                style={
+                  !confirmed || saving || task.status === "Completed"
+                    ? disabledButtonStyle
+                    : buttonStyle
+                }
+              >
+                {task.status === "Completed"
+                  ? "Already Completed"
+                  : saving
+                    ? "Completing..."
+                    : "Mark Complete"}
+              </button>
 
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            <Link href={`/tasks/${taskId}`} style={{ color: "#8ab4ff" }}>
-              Open Task
-            </Link>
-            <Link href="/assistant" style={{ color: "#8ab4ff" }}>
-              Back to Assistant
-            </Link>
-          </div>
+              <Link href="/assistant" style={secondaryLinkButtonStyle}>
+                Cancel
+              </Link>
+            </div>
+          </form>
         </>
       )}
     </main>
