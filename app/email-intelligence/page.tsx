@@ -119,44 +119,45 @@ function emailActivityDate(value: string) {
 
 const pageStyle: CSSProperties = {
   minHeight: "100vh",
-  backgroundColor: "#111",
-  color: "white",
-  padding: "40px",
+  color: "#f8fafc",
+  padding: "28px",
   fontFamily: "Arial, sans-serif",
 };
 
 const navStyle: CSSProperties = {
-  display: "flex",
-  gap: "12px",
-  flexWrap: "wrap",
-  marginBottom: "24px",
+  display: "none",
 };
 
 const linkStyle: CSSProperties = {
-  color: "#8ab4ff",
-  fontWeight: "bold",
+  color: "#a78bfa",
+  fontWeight: 800,
+  textDecoration: "none",
 };
 
 const cardStyle: CSSProperties = {
-  border: "1px solid #333",
-  backgroundColor: "#181818",
-  borderRadius: "10px",
-  padding: "18px",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  background:
+    "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
+  borderRadius: "20px",
+  padding: "20px",
   marginBottom: "18px",
-  maxWidth: "1000px",
+  maxWidth: "1120px",
+  boxShadow: "0 20px 70px rgba(2, 6, 23, 0.24)",
 };
 
 const inputStyle: CSSProperties = {
   display: "block",
   width: "100%",
-  marginTop: "6px",
-  padding: "12px",
-  borderRadius: "6px",
-  border: "1px solid #555",
-  backgroundColor: "white",
-  color: "black",
+  marginTop: "8px",
+  marginBottom: "16px",
+  padding: "12px 14px",
+  borderRadius: "12px",
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+  backgroundColor: "#0f172a",
+  color: "#f8fafc",
   fontSize: "15px",
   boxSizing: "border-box",
+  outline: "none",
 };
 
 const gridStyle: CSSProperties = {
@@ -167,13 +168,49 @@ const gridStyle: CSSProperties = {
 
 const buttonStyle: CSSProperties = {
   marginTop: "16px",
-  padding: "12px 16px",
-  borderRadius: "6px",
-  border: "none",
-  backgroundColor: "#f5d76e",
-  color: "black",
-  fontWeight: "bold",
+  padding: "12px 18px",
+  borderRadius: "999px",
+  border: "1px solid rgba(167, 139, 250, 0.45)",
+  background:
+    "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
+  color: "white",
+  fontWeight: 800,
   cursor: "pointer",
+  boxShadow: "0 16px 36px rgba(79, 70, 229, 0.28)",
+};
+
+const headerStyle: CSSProperties = {
+  maxWidth: "1120px",
+  marginBottom: "24px",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "24px",
+  padding: "24px",
+  background:
+    "radial-gradient(circle at top left, rgba(124, 58, 237, 0.24), transparent 32%), linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.72))",
+  boxShadow: "0 24px 80px rgba(2, 6, 23, 0.28)",
+};
+
+const eyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  color: "#a78bfa",
+  fontSize: "13px",
+  fontWeight: 900,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+};
+
+const titleStyle: CSSProperties = {
+  margin: "0 0 10px",
+  fontSize: "34px",
+  lineHeight: 1.05,
+  letterSpacing: "-0.04em",
+};
+
+const mutedTextStyle: CSSProperties = {
+  color: "#cbd5e1",
+  margin: 0,
+  maxWidth: "880px",
+  lineHeight: 1.65,
 };
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -976,29 +1013,17 @@ export default function EmailIntelligencePage() {
 
   return (
     <main style={pageStyle}>
-      <nav style={navStyle}>
-        <Link href="/" style={linkStyle}>
-          Home
-        </Link>
-        <Link href="/capture" style={linkStyle}>
-          AI Capture
-        </Link>
-        <Link href="/activities" style={linkStyle}>
-          Activities
-        </Link>
-        <Link href="/assistant" style={linkStyle}>
-          Assistant
-        </Link>
-      </nav>
+      <header style={headerStyle}>
+        <p style={eyebrowStyle}>Capture</p>
 
-      <h1>Email Intelligence</h1>
+        <h1 style={titleStyle}>Email Intelligence</h1>
 
-      <p style={{ color: "#aaa", maxWidth: "900px" }}>
-        Manual email capture for Sell It. Paste email content here first,
-        review AI suggestions next, and save only after confirmation. This
-        version does not connect to Bluehost, IMAP, SMTP, polling, or email
-        sending.
-      </p>
+        <p style={mutedTextStyle}>
+          Manual email capture for Sell It. Paste email content, review AI
+          suggestions, and save only after confirmation. This version does not
+          connect to Bluehost, IMAP, SMTP, polling, or email sending.
+        </p>
+      </header>
 
       <form onSubmit={handleAnalyze} style={cardStyle}>
         <h2 style={{ marginTop: 0 }}>Manual Email Capture</h2>
@@ -1265,7 +1290,7 @@ export default function EmailIntelligencePage() {
             onClick={handleSaveReviewedEmail}
             style={{
               ...buttonStyle,
-              backgroundColor: saving ? "#777" : "#f5d76e",
+              opacity: saving ? 0.6 : 1,
               cursor: saving ? "not-allowed" : "pointer",
             }}
           >
@@ -1278,9 +1303,9 @@ export default function EmailIntelligencePage() {
                 marginTop: "14px",
                 padding: "12px",
                 borderRadius: "8px",
-                border: "1px solid #2f6f3e",
-                backgroundColor: "#102415",
-                color: "#c8f7c5",
+                border: "1px solid rgba(34, 197, 94, 0.35)",
+                backgroundColor: "rgba(20, 83, 45, 0.22)",
+                color: "#bbf7d0",
               }}
             >
               <strong>{saveMessage}</strong>
@@ -1362,9 +1387,9 @@ export default function EmailIntelligencePage() {
             <pre
               style={{
                 whiteSpace: "pre-wrap",
-                backgroundColor: "#111",
-                border: "1px solid #333",
-                borderRadius: "8px",
+                backgroundColor: "#0f172a",
+                border: "1px solid rgba(148, 163, 184, 0.22)",
+                borderRadius: "12px",
                 padding: "12px",
                 overflowX: "auto",
               }}
@@ -1376,7 +1401,7 @@ export default function EmailIntelligencePage() {
       )}
 
       <section style={cardStyle}>
-        <h2 style={{ marginTop: 0 }}>V1 Safety Rules</h2>
+        <h2 style={{ marginTop: 0 }}>Safety Rules</h2>
 
         <ul style={{ color: "#ddd", lineHeight: 1.7 }}>
           <li>No Bluehost connection.</li>
@@ -1390,6 +1415,7 @@ export default function EmailIntelligencePage() {
     </main>
   );
 }
+
 
 
 
