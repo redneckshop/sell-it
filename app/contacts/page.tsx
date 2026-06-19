@@ -1,4 +1,5 @@
-import Link from "next/link";
+﻿import Link from "next/link";
+import type { CSSProperties } from "react";
 import { supabase } from "../lib/supabase";
 
 type SupabaseRelation<T> = T | T[] | null;
@@ -100,6 +101,119 @@ function uniqueCompanies(contacts: Contact[]) {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+function initialsFromContact(contact: Contact) {
+  const firstInitial = contact.first_name?.trim()?.[0] ?? "";
+  const lastInitial = contact.last_name?.trim()?.[0] ?? "";
+
+  const initials = `${firstInitial}${lastInitial}`.trim();
+
+  if (initials) return initials.toUpperCase();
+
+  return fullName(contact).slice(0, 2).toUpperCase() || "?";
+}
+
+function pageStyle(): CSSProperties {
+  return {
+    minHeight: "calc(100vh - 64px)",
+    backgroundColor: "#101010",
+    color: "white",
+    padding: "38px",
+    fontFamily: "Arial, sans-serif",
+    boxSizing: "border-box",
+  };
+}
+
+function panelStyle(): CSSProperties {
+  return {
+    border: "1px solid #2f2f2f",
+    background:
+      "linear-gradient(180deg, rgba(31,31,31,0.96), rgba(22,22,22,0.96))",
+    padding: "16px",
+    borderRadius: "14px",
+    boxShadow: "0 14px 35px rgba(0,0,0,0.18)",
+  };
+}
+
+function inputStyle(): CSSProperties {
+  return {
+    width: "100%",
+    boxSizing: "border-box",
+    padding: "11px 12px",
+    borderRadius: "10px",
+    border: "1px solid #3d3d3d",
+    backgroundColor: "#111",
+    color: "white",
+    outline: "none",
+  };
+}
+
+function fieldLabelStyle(): CSSProperties {
+  return {
+    display: "block",
+    marginBottom: "7px",
+    color: "#e5e5e5",
+    fontSize: "13px",
+    fontWeight: 800,
+  };
+}
+
+function primaryButtonStyle(): CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "42px",
+    backgroundColor: "#7c3aed",
+    color: "white",
+    padding: "0 16px",
+    borderRadius: "12px",
+    textDecoration: "none",
+    fontWeight: 900,
+    border: "1px solid #8b5cf6",
+    boxShadow: "0 12px 24px rgba(124,58,237,0.24)",
+  };
+}
+
+function secondaryButtonStyle(): CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "42px",
+    color: "white",
+    border: "1px solid #3d3d3d",
+    backgroundColor: "#151515",
+    padding: "0 16px",
+    borderRadius: "12px",
+    textDecoration: "none",
+    fontWeight: 900,
+  };
+}
+
+function statusBadgeStyle(value: "archived" | "active"): CSSProperties {
+  const isArchived = value === "archived";
+
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    borderRadius: "999px",
+    padding: "3px 9px",
+    fontSize: "12px",
+    fontWeight: 900,
+    backgroundColor: isArchived
+      ? "rgba(245, 158, 11, 0.22)"
+      : "rgba(34, 197, 94, 0.18)",
+    color: isArchived ? "#fcd34d" : "#86efac",
+    border: "1px solid rgba(255,255,255,0.08)",
+  };
+}
+
+function mutedTextStyle(): CSSProperties {
+  return {
+    color: "#a7a7a7",
+  };
+}
+
 export default async function ContactsPage({ searchParams }: PageProps) {
   const params = searchParams ? await searchParams : {};
 
@@ -170,270 +284,290 @@ export default async function ContactsPage({ searchParams }: PageProps) {
           }`;
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#111",
-        color: "white",
-        padding: "40px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "24px",
-          gap: "16px",
-          flexWrap: "wrap",
-        }}
-      >
-        <div>
-          <h1>Contacts</h1>
+    <main style={pageStyle()}>
+      <section style={{ maxWidth: "1180px", margin: "0 auto" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            marginBottom: "22px",
+            gap: "16px",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <p
+              style={{
+                ...mutedTextStyle(),
+                textTransform: "uppercase",
+                letterSpacing: "1.8px",
+                fontSize: "12px",
+                fontWeight: 900,
+                margin: "0 0 8px",
+              }}
+            >
+              Sales
+            </p>
 
-          <p style={{ color: "#aaa" }}>
-            People connected to this Sell It workspace.
+            <h1 style={{ fontSize: "32px", margin: "0 0 8px" }}>Contacts</h1>
+
+            <p style={{ ...mutedTextStyle(), margin: 0, lineHeight: 1.5 }}>
+              People connected to this Sell It workspace.
+            </p>
+          </div>
+
+          <Link href="/contacts/new" style={primaryButtonStyle()}>
+            + Add Contact
+          </Link>
+        </div>
+
+        <form action="/contacts" style={{ ...panelStyle(), marginBottom: "18px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+              gap: "12px",
+              alignItems: "end",
+            }}
+          >
+            <label>
+              <span style={fieldLabelStyle()}>Search</span>
+              <input
+                name="q"
+                defaultValue={params.q ?? ""}
+                placeholder="Search contacts..."
+                style={inputStyle()}
+              />
+            </label>
+
+            <label>
+              <span style={fieldLabelStyle()}>Company</span>
+              <select name="company_id" defaultValue={companyId} style={inputStyle()}>
+                <option value="">All</option>
+                {companies.map((company) => (
+                  <option key={company.id} value={company.id}>
+                    {company.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span style={fieldLabelStyle()}>Title / Role</span>
+              <input
+                name="title"
+                defaultValue={params.title ?? ""}
+                placeholder="Owner, dispatcher..."
+                style={inputStyle()}
+              />
+            </label>
+
+            <label>
+              <span style={fieldLabelStyle()}>Archived</span>
+              <select name="archived" defaultValue={archivedFilter} style={inputStyle()}>
+                <option value="active">Active only</option>
+                <option value="archived">Archived only</option>
+                <option value="all">All records</option>
+              </select>
+            </label>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              flexWrap: "wrap",
+              marginTop: "14px",
+            }}
+          >
+            <button
+              type="submit"
+              style={{
+                ...primaryButtonStyle(),
+                cursor: "pointer",
+              }}
+            >
+              Apply Filters
+            </button>
+
+            <a href="/contacts" style={secondaryButtonStyle()}>
+              Clear Filters
+            </a>
+          </div>
+        </form>
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "12px",
+            flexWrap: "wrap",
+            marginBottom: "14px",
+          }}
+        >
+          <p style={{ ...mutedTextStyle(), margin: 0 }}>{resultCountLabel}</p>
+
+          <p style={{ ...mutedTextStyle(), margin: 0, fontSize: "13px" }}>
+            Sorted by newest first
           </p>
         </div>
 
-        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-          <Link
-            href="/"
-            style={{
-              backgroundColor: "white",
-              color: "black",
-              padding: "12px 16px",
-              borderRadius: "6px",
-              textDecoration: "none",
-              fontWeight: "bold",
-            }}
-          >
-            Home
-          </Link>
+        {error && (
+          <p style={{ color: "red" }}>Database error: {error.message}</p>
+        )}
 
-          <Link
-            href="/contacts/new"
-            style={{
-              backgroundColor: "white",
-              color: "black",
-              padding: "12px 16px",
-              borderRadius: "6px",
-              textDecoration: "none",
-              fontWeight: "bold",
-            }}
-          >
-            Add Contact
-          </Link>
-        </div>
-      </div>
+        {!error && allContacts.length === 0 && <p>No contacts found.</p>}
 
-      <form
-        action="/contacts"
-        style={{
-          border: "1px solid #333",
-          backgroundColor: "#181818",
-          padding: "16px",
-          borderRadius: "10px",
-          marginBottom: "18px",
-          display: "grid",
-          gap: "12px",
-        }}
-      >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            gap: "12px",
-          }}
-        >
-          <label>
-            <span style={{ display: "block", marginBottom: "6px" }}>
-              Search
-            </span>
-            <input
-              name="q"
-              defaultValue={params.q ?? ""}
-              placeholder="Keyword"
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "1px solid #555",
-              }}
-            />
-          </label>
+        {!error && allContacts.length > 0 && contacts.length === 0 && (
+          <p>No contacts match the current filters.</p>
+        )}
 
-          <label>
-            <span style={{ display: "block", marginBottom: "6px" }}>
-              Company
-            </span>
-            <select
-              name="company_id"
-              defaultValue={companyId}
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "1px solid #555",
-              }}
-            >
-              <option value="">All</option>
-              {companies.map((company) => (
-                <option key={company.id} value={company.id}>
-                  {company.name}
-                </option>
-              ))}
-            </select>
-          </label>
+        <div style={{ display: "grid", gap: "10px" }}>
+          {contacts.map((contact) => {
+            const company = singleRelation(contact.companies);
+            const name = fullName(contact);
 
-          <label>
-            <span style={{ display: "block", marginBottom: "6px" }}>
-              Title / Role
-            </span>
-            <input
-              name="title"
-              defaultValue={params.title ?? ""}
-              placeholder="Owner, dispatcher..."
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "1px solid #555",
-              }}
-            />
-          </label>
-
-          <label>
-            <span style={{ display: "block", marginBottom: "6px" }}>
-              Archived
-            </span>
-            <select
-              name="archived"
-              defaultValue={archivedFilter}
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "1px solid #555",
-              }}
-            >
-              <option value="active">Active only</option>
-              <option value="archived">Archived only</option>
-              <option value="all">All records</option>
-            </select>
-          </label>
-        </div>
-
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-          <button
-            type="submit"
-            style={{
-              backgroundColor: "#f5d76e",
-              color: "black",
-              padding: "10px 14px",
-              borderRadius: "6px",
-              border: "none",
-              fontWeight: "bold",
-              cursor: "pointer",
-            }}
-          >
-            Apply Filters
-          </button>
-
-          <a
-            href="/contacts"
-            style={{
-              color: "white",
-              border: "1px solid #555",
-              padding: "10px 14px",
-              borderRadius: "6px",
-              textDecoration: "none",
-              fontWeight: "bold",
-            }}
-          >
-            Clear Filters
-          </a>
-        </div>
-      </form>
-
-      <p style={{ color: "#aaa", marginBottom: "18px" }}>
-        {resultCountLabel}
-      </p>
-
-      {error && (
-        <p style={{ color: "red" }}>Database error: {error.message}</p>
-      )}
-
-      {!error && allContacts.length === 0 && <p>No contacts found.</p>}
-
-      {!error && allContacts.length > 0 && contacts.length === 0 && (
-        <p>No contacts match the current filters.</p>
-      )}
-
-      {contacts.map((contact) => {
-        const company = singleRelation(contact.companies);
-
-        return (
-          <Link
-            key={contact.id}
-            href={`/contacts/${contact.id}`}
-            style={{
-              display: "block",
-              border: contact.is_archived ? "1px solid #d6a400" : "1px solid #333",
-              padding: "16px",
-              marginBottom: "12px",
-              borderRadius: "8px",
-              backgroundColor: contact.is_archived ? "#211c0d" : "#1a1a1a",
-              color: "white",
-              textDecoration: "none",
-            }}
-          >
-            {contact.is_archived && (
-              <div
+            return (
+              <Link
+                key={contact.id}
+                href={`/contacts/${contact.id}`}
                 style={{
-                  display: "inline-block",
-                  backgroundColor: "#f5d76e",
-                  color: "black",
-                  padding: "4px 8px",
-                  borderRadius: "4px",
-                  fontWeight: "bold",
-                  marginBottom: "10px",
+                  display: "grid",
+                  gridTemplateColumns:
+                    "48px minmax(0, 1.25fr) minmax(170px, 0.9fr) 26px",
+                  gap: "14px",
+                  alignItems: "center",
+                  border: contact.is_archived
+                    ? "1px solid rgba(245, 158, 11, 0.65)"
+                    : "1px solid #2f2f2f",
+                  padding: "14px",
+                  borderRadius: "14px",
+                  background: contact.is_archived
+                    ? "linear-gradient(180deg, rgba(49,39,14,0.96), rgba(27,24,14,0.96))"
+                    : "linear-gradient(180deg, rgba(31,31,31,0.96), rgba(22,22,22,0.96))",
+                  color: "white",
+                  textDecoration: "none",
+                  boxShadow: "0 10px 24px rgba(0,0,0,0.16)",
                 }}
               >
-                ARCHIVED
-              </div>
-            )}
+                <div
+                  style={{
+                    width: "42px",
+                    height: "42px",
+                    borderRadius: "999px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "#2b2b2b",
+                    color: "white",
+                    fontWeight: 900,
+                    border: "1px solid #3d3d3d",
+                  }}
+                >
+                  {initialsFromContact(contact)}
+                </div>
 
-            <h2 style={{ marginTop: 0 }}>{fullName(contact)}</h2>
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      flexWrap: "wrap",
+                      marginBottom: "5px",
+                    }}
+                  >
+                    <strong>{name || "Unnamed Contact"}</strong>
 
-            {contact.title && <p>Title: {contact.title}</p>}
-            {company?.name && <p>Company: {company.name}</p>}
-            {contact.email && <p>Email: {contact.email}</p>}
-            {contact.phone && <p>Phone: {contact.phone}</p>}
+                    {contact.is_archived ? (
+                      <span style={statusBadgeStyle("archived")}>Archived</span>
+                    ) : (
+                      <span style={statusBadgeStyle("active")}>Active</span>
+                    )}
+                  </div>
 
-            {contact.notes && (
-              <p style={{ color: "#aaa" }}>
-                Notes:{" "}
-                {contact.notes.length > 180
-                  ? `${contact.notes.slice(0, 180)}...`
-                  : contact.notes}
-              </p>
-            )}
+                  <p style={{ ...mutedTextStyle(), margin: "0 0 4px" }}>
+                    {contact.title ? `Title: ${contact.title}` : "Title: Not listed"}
+                  </p>
 
-            {contact.is_archived && (
-              <>
-                <p>Archived: {formatDateTime(contact.archived_at)}</p>
-                {contact.archive_reason && <p>Reason: {contact.archive_reason}</p>}
-              </>
-            )}
-          </Link>
-        );
-      })}
+                  <p style={{ ...mutedTextStyle(), margin: 0 }}>
+                    {company?.name ? `Company: ${company.name}` : "Company: Not linked"}
+                  </p>
+
+                  {contact.notes && (
+                    <p
+                      style={{
+                        ...mutedTextStyle(),
+                        margin: "8px 0 0",
+                        lineHeight: 1.4,
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      Notes:{" "}
+                      {contact.notes.length > 140
+                        ? `${contact.notes.slice(0, 140)}...`
+                        : contact.notes}
+                    </p>
+                  )}
+
+                  {contact.is_archived && (
+                    <p style={{ color: "#ffcc66", margin: "8px 0 0" }}>
+                      Archived: {formatDateTime(contact.archived_at)}
+                      {contact.archive_reason
+                        ? ` — Reason: ${contact.archive_reason}`
+                        : ""}
+                    </p>
+                  )}
+                </div>
+
+                <div style={{ minWidth: 0 }}>
+                  {contact.phone && (
+                    <p
+                      style={{
+                        ...mutedTextStyle(),
+                        margin: "0 0 6px",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      Phone: {contact.phone}
+                    </p>
+                  )}
+
+                  {contact.email && (
+                    <p
+                      style={{
+                        ...mutedTextStyle(),
+                        margin: 0,
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      Email: {contact.email}
+                    </p>
+                  )}
+
+                  {!contact.phone && !contact.email && (
+                    <p style={{ ...mutedTextStyle(), margin: 0 }}>
+                      No phone or email listed.
+                    </p>
+                  )}
+                </div>
+
+                <div
+                  style={{
+                    color: "#a7a7a7",
+                    fontSize: "26px",
+                    textAlign: "right",
+                  }}
+                >
+                  ›
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
     </main>
   );
 }
