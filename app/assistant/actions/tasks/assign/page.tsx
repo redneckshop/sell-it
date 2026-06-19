@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import {
@@ -65,43 +65,135 @@ type Task = {
   assigned_team_member: SupabaseRelation<TeamMember>;
 };
 
+const pageStyle: CSSProperties = {
+  minHeight: "100vh",
+  color: "#f8fafc",
+  padding: "28px",
+  fontFamily: "Arial, sans-serif",
+};
+
 const cardStyle: CSSProperties = {
-  border: "1px solid #333",
-  borderRadius: "10px",
-  padding: "18px",
-  backgroundColor: "#151515",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "20px",
+  padding: "20px",
+  background:
+    "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
   maxWidth: "950px",
   marginBottom: "18px",
+  boxShadow: "0 20px 70px rgba(2, 6, 23, 0.24)",
 };
 
 const inputStyle: CSSProperties = {
   display: "block",
   width: "100%",
-  padding: "12px",
-  marginTop: "6px",
-  backgroundColor: "white",
-  color: "black",
-  border: "1px solid #555",
-  borderRadius: "6px",
+  padding: "12px 14px",
+  marginTop: "8px",
+  backgroundColor: "#0f172a",
+  color: "#f8fafc",
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+  borderRadius: "12px",
   fontSize: "16px",
   boxSizing: "border-box",
+  outline: "none",
 };
 
 const buttonStyle: CSSProperties = {
-  backgroundColor: "#f5d76e",
-  color: "black",
-  border: "none",
-  borderRadius: "8px",
+  background:
+    "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
+  color: "white",
+  border: "1px solid rgba(167, 139, 250, 0.45)",
+  borderRadius: "999px",
   padding: "12px 16px",
-  fontWeight: "bold",
+  fontWeight: 800,
   fontSize: "15px",
   cursor: "pointer",
+  boxShadow: "0 16px 36px rgba(79, 70, 229, 0.28)",
 };
 
 const disabledButtonStyle: CSSProperties = {
   ...buttonStyle,
   opacity: 0.55,
   cursor: "not-allowed",
+};
+
+const linkStyle: CSSProperties = {
+  color: "#c4b5fd",
+  textDecoration: "none",
+  fontWeight: 800,
+};
+
+const secondaryLinkButtonStyle: CSSProperties = {
+  color: "#f8fafc",
+  border: "1px solid rgba(148, 163, 184, 0.25)",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 800,
+  background: "rgba(15, 23, 42, 0.74)",
+};
+
+const headerStyle: CSSProperties = {
+  maxWidth: "950px",
+  marginBottom: "24px",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "24px",
+  padding: "24px",
+  background:
+    "radial-gradient(circle at top left, rgba(124, 58, 237, 0.24), transparent 32%), linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.72))",
+  boxShadow: "0 24px 80px rgba(2, 6, 23, 0.28)",
+};
+
+const eyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  color: "#a78bfa",
+  fontSize: "13px",
+  fontWeight: 900,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+};
+
+const titleStyle: CSSProperties = {
+  margin: "0 0 10px",
+  fontSize: "34px",
+  lineHeight: 1.05,
+  letterSpacing: "-0.04em",
+};
+
+const mutedTextStyle: CSSProperties = {
+  color: "#cbd5e1",
+  margin: 0,
+  maxWidth: "850px",
+  lineHeight: 1.65,
+};
+
+const noticeStyle: CSSProperties = {
+  border: "1px solid rgba(167, 139, 250, 0.32)",
+  background: "rgba(88, 28, 135, 0.22)",
+  color: "#ddd6fe",
+  padding: "14px",
+  borderRadius: "16px",
+  marginBottom: "18px",
+  maxWidth: "950px",
+};
+
+const errorStyle: CSSProperties = {
+  border: "1px solid rgba(248, 113, 113, 0.36)",
+  background: "rgba(127, 29, 29, 0.22)",
+  color: "#fecaca",
+  padding: "14px",
+  borderRadius: "16px",
+  marginBottom: "18px",
+  maxWidth: "950px",
+};
+
+const successStyle: CSSProperties = {
+  border: "1px solid rgba(34, 197, 94, 0.32)",
+  background: "rgba(20, 83, 45, 0.22)",
+  color: "#bbf7d0",
+  padding: "14px",
+  borderRadius: "16px",
+  marginBottom: "18px",
+  maxWidth: "950px",
 };
 
 function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
@@ -360,7 +452,7 @@ function AssistantAssignTaskClient() {
 
   if (loading) {
     return (
-      <main style={{ padding: "24px", color: "white" }}>
+      <main style={pageStyle}>
         <p>Loading assignment review...</p>
       </main>
     );
@@ -375,78 +467,53 @@ function AssistantAssignTaskClient() {
     teamMembers.find((member) => member.id === newTeamMemberId) || null;
 
   return (
-    <main style={{ padding: "24px", color: "white" }}>
-      <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-        <Link href="/assistant" style={{ color: "#8ab4ff" }}>
+    <main style={pageStyle}>
+      <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "18px" }}>
+        <Link href="/assistant" style={linkStyle}>
           Back to Assistant
         </Link>
 
-        <Link href="/planner" style={{ color: "#8ab4ff" }}>
+        <Link href="/planner" style={linkStyle}>
           Open Planner
         </Link>
 
         {task && (
-          <Link href={`/tasks/${task.id}`} style={{ color: "#8ab4ff" }}>
+          <Link href={`/tasks/${task.id}`} style={linkStyle}>
             Open Task
           </Link>
         )}
       </div>
 
-      <h1>Assistant Action: Assign Task</h1>
+      <header style={headerStyle}>
+        <p style={eyebrowStyle}>Assistant Action</p>
 
-      <div
-        style={{
-          border: "1px solid #f5d76e",
-          backgroundColor: "#211c0d",
-          color: "#ffcc66",
-          padding: "14px",
-          borderRadius: "8px",
-          marginBottom: "18px",
-          maxWidth: "950px",
-        }}
-      >
-        Review the assignment below. Sell It will not update the task until you
-        confirm and press Confirm Assignment.
+        <h1 style={titleStyle}>Assign Task</h1>
+
+        <p style={mutedTextStyle}>
+          Review the assignment below. Sell It will not update the task until
+          you confirm and press Confirm Assignment.
+        </p>
+      </header>
+
+      <div style={noticeStyle}>
+        Review-before-save is active. This page changes the task assignment only
+        after the confirmation checkbox is selected and the button is pressed.
       </div>
 
-      {errorMessage && (
-        <div
-          style={{
-            border: "1px solid #ff6b6b",
-            backgroundColor: "#2a1111",
-            color: "#ff9999",
-            padding: "14px",
-            borderRadius: "8px",
-            marginBottom: "18px",
-            maxWidth: "950px",
-          }}
-        >
-          {errorMessage}
-        </div>
-      )}
+      {errorMessage && <div style={errorStyle}>{errorMessage}</div>}
 
       {saved && task && (
-        <div
-          style={{
-            border: "1px solid #46d369",
-            backgroundColor: "#102414",
-            color: "#8ff0a4",
-            padding: "14px",
-            borderRadius: "8px",
-            marginBottom: "18px",
-            maxWidth: "950px",
-          }}
-        >
-          <p style={{ marginTop: 0, fontWeight: "bold" }}>
+        <div style={successStyle}>
+          <p style={{ marginTop: 0, fontWeight: 800 }}>
             Assignment successful.
           </p>
 
           <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            <Link href={`/tasks/${task.id}`} style={{ color: "#8ab4ff" }}>
+            <Link href={`/tasks/${task.id}`} style={linkStyle}>
               Open Task
             </Link>
 
-            <Link href="/planner" style={{ color: "#8ab4ff" }}>
+            <Link href="/planner" style={linkStyle}>
               Open Planner
             </Link>
           </div>
@@ -571,11 +638,11 @@ function AssistantAssignTaskClient() {
               href="/assistant"
               style={{
                 color: "white",
-                border: "1px solid #555",
+                border: "1px solid rgba(148, 163, 184, 0.25)",
                 padding: "12px 16px",
-                borderRadius: "8px",
+                borderRadius: "999px",
                 textDecoration: "none",
-                fontWeight: "bold",
+                fontWeight: 800,
               }}
             >
               Cancel
@@ -595,7 +662,7 @@ export default function AssistantAssignTaskPage() {
   return (
     <Suspense
       fallback={
-        <main style={{ padding: "24px", color: "white" }}>
+        <main style={pageStyle}>
           <p>Loading assignment review...</p>
         </main>
       }
@@ -604,5 +671,7 @@ export default function AssistantAssignTaskPage() {
     </Suspense>
   );
 }
+
+
 
 
