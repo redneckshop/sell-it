@@ -54,6 +54,7 @@ const contextNavItems: Record<AppSection, NavItem[]> = {
     { label: "Contacts", href: "/contacts" },
     { label: "Opportunities", href: "/opportunities" },
     { label: "Tasks", href: "/tasks" },
+    { label: "Planner", href: "/planner" },
     { label: "Activities", href: "/activities" },
     { label: "Notes", href: "/notes" },
   ],
@@ -487,4 +488,7 @@ export default function AppShell({ children }: AppShellProps) {
     </div>
   );
 }
+
+
+
 

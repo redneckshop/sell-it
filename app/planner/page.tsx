@@ -1,4 +1,5 @@
-import Link from "next/link";
+﻿import Link from "next/link";
+import type { CSSProperties } from "react";
 import { supabase } from "../lib/supabase";
 
 type SupabaseRelation<T> = T | T[] | null;
@@ -176,11 +177,7 @@ function completedSortValue(task: Task) {
 
 function uniqueValues(values: Array<string | null | undefined>) {
   return Array.from(
-    new Set(
-      values
-        .map((value) => (value ?? "").trim())
-        .filter(Boolean)
-    )
+    new Set(values.map((value) => (value ?? "").trim()).filter(Boolean))
   ).sort((a, b) => a.localeCompare(b));
 }
 
@@ -192,11 +189,20 @@ function teamMemberLabel(member: TeamMember | null) {
   return member?.display_name || member?.email || "Unassigned";
 }
 
-function taskAssignedLabel(task: Task) {
+function assignedLabel(task: Task) {
   const teamMember = singleRelation(task.assigned_team_member);
   const profile = singleRelation(task.assigned_profile);
 
-  return teamMemberLabel(teamMember) || profileLabel(profile);
+  if (teamMember) return teamMemberLabel(teamMember);
+  if (profile) return profileLabel(profile);
+
+  return "Unassigned";
+}
+
+function contactName(contact: RelatedContact | null) {
+  if (!contact) return "Not linked";
+
+  return `${contact.first_name} ${contact.last_name || ""}`.trim();
 }
 
 function taskMatchesFilters(
@@ -219,9 +225,9 @@ function taskPillLabel(task: Task) {
 }
 
 function monthLabel(today: string) {
-  const [year, month, day] = today.split("-").map(Number);
+  const [year, month] = today.split("-").map(Number);
 
-  return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+  return new Date(year, month - 1, 1).toLocaleDateString(undefined, {
     month: "long",
     year: "numeric",
   });
@@ -289,24 +295,164 @@ function buildPlannerDayHref({
   return `/planner?${params.toString()}`;
 }
 
-function cardStyle() {
+function pageStyle(): CSSProperties {
   return {
-    border: "1px solid #333",
-    borderRadius: "10px",
-    padding: "14px",
-    backgroundColor: "#1a1a1a",
+    minHeight: "calc(100vh - 64px)",
+    backgroundColor: "#101010",
     color: "white",
-    textDecoration: "none",
-    display: "block",
+    padding: "38px",
+    fontFamily: "Arial, sans-serif",
+    boxSizing: "border-box",
   };
 }
 
-function sectionStyle() {
+function panelStyle(): CSSProperties {
   return {
-    border: "1px solid #333",
-    borderRadius: "12px",
-    backgroundColor: "#151515",
+    border: "1px solid #2f2f2f",
+    background:
+      "linear-gradient(180deg, rgba(31,31,31,0.96), rgba(22,22,22,0.96))",
+    padding: "16px",
+    borderRadius: "14px",
+    boxShadow: "0 14px 35px rgba(0,0,0,0.18)",
+  };
+}
+
+function sectionStyle(): CSSProperties {
+  return {
+    border: "1px solid #2f2f2f",
+    borderRadius: "16px",
+    background:
+      "linear-gradient(180deg, rgba(31,31,31,0.96), rgba(22,22,22,0.96))",
     padding: "18px",
+    boxShadow: "0 14px 35px rgba(0,0,0,0.18)",
+  };
+}
+
+function cardStyle(): CSSProperties {
+  return {
+    border: "1px solid #2f2f2f",
+    borderRadius: "14px",
+    padding: "14px",
+    backgroundColor: "#151515",
+    color: "white",
+    textDecoration: "none",
+    display: "block",
+    boxShadow: "0 10px 24px rgba(0,0,0,0.12)",
+  };
+}
+
+function inputStyle(): CSSProperties {
+  return {
+    width: "100%",
+    boxSizing: "border-box",
+    padding: "11px 12px",
+    borderRadius: "10px",
+    border: "1px solid #3d3d3d",
+    backgroundColor: "#111",
+    color: "white",
+    outline: "none",
+  };
+}
+
+function fieldLabelStyle(): CSSProperties {
+  return {
+    display: "block",
+    marginBottom: "7px",
+    color: "#e5e5e5",
+    fontSize: "13px",
+    fontWeight: 800,
+  };
+}
+
+function primaryButtonStyle(): CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "42px",
+    backgroundColor: "#7c3aed",
+    color: "white",
+    padding: "0 16px",
+    borderRadius: "12px",
+    textDecoration: "none",
+    fontWeight: 900,
+    border: "1px solid #8b5cf6",
+    boxShadow: "0 12px 24px rgba(124,58,237,0.24)",
+  };
+}
+
+function secondaryButtonStyle(): CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "42px",
+    color: "white",
+    border: "1px solid #3d3d3d",
+    backgroundColor: "#151515",
+    padding: "0 16px",
+    borderRadius: "12px",
+    textDecoration: "none",
+    fontWeight: 900,
+  };
+}
+
+function mutedTextStyle(): CSSProperties {
+  return {
+    color: "#a7a7a7",
+  };
+}
+
+function priorityColor(priority: string | null) {
+  if (priority === "Urgent") return "#fca5a5";
+  if (priority === "High") return "#fcd34d";
+  if (priority === "Low") return "#93c5fd";
+
+  return "#d1d5db";
+}
+
+function badgeStyle(value: string | null): CSSProperties {
+  const normalized = (value ?? "").toLowerCase();
+
+  const backgroundColor =
+    normalized === "urgent" || normalized === "overdue"
+      ? "rgba(239, 68, 68, 0.18)"
+      : normalized === "high" || normalized.includes("today")
+        ? "rgba(245, 158, 11, 0.22)"
+        : normalized === "completed"
+          ? "rgba(34, 197, 94, 0.20)"
+          : normalized === "in progress"
+            ? "rgba(124, 58, 237, 0.22)"
+            : "rgba(156, 163, 175, 0.18)";
+
+  const color =
+    normalized === "urgent" || normalized === "overdue"
+      ? "#fca5a5"
+      : normalized === "high" || normalized.includes("today")
+        ? "#fcd34d"
+        : normalized === "completed"
+          ? "#86efac"
+          : normalized === "in progress"
+            ? "#c4b5fd"
+            : "#d1d5db";
+
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    borderRadius: "999px",
+    padding: "3px 9px",
+    fontSize: "12px",
+    fontWeight: 900,
+    backgroundColor,
+    color,
+    border: "1px solid rgba(255,255,255,0.08)",
+  };
+}
+
+function statCardStyle(): CSSProperties {
+  return {
+    ...panelStyle(),
+    padding: "14px",
   };
 }
 
@@ -314,16 +460,10 @@ function TaskCard({ task }: { task: Task }) {
   const company = singleRelation(task.companies);
   const contact = singleRelation(task.contacts);
   const opportunity = singleRelation(task.opportunities);
-  const assignedProfile = singleRelation(task.assigned_profile);
-  const assignedTeamMember = singleRelation(task.assigned_team_member);
-
-  const contactName = contact
-    ? `${contact.first_name} ${contact.last_name || ""}`.trim()
-    : "Not linked";
 
   const relatedLine = [
     `Company: ${company?.name || "Not linked"}`,
-    `Contact: ${contactName}`,
+    `Contact: ${contactName(contact)}`,
     `Opportunity: ${opportunity?.name || "Not linked"}`,
   ].join(" | ");
 
@@ -333,49 +473,63 @@ function TaskCard({ task }: { task: Task }) {
       style={{
         ...cardStyle(),
         padding: "12px",
-        maxHeight: "168px",
+        maxHeight: "180px",
         overflowY: "auto",
       }}
     >
-      <h3
+      <div
         style={{
-          marginTop: 0,
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: "10px",
           marginBottom: "8px",
-          fontSize: "15px",
-          lineHeight: "1.25",
-          maxHeight: "38px",
-          overflow: "hidden",
         }}
       >
-        {task.title}
-      </h3>
+        <h3
+          style={{
+            margin: 0,
+            fontSize: "15px",
+            lineHeight: "1.25",
+            maxHeight: "38px",
+            overflow: "hidden",
+          }}
+        >
+          {task.title}
+        </h3>
 
-      <p style={{ margin: "4px 0" }}>
-        <strong>Due:</strong> {formatDate(task.due_date)}{" "}
-        <span style={{ color: "#aaa" }}>|</span>{" "}
-        <strong>Priority:</strong> {task.priority || "Not set"}
+        {task.priority && (
+          <span style={{ ...badgeStyle(task.priority), color: priorityColor(task.priority) }}>
+            {task.priority}
+          </span>
+        )}
+      </div>
+
+      <p style={{ ...mutedTextStyle(), margin: "4px 0" }}>
+        <strong style={{ color: "white" }}>Due:</strong> {formatDate(task.due_date)}
       </p>
 
-      <p style={{ margin: "4px 0" }}>
-        <strong>Status:</strong> {task.status || "Not set"}{" "}
-        <span style={{ color: "#aaa" }}>|</span>{" "}
-        <strong>Assigned:</strong> {teamMemberLabel(assignedTeamMember) || profileLabel(assignedProfile)}
+      <p style={{ ...mutedTextStyle(), margin: "4px 0" }}>
+        <strong style={{ color: "white" }}>Status:</strong>{" "}
+        {task.status || "Not set"}{" "}
+        <span style={{ color: "#666" }}>|</span>{" "}
+        <strong style={{ color: "white" }}>Assigned:</strong> {assignedLabel(task)}
       </p>
 
       <p
         style={{
+          ...mutedTextStyle(),
           margin: "4px 0",
-          color: "#ddd",
           lineHeight: "1.3",
           maxHeight: "36px",
           overflow: "hidden",
         }}
       >
-        <strong>Related:</strong> {relatedLine}
+        <strong style={{ color: "white" }}>Related:</strong> {relatedLine}
       </p>
 
       {task.status === "Completed" && (
-        <p style={{ margin: "8px 0 0 0", color: "#8ff0a4" }}>
+        <p style={{ margin: "8px 0 0 0", color: "#86efac" }}>
           <strong>Completed:</strong> {formatDateTime(task.completed_at)}
         </p>
       )}
@@ -423,7 +577,7 @@ function CalendarMonth({
         style={{
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "baseline",
+          alignItems: "flex-start",
           gap: "12px",
           marginBottom: "14px",
           flexWrap: "wrap",
@@ -431,137 +585,76 @@ function CalendarMonth({
       >
         <div>
           <h2 style={{ margin: 0 }}>{monthLabel(today)}</h2>
-          <p style={{ color: "#aaa", margin: "6px 0 0 0" }}>
+          <p style={{ ...mutedTextStyle(), margin: "6px 0 0 0", lineHeight: 1.5 }}>
             Month at a glance. Active scheduled tasks appear on their due dates.
             Click a date number to review every task for that day below.
           </p>
         </div>
 
-        <Link
-          href="/tasks/new"
-          style={{
-            backgroundColor: "#f5d76e",
-            color: "black",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Add Task
+        <Link href="/tasks/new" style={primaryButtonStyle()}>
+          + Add Task
         </Link>
       </div>
 
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(7, minmax(95px, 1fr))",
-          gap: "8px",
           overflowX: "auto",
+          paddingBottom: "4px",
         }}
       >
-        {weekDayLabels.map((label) => (
-          <div
-            key={label}
-            style={{
-              color: "#aaa",
-              fontWeight: "bold",
-              textAlign: "center",
-              padding: "6px",
-            }}
-          >
-            {label}
-          </div>
-        ))}
-
-        {days.map((day) => {
-          const dayTasks = tasksByDay.get(day.key) ?? [];
-          const visibleTasks = dayTasks.slice(0, 4);
-          const hiddenCount = Math.max(dayTasks.length - visibleTasks.length, 0);
-          const isSelected = day.key === selectedDay;
-
-          return (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(7, minmax(105px, 1fr))",
+            gap: "8px",
+            minWidth: "780px",
+          }}
+        >
+          {weekDayLabels.map((label) => (
             <div
-              key={day.key}
+              key={label}
               style={{
-                minHeight: "128px",
-                border: isSelected
-                  ? "2px solid #8ab4ff"
-                  : day.isToday
-                    ? "2px solid #f5d76e"
-                    : "1px solid #333",
-                borderRadius: "10px",
-                padding: "8px",
-                backgroundColor: day.isCurrentMonth ? "#181818" : "#101010",
-                opacity: day.isCurrentMonth ? 1 : 0.45,
+                color: "#a7a7a7",
+                fontWeight: 900,
+                textAlign: "center",
+                padding: "6px",
+                fontSize: "13px",
               }}
             >
+              {label}
+            </div>
+          ))}
+
+          {days.map((day) => {
+            const dayTasks = tasksByDay.get(day.key) ?? [];
+            const visibleTasks = dayTasks.slice(0, 4);
+            const hiddenCount = Math.max(dayTasks.length - visibleTasks.length, 0);
+            const isSelected = day.key === selectedDay;
+
+            return (
               <div
+                key={day.key}
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "8px",
+                  minHeight: "128px",
+                  border: isSelected
+                    ? "2px solid #8b5cf6"
+                    : day.isToday
+                      ? "2px solid #fcd34d"
+                      : "1px solid #2f2f2f",
+                  borderRadius: "12px",
+                  padding: "8px",
+                  backgroundColor: day.isCurrentMonth ? "#151515" : "#0f0f0f",
+                  opacity: day.isCurrentMonth ? 1 : 0.45,
                 }}
               >
-                <Link
-                  href={buildPlannerDayHref({
-                    day: day.key,
-                    assignedToFilter,
-                    statusFilter,
-                    priorityFilter,
-                  })}
+                <div
                   style={{
-                    color: isSelected
-                      ? "#8ab4ff"
-                      : day.isToday
-                        ? "#f5d76e"
-                        : "white",
-                    fontSize: "16px",
-                    fontWeight: "bold",
-                    textDecoration: "none",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "8px",
                   }}
                 >
-                  {day.dayNumber}
-                </Link>
-
-                {dayTasks.length > 0 && (
-                  <span style={{ color: "#aaa", fontSize: "12px" }}>
-                    {dayTasks.length}
-                  </span>
-                )}
-              </div>
-
-              <div style={{ display: "grid", gap: "6px" }}>
-                {visibleTasks.map((task) => (
-                  <Link
-                    key={task.id}
-                    href={`/tasks/${task.id}`}
-                    title={task.title}
-                    style={{
-                      display: "block",
-                      color: "black",
-                      backgroundColor:
-                        task.priority === "Urgent"
-                          ? "#ffcc66"
-                          : task.priority === "High"
-                            ? "#f5d76e"
-                            : "white",
-                      borderRadius: "6px",
-                      padding: "5px 6px",
-                      textDecoration: "none",
-                      fontSize: "12px",
-                      fontWeight: "bold",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {taskPillLabel(task)}
-                  </Link>
-                ))}
-
-                {hiddenCount > 0 && (
                   <Link
                     href={buildPlannerDayHref({
                       day: day.key,
@@ -570,19 +663,79 @@ function CalendarMonth({
                       priorityFilter,
                     })}
                     style={{
-                      color: "#8ab4ff",
-                      fontSize: "12px",
+                      color: isSelected
+                        ? "#c4b5fd"
+                        : day.isToday
+                          ? "#fcd34d"
+                          : "white",
+                      fontSize: "16px",
+                      fontWeight: 900,
                       textDecoration: "none",
-                      fontWeight: "bold",
                     }}
                   >
-                    +{hiddenCount} more
+                    {day.dayNumber}
                   </Link>
-                )}
+
+                  {dayTasks.length > 0 && (
+                    <span style={badgeStyle(String(dayTasks.length))}>
+                      {dayTasks.length}
+                    </span>
+                  )}
+                </div>
+
+                <div style={{ display: "grid", gap: "6px" }}>
+                  {visibleTasks.map((task) => (
+                    <Link
+                      key={task.id}
+                      href={`/tasks/${task.id}`}
+                      title={task.title}
+                      style={{
+                        display: "block",
+                        color: "white",
+                        backgroundColor:
+                          task.priority === "Urgent"
+                            ? "rgba(239, 68, 68, 0.24)"
+                            : task.priority === "High"
+                              ? "rgba(245, 158, 11, 0.24)"
+                              : "rgba(124, 58, 237, 0.22)",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        borderRadius: "8px",
+                        padding: "5px 6px",
+                        textDecoration: "none",
+                        fontSize: "12px",
+                        fontWeight: 800,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {taskPillLabel(task)}
+                    </Link>
+                  ))}
+
+                  {hiddenCount > 0 && (
+                    <Link
+                      href={buildPlannerDayHref({
+                        day: day.key,
+                        assignedToFilter,
+                        statusFilter,
+                        priorityFilter,
+                      })}
+                      style={{
+                        color: "#c4b5fd",
+                        fontSize: "12px",
+                        textDecoration: "none",
+                        fontWeight: 900,
+                      }}
+                    >
+                      +{hiddenCount} more
+                    </Link>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </section>
   );
@@ -602,14 +755,14 @@ function SelectedDaySection({
           display: "flex",
           justifyContent: "space-between",
           gap: "12px",
-          alignItems: "baseline",
+          alignItems: "flex-start",
           marginBottom: "12px",
           flexWrap: "wrap",
         }}
       >
         <div>
           <h2 style={{ margin: 0 }}>Selected Day</h2>
-          <p style={{ color: "#aaa", margin: "6px 0 0 0" }}>
+          <p style={{ ...mutedTextStyle(), margin: "6px 0 0 0" }}>
             {formatDateFromKey(selectedDay)}
           </p>
         </div>
@@ -618,7 +771,7 @@ function SelectedDaySection({
       </div>
 
       {tasks.length === 0 ? (
-        <p style={{ color: "#aaa" }}>No active tasks scheduled for this day.</p>
+        <p style={mutedTextStyle()}>No active tasks scheduled for this day.</p>
       ) : (
         <div
           style={{
@@ -645,8 +798,7 @@ function PlannerSection({
   description: string;
   tasks: Task[];
 }) {
-  const sectionMaxHeight =
-    title === "Needs Scheduling" ? "520px" : "460px";
+  const sectionMaxHeight = title === "Needs Scheduling" ? "520px" : "460px";
 
   return (
     <section style={sectionStyle()}>
@@ -655,26 +807,28 @@ function PlannerSection({
           display: "flex",
           justifyContent: "space-between",
           gap: "12px",
-          alignItems: "baseline",
+          alignItems: "flex-start",
           marginBottom: "12px",
         }}
       >
         <div>
           <h2 style={{ margin: 0 }}>{title}</h2>
-          <p style={{ color: "#aaa", margin: "6px 0 0 0" }}>{description}</p>
+          <p style={{ ...mutedTextStyle(), margin: "6px 0 0 0", lineHeight: 1.45 }}>
+            {description}
+          </p>
         </div>
 
         <strong style={{ fontSize: "28px" }}>{tasks.length}</strong>
       </div>
 
       {tasks.length > 4 && (
-        <p style={{ color: "#aaa", fontSize: "13px", marginTop: 0 }}>
+        <p style={{ ...mutedTextStyle(), fontSize: "13px", marginTop: 0 }}>
           Scroll inside this section to see more.
         </p>
       )}
 
       {tasks.length === 0 ? (
-        <p style={{ color: "#aaa" }}>No tasks in this section.</p>
+        <p style={mutedTextStyle()}>No tasks in this section.</p>
       ) : (
         <div
           style={{
@@ -796,10 +950,7 @@ function buildTeamWorkloads(input: {
         thisWeekTasks,
         completedThisWeekTasks,
         completedRecentlyTasks,
-        statusLabel: workloadStatusLabel(
-          openTasks.length,
-          overdueTasks.length
-        ),
+        statusLabel: workloadStatusLabel(openTasks.length, overdueTasks.length),
       };
     })
     .sort((left, right) =>
@@ -818,27 +969,24 @@ function buildPlannerWorkloadHref(memberId: string) {
 function workloadStatusStyle(statusLabel: TeamWorkload["statusLabel"]) {
   if (statusLabel === "Heavy workload") {
     return {
-      color: "#ff9999",
-      borderColor: "#8f3030",
-      backgroundColor: "#2a1111",
+      color: "#fca5a5",
+      borderColor: "rgba(239, 68, 68, 0.35)",
+      backgroundColor: "rgba(239, 68, 68, 0.14)",
     };
   }
 
-  if (
-    statusLabel === "Light workload" ||
-    statusLabel === "No assigned work"
-  ) {
+  if (statusLabel === "Light workload" || statusLabel === "No assigned work") {
     return {
-      color: "#8ff0a4",
-      borderColor: "#2f7a3f",
-      backgroundColor: "#102414",
+      color: "#86efac",
+      borderColor: "rgba(34, 197, 94, 0.35)",
+      backgroundColor: "rgba(34, 197, 94, 0.14)",
     };
   }
 
   return {
-    color: "#ffcc66",
-    borderColor: "#735f20",
-    backgroundColor: "#211c0d",
+    color: "#fcd34d",
+    borderColor: "rgba(245, 158, 11, 0.35)",
+    backgroundColor: "rgba(245, 158, 11, 0.14)",
   };
 }
 
@@ -868,21 +1016,21 @@ function TeamWorkloadSection({
           display: "flex",
           justifyContent: "space-between",
           gap: "12px",
-          alignItems: "baseline",
+          alignItems: "flex-start",
           marginBottom: "12px",
           flexWrap: "wrap",
         }}
       >
         <div>
           <h2 style={{ margin: 0 }}>Team Workload</h2>
-          <p style={{ color: "#aaa", margin: "6px 0 0 0" }}>
+          <p style={{ ...mutedTextStyle(), margin: "6px 0 0 0", lineHeight: 1.5 }}>
             Visibility only. This does not assign, rebalance, notify, or change
             task ownership.
           </p>
         </div>
 
         {lowestOpenWorkload && (
-          <p style={{ color: "#aaa", margin: 0 }}>
+          <p style={{ ...mutedTextStyle(), margin: 0 }}>
             Suggested capacity:{" "}
             <strong style={{ color: "white" }}>
               {teamMemberLabel(lowestOpenWorkload.member)}
@@ -892,7 +1040,7 @@ function TeamWorkloadSection({
       </div>
 
       {workloads.length === 0 ? (
-        <p style={{ color: "#aaa" }}>No active team members were found.</p>
+        <p style={mutedTextStyle()}>No active team members were found.</p>
       ) : (
         <div
           style={{
@@ -912,13 +1060,14 @@ function TeamWorkloadSection({
                 style={{
                   display: "block",
                   border: isSelected
-                    ? "2px solid #8ab4ff"
-                    : "1px solid #333",
-                  borderRadius: "10px",
+                    ? "2px solid #8b5cf6"
+                    : "1px solid #2f2f2f",
+                  borderRadius: "14px",
                   padding: "14px",
-                  backgroundColor: "#101010",
+                  backgroundColor: "#151515",
                   color: "white",
                   textDecoration: "none",
+                  boxShadow: "0 10px 24px rgba(0,0,0,0.12)",
                 }}
               >
                 <div
@@ -936,7 +1085,7 @@ function TeamWorkloadSection({
                     </h3>
 
                     {workload.member.role_title && (
-                      <p style={{ color: "#aaa", margin: "4px 0 0 0" }}>
+                      <p style={{ ...mutedTextStyle(), margin: "4px 0 0 0" }}>
                         {workload.member.role_title}
                       </p>
                     )}
@@ -950,7 +1099,7 @@ function TeamWorkloadSection({
                       borderRadius: "999px",
                       padding: "4px 8px",
                       fontSize: "12px",
-                      fontWeight: "bold",
+                      fontWeight: 900,
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -964,26 +1113,33 @@ function TeamWorkloadSection({
                     gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
                     gap: "8px",
                     fontSize: "14px",
+                    color: "#d1d5db",
                   }}
                 >
                   <p style={{ margin: 0 }}>
-                    <strong>Open:</strong> {workload.openTasks.length}
+                    <strong style={{ color: "white" }}>Open:</strong>{" "}
+                    {workload.openTasks.length}
                   </p>
 
                   <p style={{ margin: 0 }}>
-                    <strong>Overdue:</strong> {workload.overdueTasks.length}
+                    <strong style={{ color: "white" }}>Overdue:</strong>{" "}
+                    {workload.overdueTasks.length}
                   </p>
 
                   <p style={{ margin: 0 }}>
-                    <strong>Today:</strong> {workload.todayTasks.length}
+                    <strong style={{ color: "white" }}>Today:</strong>{" "}
+                    {workload.todayTasks.length}
                   </p>
 
                   <p style={{ margin: 0 }}>
-                    <strong>Week:</strong> {workload.thisWeekTasks.length}
+                    <strong style={{ color: "white" }}>Week:</strong>{" "}
+                    {workload.thisWeekTasks.length}
                   </p>
 
                   <p style={{ margin: 0, gridColumn: "1 / -1" }}>
-                    <strong>Completed This Week:</strong>{" "}
+                    <strong style={{ color: "white" }}>
+                      Completed This Week:
+                    </strong>{" "}
                     {workload.completedThisWeekTasks.length}
                   </p>
                 </div>
@@ -1000,7 +1156,7 @@ function TeamWorkloadSection({
               display: "flex",
               justifyContent: "space-between",
               gap: "12px",
-              alignItems: "baseline",
+              alignItems: "flex-start",
               flexWrap: "wrap",
               marginBottom: "12px",
             }}
@@ -1010,12 +1166,12 @@ function TeamWorkloadSection({
                 Workload Detail: {teamMemberLabel(selectedWorkload.member)}
               </h3>
 
-              <p style={{ color: "#aaa", margin: "6px 0 0 0" }}>
+              <p style={{ ...mutedTextStyle(), margin: "6px 0 0 0" }}>
                 Assigned tasks grouped by timing and completion status.
               </p>
             </div>
 
-            <Link href="/planner" style={{ color: "#8ab4ff", fontWeight: "bold" }}>
+            <Link href="/planner" style={secondaryButtonStyle()}>
               Clear workload detail
             </Link>
           </div>
@@ -1186,270 +1342,248 @@ export default async function PlannerPage({ searchParams }: PageProps) {
   });
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#111",
-        color: "white",
-        padding: "40px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          gap: "12px",
-          marginBottom: "28px",
-          flexWrap: "wrap",
-        }}
-      >
-        <Link
-          href="/"
+    <main style={pageStyle()}>
+      <section style={{ maxWidth: "1240px", margin: "0 auto" }}>
+        <div
           style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            marginBottom: "22px",
+            gap: "16px",
+            flexWrap: "wrap",
           }}
         >
-          Home
-        </Link>
+          <div>
+            <p
+              style={{
+                ...mutedTextStyle(),
+                textTransform: "uppercase",
+                letterSpacing: "1.8px",
+                fontSize: "12px",
+                fontWeight: 900,
+                margin: "0 0 8px",
+              }}
+            >
+              Sales
+            </p>
 
-        <Link
-          href="/tasks"
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Tasks
-        </Link>
+            <h1 style={{ fontSize: "32px", margin: "0 0 8px" }}>Planner</h1>
 
-        <Link
-          href="/tasks/new"
-          style={{
-            color: "black",
-            backgroundColor: "#f5d76e",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Add Task
-        </Link>
-      </div>
+            <p
+              style={{
+                ...mutedTextStyle(),
+                maxWidth: "880px",
+                margin: 0,
+                lineHeight: 1.5,
+              }}
+            >
+              Calendar-style view of scheduled Sell It tasks using task due
+              dates. Completed tasks stay out of active planner sections and
+              appear only in Completed Recently.
+            </p>
+          </div>
 
-      <h1>Planner</h1>
+          <Link href="/tasks/new" style={primaryButtonStyle()}>
+            + Add Task
+          </Link>
+        </div>
 
-      <p style={{ color: "#aaa", maxWidth: "900px" }}>
-        Calendar-style view of scheduled Sell It tasks using task due dates.
-        Completed tasks stay out of the active planner sections and appear only
-        in Completed Recently. Open tasks with no due date appear in Needs Scheduling.
-      </p>
+        {error && (
+          <p style={{ color: "#fca5a5" }}>Database error: {error.message}</p>
+        )}
 
-      {error && (
-        <p style={{ color: "#ff9999" }}>Database error: {error.message}</p>
-      )}
+        {teamMemberError && (
+          <p style={{ color: "#fca5a5" }}>
+            Team member error: {teamMemberError.message}
+          </p>
+        )}
 
-      <form
-        action="/planner"
-        style={{
-          border: "1px solid #333",
-          backgroundColor: "#181818",
-          padding: "16px",
-          borderRadius: "10px",
-          marginBottom: "22px",
-          display: "grid",
-          gap: "12px",
-        }}
-      >
         <div
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
             gap: "12px",
+            marginBottom: "18px",
           }}
         >
-          <label>
-            <span style={{ display: "block", marginBottom: "6px" }}>
-              Assigned To
-            </span>
-            <select
-              name="assigned_to"
-              defaultValue={assignedToFilter}
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "1px solid #555",
-              }}
-            >
-              <option value="">All</option>
-              {assignedOptions.map(([id, label]) => (
-                <option key={id} value={id}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div style={statCardStyle()}>
+            <p style={{ ...mutedTextStyle(), margin: "0 0 6px" }}>Today</p>
+            <strong style={{ fontSize: "28px" }}>{todayTasks.length}</strong>
+          </div>
 
-          <label>
-            <span style={{ display: "block", marginBottom: "6px" }}>
-              Status
-            </span>
-            <select
-              name="status"
-              defaultValue={statusFilter}
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "1px solid #555",
-              }}
-            >
-              <option value="">All active + completed recently</option>
-              {statuses.map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div style={statCardStyle()}>
+            <p style={{ ...mutedTextStyle(), margin: "0 0 6px" }}>This Week</p>
+            <strong style={{ fontSize: "28px" }}>{thisWeekTasks.length}</strong>
+          </div>
 
-          <label>
-            <span style={{ display: "block", marginBottom: "6px" }}>
-              Priority
-            </span>
-            <select
-              name="priority"
-              defaultValue={priorityFilter}
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "1px solid #555",
-              }}
-            >
-              <option value="">All</option>
-              {priorities.map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div style={statCardStyle()}>
+            <p style={{ ...mutedTextStyle(), margin: "0 0 6px" }}>Overdue</p>
+            <strong style={{ fontSize: "28px" }}>{overdueTasks.length}</strong>
+          </div>
+
+          <div style={statCardStyle()}>
+            <p style={{ ...mutedTextStyle(), margin: "0 0 6px" }}>
+              Needs Scheduling
+            </p>
+            <strong style={{ fontSize: "28px" }}>
+              {needsSchedulingTasks.length}
+            </strong>
+          </div>
         </div>
 
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-          <button
-            type="submit"
+        <form
+          action="/planner"
+          style={{ ...panelStyle(), marginBottom: "22px" }}
+        >
+          <div
             style={{
-              backgroundColor: "#f5d76e",
-              color: "black",
-              padding: "10px 14px",
-              borderRadius: "6px",
-              border: "none",
-              fontWeight: "bold",
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+              gap: "12px",
+              alignItems: "end",
+            }}
+          >
+            <label>
+              <span style={fieldLabelStyle()}>Assigned To</span>
+              <select
+                name="assigned_to"
+                defaultValue={assignedToFilter}
+                style={inputStyle()}
+              >
+                <option value="">All</option>
+                {assignedOptions.map(([id, label]) => (
+                  <option key={id} value={id}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span style={fieldLabelStyle()}>Status</span>
+              <select
+                name="status"
+                defaultValue={statusFilter}
+                style={inputStyle()}
+              >
+                <option value="">All active + completed recently</option>
+                {statuses.map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span style={fieldLabelStyle()}>Priority</span>
+              <select
+                name="priority"
+                defaultValue={priorityFilter}
+                style={inputStyle()}
+              >
+                <option value="">All</option>
+                {priorities.map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              flexWrap: "wrap",
+              marginTop: "14px",
+            }}
+          >
+            <button
+              type="submit"
+              style={{
+                ...primaryButtonStyle(),
+                cursor: "pointer",
+              }}
+            >
+              Apply Filters
+            </button>
+
+            <a href="/planner" style={secondaryButtonStyle()}>
+              Clear Filters
+            </a>
+          </div>
+        </form>
+
+        <TeamWorkloadSection
+          workloads={teamWorkloads}
+          selectedMemberId={selectedWorkloadMemberId}
+        />
+
+        <details open style={{ marginBottom: "18px" }}>
+          <summary
+            style={{
               cursor: "pointer",
+              color: "#c4b5fd",
+              fontWeight: 900,
+              marginBottom: "10px",
             }}
           >
-            Apply Filters
-          </button>
+            Monthly Calendar - click to collapse or expand
+          </summary>
 
-          <a
-            href="/planner"
-            style={{
-              color: "white",
-              border: "1px solid #555",
-              padding: "10px 14px",
-              borderRadius: "6px",
-              textDecoration: "none",
-              fontWeight: "bold",
-            }}
-          >
-            Clear Filters
-          </a>
-        </div>
-      </form>
+          <CalendarMonth
+            today={today}
+            tasks={filteredTasks}
+            selectedDay={selectedDay}
+            assignedToFilter={assignedToFilter}
+            statusFilter={statusFilter}
+            priorityFilter={priorityFilter}
+          />
+        </details>
 
-      <TeamWorkloadSection
-        workloads={teamWorkloads}
-        selectedMemberId={selectedWorkloadMemberId}
-      />
+        <SelectedDaySection selectedDay={selectedDay} tasks={selectedDayTasks} />
 
-      <details open style={{ marginBottom: "18px" }}>
-        <summary
+        <div
           style={{
-            cursor: "pointer",
-            color: "#f5d76e",
-            fontWeight: "bold",
-            marginBottom: "10px",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+            gap: "16px",
           }}
         >
-          Monthly Calendar - click to collapse or expand
-        </summary>
+          <PlannerSection
+            title="Today"
+            description="Open tasks due today."
+            tasks={todayTasks}
+          />
 
-        <CalendarMonth
-          today={today}
-          tasks={filteredTasks}
-          selectedDay={selectedDay}
-          assignedToFilter={assignedToFilter}
-          statusFilter={statusFilter}
-          priorityFilter={priorityFilter}
-        />
-      </details>
+          <PlannerSection
+            title="This Week"
+            description="Open tasks due later this week."
+            tasks={thisWeekTasks}
+          />
 
-      <SelectedDaySection selectedDay={selectedDay} tasks={selectedDayTasks} />
+          <PlannerSection
+            title="Overdue"
+            description="Open tasks with due dates before today."
+            tasks={overdueTasks}
+          />
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-          gap: "16px",
-        }}
-      >
-        <PlannerSection
-          title="Today"
-          description="Open tasks due today."
-          tasks={todayTasks}
-        />
+          <PlannerSection
+            title="Needs Scheduling"
+            description="Open tasks with no due date. These need a date before they can appear on the calendar."
+            tasks={needsSchedulingTasks}
+          />
 
-        <PlannerSection
-          title="This Week"
-          description="Open tasks due later this week."
-          tasks={thisWeekTasks}
-        />
-
-        <PlannerSection
-          title="Overdue"
-          description="Open tasks with due dates before today."
-          tasks={overdueTasks}
-        />
-
-        <PlannerSection
-          title="Needs Scheduling"
-          description="Open tasks with no due date. These need a date before they can appear on the calendar."
-          tasks={needsSchedulingTasks}
-        />
-
-        <PlannerSection
-          title="Completed Recently"
-          description="Recently completed tasks. Completed work stays out of the active sections."
-          tasks={completedRecentlyTasks}
-        />
-      </div>
+          <PlannerSection
+            title="Completed Recently"
+            description="Recently completed tasks. Completed work stays out of the active sections."
+            tasks={completedRecentlyTasks}
+          />
+        </div>
+      </section>
     </main>
   );
 }
-
-
