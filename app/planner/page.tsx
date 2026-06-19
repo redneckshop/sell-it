@@ -61,6 +61,7 @@ type PageProps = {
     assigned_to?: string;
     status?: string;
     priority?: string;
+    workload_member?: string;
     selected_day?: string;
   }>;
 };
@@ -692,12 +693,383 @@ function PlannerSection({
     </section>
   );
 }
+
+type TeamWorkload = {
+  member: TeamMember;
+  assignedTasks: Task[];
+  openTasks: Task[];
+  overdueTasks: Task[];
+  todayTasks: Task[];
+  thisWeekTasks: Task[];
+  completedThisWeekTasks: Task[];
+  completedRecentlyTasks: Task[];
+  statusLabel:
+    | "No assigned work"
+    | "Light workload"
+    | "Normal workload"
+    | "Heavy workload";
+};
+
+function taskMatchesTeamMember(task: Task, member: TeamMember) {
+  return (
+    task.assigned_team_member_id === member.id ||
+    Boolean(member.profile_id && task.assigned_to === member.profile_id)
+  );
+}
+
+function workloadStatusLabel(
+  openCount: number,
+  overdueCount: number
+): TeamWorkload["statusLabel"] {
+  if (openCount === 0) return "No assigned work";
+  if (openCount >= 10 || overdueCount >= 3) return "Heavy workload";
+  if (openCount <= 3 && overdueCount === 0) return "Light workload";
+
+  return "Normal workload";
+}
+
+function buildTeamWorkloads(input: {
+  teamMembers: TeamMember[];
+  allTasks: Task[];
+  today: string;
+  weekEnd: string;
+}) {
+  const completedWeekStart = addDaysKey(input.today, -7);
+
+  return input.teamMembers
+    .map((member) => {
+      const assignedTasks = input.allTasks.filter((task) =>
+        taskMatchesTeamMember(task, member)
+      );
+
+      const openTasks = assignedTasks
+        .filter(isActive)
+        .sort((left, right) =>
+          taskSortDateValue(left).localeCompare(taskSortDateValue(right))
+        );
+
+      const overdueTasks = openTasks.filter((task) => {
+        const due = dateKey(task.due_date);
+
+        return Boolean(due) && due < input.today;
+      });
+
+      const todayTasks = openTasks.filter(
+        (task) => dateKey(task.due_date) === input.today
+      );
+
+      const thisWeekTasks = openTasks.filter((task) => {
+        const due = dateKey(task.due_date);
+
+        return Boolean(due) && due > input.today && due <= input.weekEnd;
+      });
+
+      const completedThisWeekTasks = assignedTasks
+        .filter((task) => {
+          if (task.status !== "Completed") return false;
+
+          const completed = dateKey(task.completed_at || task.updated_at);
+
+          return (
+            Boolean(completed) &&
+            completed >= completedWeekStart &&
+            completed <= input.today
+          );
+        })
+        .sort((left, right) =>
+          completedSortValue(right).localeCompare(completedSortValue(left))
+        );
+
+      const completedRecentlyTasks = assignedTasks
+        .filter((task) => task.status === "Completed")
+        .sort((left, right) =>
+          completedSortValue(right).localeCompare(completedSortValue(left))
+        )
+        .slice(0, 8);
+
+      return {
+        member,
+        assignedTasks,
+        openTasks,
+        overdueTasks,
+        todayTasks,
+        thisWeekTasks,
+        completedThisWeekTasks,
+        completedRecentlyTasks,
+        statusLabel: workloadStatusLabel(
+          openTasks.length,
+          overdueTasks.length
+        ),
+      };
+    })
+    .sort((left, right) =>
+      teamMemberLabel(left.member).localeCompare(teamMemberLabel(right.member))
+    );
+}
+
+function buildPlannerWorkloadHref(memberId: string) {
+  const params = new URLSearchParams();
+
+  params.set("workload_member", memberId);
+
+  return `/planner?${params.toString()}`;
+}
+
+function workloadStatusStyle(statusLabel: TeamWorkload["statusLabel"]) {
+  if (statusLabel === "Heavy workload") {
+    return {
+      color: "#ff9999",
+      borderColor: "#8f3030",
+      backgroundColor: "#2a1111",
+    };
+  }
+
+  if (
+    statusLabel === "Light workload" ||
+    statusLabel === "No assigned work"
+  ) {
+    return {
+      color: "#8ff0a4",
+      borderColor: "#2f7a3f",
+      backgroundColor: "#102414",
+    };
+  }
+
+  return {
+    color: "#ffcc66",
+    borderColor: "#735f20",
+    backgroundColor: "#211c0d",
+  };
+}
+
+function TeamWorkloadSection({
+  workloads,
+  selectedMemberId,
+}: {
+  workloads: TeamWorkload[];
+  selectedMemberId: string;
+}) {
+  const selectedWorkload =
+    workloads.find((workload) => workload.member.id === selectedMemberId) ||
+    null;
+
+  const lowestOpenWorkload = workloads.slice().sort((left, right) => {
+    const openDiff = left.openTasks.length - right.openTasks.length;
+
+    if (openDiff !== 0) return openDiff;
+
+    return left.overdueTasks.length - right.overdueTasks.length;
+  })[0];
+
+  return (
+    <section style={{ ...sectionStyle(), marginBottom: "18px" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: "12px",
+          alignItems: "baseline",
+          marginBottom: "12px",
+          flexWrap: "wrap",
+        }}
+      >
+        <div>
+          <h2 style={{ margin: 0 }}>Team Workload</h2>
+          <p style={{ color: "#aaa", margin: "6px 0 0 0" }}>
+            Visibility only. This does not assign, rebalance, notify, or change
+            task ownership.
+          </p>
+        </div>
+
+        {lowestOpenWorkload && (
+          <p style={{ color: "#aaa", margin: 0 }}>
+            Suggested capacity:{" "}
+            <strong style={{ color: "white" }}>
+              {teamMemberLabel(lowestOpenWorkload.member)}
+            </strong>
+          </p>
+        )}
+      </div>
+
+      {workloads.length === 0 ? (
+        <p style={{ color: "#aaa" }}>No active team members were found.</p>
+      ) : (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+            gap: "12px",
+          }}
+        >
+          {workloads.map((workload) => {
+            const statusStyle = workloadStatusStyle(workload.statusLabel);
+            const isSelected = selectedMemberId === workload.member.id;
+
+            return (
+              <Link
+                key={workload.member.id}
+                href={buildPlannerWorkloadHref(workload.member.id)}
+                style={{
+                  display: "block",
+                  border: isSelected
+                    ? "2px solid #8ab4ff"
+                    : "1px solid #333",
+                  borderRadius: "10px",
+                  padding: "14px",
+                  backgroundColor: "#101010",
+                  color: "white",
+                  textDecoration: "none",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: "10px",
+                    alignItems: "flex-start",
+                    marginBottom: "10px",
+                  }}
+                >
+                  <div>
+                    <h3 style={{ margin: 0 }}>
+                      {teamMemberLabel(workload.member)}
+                    </h3>
+
+                    {workload.member.role_title && (
+                      <p style={{ color: "#aaa", margin: "4px 0 0 0" }}>
+                        {workload.member.role_title}
+                      </p>
+                    )}
+                  </div>
+
+                  <span
+                    style={{
+                      color: statusStyle.color,
+                      border: `1px solid ${statusStyle.borderColor}`,
+                      backgroundColor: statusStyle.backgroundColor,
+                      borderRadius: "999px",
+                      padding: "4px 8px",
+                      fontSize: "12px",
+                      fontWeight: "bold",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {workload.statusLabel}
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                    gap: "8px",
+                    fontSize: "14px",
+                  }}
+                >
+                  <p style={{ margin: 0 }}>
+                    <strong>Open:</strong> {workload.openTasks.length}
+                  </p>
+
+                  <p style={{ margin: 0 }}>
+                    <strong>Overdue:</strong> {workload.overdueTasks.length}
+                  </p>
+
+                  <p style={{ margin: 0 }}>
+                    <strong>Today:</strong> {workload.todayTasks.length}
+                  </p>
+
+                  <p style={{ margin: 0 }}>
+                    <strong>Week:</strong> {workload.thisWeekTasks.length}
+                  </p>
+
+                  <p style={{ margin: 0, gridColumn: "1 / -1" }}>
+                    <strong>Completed This Week:</strong>{" "}
+                    {workload.completedThisWeekTasks.length}
+                  </p>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+
+      {selectedWorkload && (
+        <div style={{ marginTop: "18px" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: "12px",
+              alignItems: "baseline",
+              flexWrap: "wrap",
+              marginBottom: "12px",
+            }}
+          >
+            <div>
+              <h3 style={{ margin: 0 }}>
+                Workload Detail: {teamMemberLabel(selectedWorkload.member)}
+              </h3>
+
+              <p style={{ color: "#aaa", margin: "6px 0 0 0" }}>
+                Assigned tasks grouped by timing and completion status.
+              </p>
+            </div>
+
+            <Link href="/planner" style={{ color: "#8ab4ff", fontWeight: "bold" }}>
+              Clear workload detail
+            </Link>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gap: "14px",
+            }}
+          >
+            <PlannerSection
+              title="Assigned Tasks"
+              description="All open tasks assigned to this team member."
+              tasks={selectedWorkload.openTasks}
+            />
+
+            <PlannerSection
+              title="Overdue"
+              description="Assigned open tasks with due dates before today."
+              tasks={selectedWorkload.overdueTasks}
+            />
+
+            <PlannerSection
+              title="Due Today"
+              description="Assigned open tasks due today."
+              tasks={selectedWorkload.todayTasks}
+            />
+
+            <PlannerSection
+              title="Due This Week"
+              description="Assigned open tasks due later this week."
+              tasks={selectedWorkload.thisWeekTasks}
+            />
+
+            <PlannerSection
+              title="Completed Recently"
+              description="Assigned tasks completed recently."
+              tasks={selectedWorkload.completedRecentlyTasks}
+            />
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default async function PlannerPage({ searchParams }: PageProps) {
   const params = searchParams ? await searchParams : {};
 
   const assignedToFilter = (params.assigned_to ?? "").trim();
   const statusFilter = (params.status ?? "").trim();
   const priorityFilter = (params.priority ?? "").trim();
+  const selectedWorkloadMemberId = (params.workload_member ?? "").trim();
 
   const today = todayKey();
   const selectedDay = dateKey(params.selected_day ?? null) || today;
@@ -805,6 +1177,13 @@ export default async function PlannerPage({ searchParams }: PageProps) {
   const assignedOptions = teamMembers
     .map((member) => [member.id, teamMemberLabel(member)] as const)
     .sort((left, right) => left[1].localeCompare(right[1]));
+
+  const teamWorkloads = buildTeamWorkloads({
+    teamMembers,
+    allTasks,
+    today,
+    weekEnd,
+  });
 
   return (
     <main
@@ -1003,6 +1382,11 @@ export default async function PlannerPage({ searchParams }: PageProps) {
         </div>
       </form>
 
+      <TeamWorkloadSection
+        workloads={teamWorkloads}
+        selectedMemberId={selectedWorkloadMemberId}
+      />
+
       <details open style={{ marginBottom: "18px" }}>
         <summary
           style={{
@@ -1067,3 +1451,5 @@ export default async function PlannerPage({ searchParams }: PageProps) {
     </main>
   );
 }
+
+

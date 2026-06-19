@@ -3934,6 +3934,7 @@ type RecommendationQuestionMode =
   | "trending_pain_points"
   | "alpha_candidates"
   | "owner_work"
+  | "workload_summary"
   | "data_quality"
   | "proactive_insights"
   | "top_priorities";
@@ -4027,6 +4028,15 @@ function isRecommendationQuestion(lowerQuestion: string) {
     "what should angel focus on",
     "what should charles focus on",
     "what should charley focus on",
+    "who is overloaded",
+    "who has capacity",
+    "who should get the next task",
+    "who should receive the next task",
+    "who can take the next task",
+    "workload",
+    "team workload",
+    "capacity",
+    "overloaded",
     "what should",
     "who should",
   ];
@@ -4037,6 +4047,20 @@ function isRecommendationQuestion(lowerQuestion: string) {
 function getRecommendationQuestionMode(lowerQuestion: string): RecommendationQuestionMode {
   if (getRequestedRecommendationOwner(lowerQuestion)) return "owner_work";
 
+
+  if (
+    lowerQuestion.includes("who is overloaded") ||
+    lowerQuestion.includes("who has capacity") ||
+    lowerQuestion.includes("who should get the next task") ||
+    lowerQuestion.includes("who should receive the next task") ||
+    lowerQuestion.includes("who can take the next task") ||
+    lowerQuestion.includes("team workload") ||
+    lowerQuestion.includes("workload") ||
+    lowerQuestion.includes("capacity") ||
+    lowerQuestion.includes("overloaded")
+  ) {
+    return "workload_summary";
+  }
   if (
     lowerQuestion.includes("which pain points are trending") ||
     lowerQuestion.includes("pain points are trending") ||
@@ -5290,6 +5314,252 @@ async function loadRecommendationData(): Promise<RecommendationData> {
   };
 }
 
+
+type AssistantWorkloadSummary = {
+  member: RecommendationTeamMember;
+  name: string;
+  openTasks: RecommendationTask[];
+  overdueTasks: RecommendationTask[];
+  todayTasks: RecommendationTask[];
+  thisWeekTasks: RecommendationTask[];
+  completedThisWeekTasks: RecommendationTask[];
+  statusLabel:
+    | "No assigned work"
+    | "Light workload"
+    | "Normal workload"
+    | "Heavy workload";
+};
+
+function assistantTaskMatchesTeamMember(
+  task: RecommendationTask,
+  member: RecommendationTeamMember
+) {
+  const memberId = getStringField(member, "id");
+  const profileId = getStringField(member, "profile_id");
+
+  return (
+    Boolean(
+      memberId &&
+        getStringField(task, "assigned_team_member_id") === memberId
+    ) ||
+    Boolean(profileId && getStringField(task, "assigned_to") === profileId)
+  );
+}
+
+function assistantWorkloadStatusLabel(
+  openCount: number,
+  overdueCount: number
+): AssistantWorkloadSummary["statusLabel"] {
+  if (openCount === 0) return "No assigned work";
+  if (openCount >= 10 || overdueCount >= 3) return "Heavy workload";
+  if (openCount <= 3 && overdueCount === 0) return "Light workload";
+
+  return "Normal workload";
+}
+
+function buildAssistantWorkloadSummaries(data: RecommendationData) {
+  const today = todayIsoDate();
+
+  const weekEndDate = new Date(`${today}T00:00:00`);
+  weekEndDate.setDate(weekEndDate.getDate() + 7);
+  const weekEnd = weekEndDate.toISOString().slice(0, 10);
+
+  const completedWeekStartDate = new Date(`${today}T00:00:00`);
+  completedWeekStartDate.setDate(completedWeekStartDate.getDate() - 7);
+  const completedWeekStart = completedWeekStartDate.toISOString().slice(0, 10);
+
+  return data.teamMembers
+    .map((member) => {
+      const assignedTasks = data.tasks.filter((task) =>
+        assistantTaskMatchesTeamMember(task, member)
+      );
+
+      const openTasks = assignedTasks.filter(isOpenTask);
+
+      const overdueTasks = openTasks.filter((task) => {
+        const due = getStringField(task, "due_date").slice(0, 10);
+
+        return Boolean(due) && due < today;
+      });
+
+      const todayTasks = openTasks.filter(
+        (task) => getStringField(task, "due_date").slice(0, 10) === today
+      );
+
+      const thisWeekTasks = openTasks.filter((task) => {
+        const due = getStringField(task, "due_date").slice(0, 10);
+
+        return Boolean(due) && due > today && due <= weekEnd;
+      });
+
+      const completedThisWeekTasks = assignedTasks.filter((task) => {
+        if (getStringField(task, "status") !== "Completed") return false;
+
+        const completed = (
+          getStringField(task, "completed_at") ||
+          getStringField(task, "updated_at")
+        ).slice(0, 10);
+
+        return (
+          Boolean(completed) &&
+          completed >= completedWeekStart &&
+          completed <= today
+        );
+      });
+
+      return {
+        member,
+        name: teamMemberDisplayName(member),
+        openTasks,
+        overdueTasks,
+        todayTasks,
+        thisWeekTasks,
+        completedThisWeekTasks,
+        statusLabel: assistantWorkloadStatusLabel(
+          openTasks.length,
+          overdueTasks.length
+        ),
+      };
+    })
+    .sort((left, right) => left.name.localeCompare(right.name));
+}
+
+function formatAssistantWorkloadLine(summary: AssistantWorkloadSummary) {
+  return `${summary.name}
+Status: ${summary.statusLabel}
+Open: ${summary.openTasks.length}
+Overdue: ${summary.overdueTasks.length}
+Today: ${summary.todayTasks.length}
+Week: ${summary.thisWeekTasks.length}
+Completed This Week: ${summary.completedThisWeekTasks.length}`;
+}
+
+function answerTeamWorkloadQuestion(
+  data: RecommendationData,
+  userQuestion: string
+) {
+  const summaries = buildAssistantWorkloadSummaries(data);
+  const lowerQuestion = userQuestion.toLowerCase();
+
+  if (summaries.length === 0) {
+    return `Team workload summary
+
+No active team members were found.
+
+No assignments were changed.`;
+  }
+
+  const overloaded = summaries
+    .filter((summary) => summary.statusLabel === "Heavy workload")
+    .sort(
+      (left, right) =>
+        right.openTasks.length - left.openTasks.length ||
+        right.overdueTasks.length - left.overdueTasks.length
+    );
+
+  const capacity = summaries
+    .filter(
+      (summary) =>
+        summary.statusLabel === "Light workload" ||
+        summary.statusLabel === "No assigned work"
+    )
+    .sort(
+      (left, right) =>
+        left.openTasks.length - right.openTasks.length ||
+        left.overdueTasks.length - right.overdueTasks.length
+    );
+
+  const nextTaskCandidate =
+    capacity[0] ||
+    summaries
+      .slice()
+      .sort(
+        (left, right) =>
+          left.openTasks.length - right.openTasks.length ||
+          left.overdueTasks.length - right.overdueTasks.length
+      )[0];
+
+  if (lowerQuestion.includes("overloaded")) {
+    return `Workload overload check
+
+${
+  overloaded.length > 0
+    ? overloaded.map(formatAssistantWorkloadLine).join("\n\n")
+    : "No team member currently looks overloaded based on open and overdue task counts."
+}
+
+No assignments were changed.`;
+  }
+
+  if (
+    lowerQuestion.includes("capacity") ||
+    lowerQuestion.includes("next task") ||
+    lowerQuestion.includes("receive the next task") ||
+    lowerQuestion.includes("take the next task")
+  ) {
+    return `Workload capacity recommendation
+
+Best current capacity:
+${
+  nextTaskCandidate
+    ? formatAssistantWorkloadLine(nextTaskCandidate)
+    : "No team member found."
+}
+
+Reason:
+- This is based on the lowest open task count, with overdue task count as the tie-breaker.
+- This is a recommendation only.
+- No assignment was changed.
+
+Full team workload:
+${summaries.map(formatAssistantWorkloadLine).join("\n\n")}`;
+  }
+
+  return `Team workload summary
+
+${summaries.map(formatAssistantWorkloadLine).join("\n\n")}
+
+Recommendation:
+${
+  nextTaskCandidate
+    ? `${nextTaskCandidate.name} appears to have the best capacity for the next task based on current open and overdue task counts.`
+    : "No capacity recommendation is available."
+}
+
+No assignments were changed.`;
+}
+
+function ownerWorkloadLine(data: RecommendationData, ownerName: string) {
+  const summaries = buildAssistantWorkloadSummaries(data);
+  const matchingTeamMembers = getOwnerTeamMemberMatches(
+    ownerName,
+    data.teamMembers
+  );
+  const matchingIds = new Set(
+    matchingTeamMembers
+      .flatMap(teamMemberIds)
+      .map((value) => value.toLowerCase())
+  );
+
+  const summary = summaries.find((item) =>
+    teamMemberIds(item.member).some((id) => matchingIds.has(id.toLowerCase()))
+  );
+
+  if (!summary) {
+    return `Workload summary for ${capitalizeName(
+      ownerName
+    )}: no matching team workload found.`;
+  }
+
+  return `Workload summary for ${summary.name}
+Status: ${summary.statusLabel}
+Open: ${summary.openTasks.length}
+Overdue: ${summary.overdueTasks.length}
+Today: ${summary.todayTasks.length}
+Due This Week: ${summary.thisWeekTasks.length}
+Completed This Week: ${summary.completedThisWeekTasks.length}`;
+}
+
 function assignmentStatusMessage(data: RecommendationData, ownerName: string) {
   const assignmentRows: Array<Record<string, unknown>> = [
     ...data.tasks,
@@ -5379,6 +5649,8 @@ Assign an existing task to ${capitalizeName(ownerName)} through the Assistant as
 
   return `${assignmentStatusMessage(data, ownerName)}
 
+${ownerWorkloadLine(data, ownerName)}
+
 ${formatRecommendationAnswer(
     `Recommended work for ${capitalizeName(ownerName)}`,
     filtered,
@@ -5415,6 +5687,10 @@ async function answerRecommendationQuestion(userQuestion: string) {
     return answerOwnerRecommendations(data, ownerName, proactiveInsightRecommendations);
   }
 
+
+  if (mode === "workload_summary") {
+    return answerTeamWorkloadQuestion(data, userQuestion);
+  }
   if (mode === "data_quality") {
     return formatProactiveInsightAnswer(
       "Data quality cleanup recommendations",
@@ -7476,6 +7752,8 @@ ${answer}`,
     </main>
   );
 }
+
+
 
 
 
