@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
@@ -31,32 +31,72 @@ type TaskAssignment = {
 };
 
 const cardStyle: CSSProperties = {
-  border: "1px solid #333",
-  borderRadius: "12px",
-  padding: "18px",
-  backgroundColor: "#151515",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "20px",
+  padding: "20px",
+  background:
+    "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
+  boxShadow: "0 20px 70px rgba(2, 6, 23, 0.24)",
 };
 
 const inputStyle: CSSProperties = {
   display: "block",
   width: "100%",
-  padding: "11px",
-  marginTop: "6px",
-  backgroundColor: "white",
-  color: "black",
-  border: "1px solid #555",
-  borderRadius: "6px",
+  padding: "12px 14px",
+  marginTop: "8px",
+  marginBottom: "16px",
+  backgroundColor: "#0f172a",
+  color: "#f8fafc",
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+  borderRadius: "12px",
   boxSizing: "border-box",
+  outline: "none",
 };
 
 const buttonStyle: CSSProperties = {
-  backgroundColor: "#f5d76e",
-  color: "black",
-  border: "none",
-  borderRadius: "8px",
-  padding: "10px 14px",
-  fontWeight: "bold",
+  background:
+    "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
+  color: "white",
+  border: "1px solid rgba(167, 139, 250, 0.45)",
+  borderRadius: "999px",
+  padding: "11px 16px",
+  fontWeight: 800,
   cursor: "pointer",
+  boxShadow: "0 16px 36px rgba(79, 70, 229, 0.28)",
+};
+
+const headerStyle: CSSProperties = {
+  maxWidth: "1120px",
+  marginBottom: "24px",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "24px",
+  padding: "24px",
+  background:
+    "radial-gradient(circle at top left, rgba(124, 58, 237, 0.24), transparent 32%), linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.72))",
+  boxShadow: "0 24px 80px rgba(2, 6, 23, 0.28)",
+};
+
+const eyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  color: "#a78bfa",
+  fontSize: "13px",
+  fontWeight: 900,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+};
+
+const titleStyle: CSSProperties = {
+  margin: "0 0 10px",
+  fontSize: "34px",
+  lineHeight: 1.05,
+  letterSpacing: "-0.04em",
+};
+
+const mutedTextStyle: CSSProperties = {
+  color: "#cbd5e1",
+  margin: 0,
+  maxWidth: "880px",
+  lineHeight: 1.65,
 };
 
 function memberLabel(member: TeamMember) {
@@ -257,70 +297,29 @@ export default function TeamPage() {
     <main
       style={{
         minHeight: "100vh",
-        backgroundColor: "#111",
-        color: "white",
-        padding: "40px",
+        color: "#f8fafc",
+        padding: "28px",
         fontFamily: "Arial, sans-serif",
       }}
     >
-      <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-        <Link
-          href="/"
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Home
-        </Link>
+      <header style={headerStyle}>
+        <p style={eyebrowStyle}>Management</p>
 
-        <Link
-          href="/tasks/new"
-          style={{
-            color: "black",
-            backgroundColor: "#f5d76e",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Add Task
-        </Link>
+        <h1 style={titleStyle}>Team</h1>
 
-        <Link
-          href="/planner"
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Planner
-        </Link>
-      </div>
-
-      <h1>Team / Users</h1>
-
-      <p style={{ color: "#aaa", maxWidth: "900px" }}>
-        Manage assignable internal team members for Sell It. These records are
-        for task assignment and Planner filtering. Placeholder team members do
-        not create login accounts yet.
-      </p>
+        <p style={mutedTextStyle}>
+          Manage assignable internal team members for Sell It. These records are
+          for task assignment and Planner filtering. Placeholder team members do
+          not create login accounts yet.
+        </p>
+      </header>
 
       {errorMessage && (
         <div
           style={{
-            border: "1px solid #ff6b6b",
-            backgroundColor: "#2a1111",
-            color: "#ff9999",
+            border: "1px solid rgba(248, 113, 113, 0.35)",
+            backgroundColor: "rgba(127, 29, 29, 0.22)",
+            color: "#fecaca",
             padding: "14px",
             borderRadius: "8px",
             marginBottom: "18px",
@@ -333,9 +332,9 @@ export default function TeamPage() {
       {successMessage && (
         <div
           style={{
-            border: "1px solid #46d369",
-            backgroundColor: "#102414",
-            color: "#8ff0a4",
+            border: "1px solid rgba(34, 197, 94, 0.35)",
+            backgroundColor: "rgba(20, 83, 45, 0.22)",
+            color: "#bbf7d0",
             padding: "14px",
             borderRadius: "8px",
             marginBottom: "18px",
@@ -348,7 +347,7 @@ export default function TeamPage() {
       <section style={{ ...cardStyle, marginBottom: "18px" }}>
         <h2 style={{ marginTop: 0 }}>Quick Setup</h2>
 
-        <p style={{ color: "#aaa" }}>
+        <p style={{ color: "#94a3b8" }}>
           Use these buttons to make sure Charles, Trent, and Angel are available
           for task assignment.
         </p>
@@ -386,7 +385,7 @@ export default function TeamPage() {
       <section style={{ ...cardStyle, marginBottom: "18px" }}>
         <h2 style={{ marginTop: 0 }}>Add Placeholder Team Member</h2>
 
-        <p style={{ color: "#aaa" }}>
+        <p style={{ color: "#94a3b8" }}>
           Use this for internal assignment only. It does not send an invite or
           create a login.
         </p>
@@ -451,7 +450,7 @@ export default function TeamPage() {
         >
           <div>
             <h2 style={{ margin: 0 }}>Current Team</h2>
-            <p style={{ color: "#aaa", margin: "6px 0 0 0" }}>
+            <p style={{ color: "#94a3b8", margin: "6px 0 0 0" }}>
               {members.length} assignable team member(s)
             </p>
           </div>
@@ -460,7 +459,7 @@ export default function TeamPage() {
         </div>
 
         {members.length === 0 && !loading ? (
-          <p style={{ color: "#aaa" }}>No team members found yet.</p>
+          <p style={{ color: "#94a3b8" }}>No team members found yet.</p>
         ) : (
           <div
             style={{
