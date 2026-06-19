@@ -21,6 +21,7 @@ const navItems: NavItem[] = [
   { label: "Opportunities", href: "/opportunities" },
   { label: "Tasks", href: "/tasks" },
   { label: "Planner", href: "/planner" },
+  { label: "Team", href: "/team" },
   { label: "Activities", href: "/activities" },
   { label: "Notes", href: "/notes" },
   { label: "Communities", href: "/communities" },

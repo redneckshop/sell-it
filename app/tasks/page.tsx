@@ -20,6 +20,15 @@ type AssignedProfile = {
   email: string | null;
 };
 
+type AssignedTeamMember = {
+  id: string;
+  profile_id: string | null;
+  display_name: string;
+  email: string | null;
+  role_title: string | null;
+  status: string;
+};
+
 type Task = {
   id: string;
   title: string;
@@ -32,7 +41,9 @@ type Task = {
   contact_id: string | null;
   companies: SupabaseRelation<RelatedCompany>;
   contacts: SupabaseRelation<RelatedContact>;
+  assigned_team_member_id: string | null;
   assigned_profile: SupabaseRelation<AssignedProfile>;
+  assigned_team_member: SupabaseRelation<AssignedTeamMember>;
 };
 
 type PageProps = {
@@ -52,6 +63,19 @@ function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
   }
 
   return value;
+}
+
+function assignedTeamMemberLabel(
+  teamMember: AssignedTeamMember | null,
+  profile: AssignedProfile | null
+) {
+  return (
+    teamMember?.display_name ||
+    teamMember?.email ||
+    profile?.full_name ||
+    profile?.email ||
+    ""
+  );
 }
 
 function textValue(value: string | null | undefined) {
@@ -168,6 +192,7 @@ export default async function TasksPage({ searchParams }: PageProps) {
       priority,
       status,
       created_at,
+      assigned_team_member_id,
       company_id,
       contact_id,
       companies (
@@ -183,6 +208,14 @@ export default async function TasksPage({ searchParams }: PageProps) {
         id,
         full_name,
         email
+      ),
+      assigned_team_member:team_members!tasks_assigned_team_member_id_fkey (
+        id,
+        profile_id,
+        display_name,
+        email,
+        role_title,
+        status
       )
     `)
     .order("created_at", { ascending: false });
@@ -434,6 +467,11 @@ export default async function TasksPage({ searchParams }: PageProps) {
         const company = singleRelation(task.companies);
         const contact = singleRelation(task.contacts);
         const assignedProfile = singleRelation(task.assigned_profile);
+        const assignedTeamMember = singleRelation(task.assigned_team_member);
+        const assignedLabel = assignedTeamMemberLabel(
+          assignedTeamMember,
+          assignedProfile
+        );
 
         return (
           <Link
@@ -457,12 +495,7 @@ export default async function TasksPage({ searchParams }: PageProps) {
 
             {task.due_date && <p>Due: {task.due_date}</p>}
 
-            {(assignedProfile?.full_name || assignedProfile?.email) && (
-              <p>
-                Assigned To:{" "}
-                {assignedProfile.full_name || assignedProfile.email}
-              </p>
-            )}
+            {assignedLabel && <p>Assigned To: {assignedLabel}</p>}
 
             {company?.name && <p>Company: {company.name}</p>}
 

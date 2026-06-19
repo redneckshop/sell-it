@@ -250,6 +250,7 @@ export default async function Home() {
     { title: "Opportunities", href: "/opportunities" },
     { title: "Tasks", href: "/tasks" },
     { title: "Planner", href: "/planner" },
+  { title: "Team", href: "/team" },
     { title: "Activities", href: "/activities" },
     { title: "Notes", href: "/notes" },
     { title: "Communities", href: "/communities" },

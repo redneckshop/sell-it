@@ -25,6 +25,15 @@ type Profile = {
   email: string | null;
 };
 
+type TeamMember = {
+  id: string;
+  profile_id: string | null;
+  display_name: string;
+  email: string | null;
+  role_title: string | null;
+  status: string;
+};
+
 type Task = {
   id: string;
   title: string;
@@ -43,6 +52,8 @@ type Task = {
   contacts: SupabaseRelation<RelatedContact>;
   opportunities: SupabaseRelation<RelatedOpportunity>;
   assigned_profile: SupabaseRelation<Profile>;
+  assigned_team_member_id: string | null;
+  assigned_team_member: SupabaseRelation<TeamMember>;
 };
 
 type PageProps = {
@@ -176,6 +187,17 @@ function profileLabel(profile: Profile | null) {
   return profile?.full_name || profile?.email || "Unassigned";
 }
 
+function teamMemberLabel(member: TeamMember | null) {
+  return member?.display_name || member?.email || "Unassigned";
+}
+
+function taskAssignedLabel(task: Task) {
+  const teamMember = singleRelation(task.assigned_team_member);
+  const profile = singleRelation(task.assigned_profile);
+
+  return teamMemberLabel(teamMember) || profileLabel(profile);
+}
+
 function taskMatchesFilters(
   task: Task,
   assignedToFilter: string,
@@ -183,7 +205,7 @@ function taskMatchesFilters(
   priorityFilter: string
 ) {
   return (
-    (!assignedToFilter || task.assigned_to === assignedToFilter) &&
+    (!assignedToFilter || task.assigned_team_member_id === assignedToFilter) &&
     (!statusFilter || task.status === statusFilter) &&
     (!priorityFilter || task.priority === priorityFilter)
   );
@@ -292,6 +314,7 @@ function TaskCard({ task }: { task: Task }) {
   const contact = singleRelation(task.contacts);
   const opportunity = singleRelation(task.opportunities);
   const assignedProfile = singleRelation(task.assigned_profile);
+  const assignedTeamMember = singleRelation(task.assigned_team_member);
 
   const contactName = contact
     ? `${contact.first_name} ${contact.last_name || ""}`.trim()
@@ -335,7 +358,7 @@ function TaskCard({ task }: { task: Task }) {
       <p style={{ margin: "4px 0" }}>
         <strong>Status:</strong> {task.status || "Not set"}{" "}
         <span style={{ color: "#aaa" }}>|</span>{" "}
-        <strong>Assigned:</strong> {profileLabel(assignedProfile)}
+        <strong>Assigned:</strong> {teamMemberLabel(assignedTeamMember) || profileLabel(assignedProfile)}
       </p>
 
       <p
@@ -689,6 +712,7 @@ export default async function PlannerPage({ searchParams }: PageProps) {
       priority,
       status,
       assigned_to,
+      assigned_team_member_id,
       company_id,
       contact_id,
       opportunity_id,
@@ -712,9 +736,25 @@ export default async function PlannerPage({ searchParams }: PageProps) {
         id,
         full_name,
         email
+      ),
+      assigned_team_member:team_members!tasks_assigned_team_member_id_fkey (
+        id,
+        profile_id,
+        display_name,
+        email,
+        role_title,
+        status
       )
     `)
     .order("due_date", { ascending: true });
+
+  const { data: teamMemberRows, error: teamMemberError } = await supabase
+    .from("team_members")
+    .select("id, profile_id, display_name, email, role_title, status")
+    .eq("status", "Active")
+    .order("display_name", { ascending: true });
+
+  const teamMembers = (teamMemberRows ?? []) as TeamMember[];
 
   const allTasks = (data ?? []) as unknown as Task[];
 
@@ -762,20 +802,9 @@ export default async function PlannerPage({ searchParams }: PageProps) {
   const statuses = uniqueValues(allTasks.map((task) => task.status));
   const priorities = uniqueValues(allTasks.map((task) => task.priority));
 
-  const assignedOptions = Array.from(
-    new Map(
-      allTasks
-        .map((task) => {
-          const profile = singleRelation(task.assigned_profile);
-          const label = profileLabel(profile);
-
-          if (!task.assigned_to) return null;
-
-          return [task.assigned_to, label] as const;
-        })
-        .filter(Boolean) as Array<readonly [string, string]>
-    ).entries()
-  ).sort((left, right) => left[1].localeCompare(right[1]));
+  const assignedOptions = teamMembers
+    .map((member) => [member.id, teamMemberLabel(member)] as const)
+    .sort((left, right) => left[1].localeCompare(right[1]));
 
   return (
     <main
@@ -983,7 +1012,7 @@ export default async function PlannerPage({ searchParams }: PageProps) {
             marginBottom: "10px",
           }}
         >
-          Monthly Calendar — click to collapse or expand
+          Monthly Calendar - click to collapse or expand
         </summary>
 
         <CalendarMonth

@@ -26,6 +26,15 @@ type AssignedProfile = {
   email: string | null;
 };
 
+type AssignedTeamMember = {
+  id: string;
+  profile_id: string | null;
+  display_name: string;
+  email: string | null;
+  role_title: string | null;
+  status: string;
+};
+
 type Task = {
   id: string;
   workspace_id: string;
@@ -35,6 +44,7 @@ type Task = {
   priority: string;
   status: string;
   assigned_to: string | null;
+  assigned_team_member_id: string | null;
   company_id: string | null;
   contact_id: string | null;
   opportunity_id: string | null;
@@ -46,6 +56,7 @@ type Task = {
   contacts: SupabaseRelation<RelatedContact>;
   opportunities: SupabaseRelation<RelatedOpportunity>;
   assigned_profile: SupabaseRelation<AssignedProfile>;
+  assigned_team_member: SupabaseRelation<AssignedTeamMember>;
   completed_profile: SupabaseRelation<AssignedProfile>;
 };
 
@@ -63,6 +74,18 @@ function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
   }
 
   return value;
+}
+function assignedTeamMemberLabel(
+  teamMember: AssignedTeamMember | null,
+  profile: AssignedProfile | null
+) {
+  return (
+    teamMember?.display_name ||
+    teamMember?.email ||
+    profile?.full_name ||
+    profile?.email ||
+    "Unassigned"
+  );
 }
 
 function formatDateTime(value: string | null) {
@@ -114,6 +137,14 @@ export default async function TaskDetailPage({ params }: PageProps) {
         full_name,
         email
       ),
+      assigned_team_member:team_members!tasks_assigned_team_member_id_fkey (
+        id,
+        profile_id,
+        display_name,
+        email,
+        role_title,
+        status
+      ),
       completed_profile:profiles!tasks_completed_by_fkey (
         id,
         full_name,
@@ -129,6 +160,7 @@ export default async function TaskDetailPage({ params }: PageProps) {
   const contact = singleRelation(task?.contacts);
   const opportunity = singleRelation(task?.opportunities);
   const assignedProfile = singleRelation(task?.assigned_profile);
+  const assignedTeamMember = singleRelation(task?.assigned_team_member);
   const completedProfile = singleRelation(task?.completed_profile);
 
   return (
@@ -260,9 +292,7 @@ export default async function TaskDetailPage({ params }: PageProps) {
 
             <p>
               <strong>Assigned To:</strong>{" "}
-              {assignedProfile?.full_name ||
-                assignedProfile?.email ||
-                "Unassigned"}
+              {assignedTeamMemberLabel(assignedTeamMember, assignedProfile)}
             </p>
 
             <p>

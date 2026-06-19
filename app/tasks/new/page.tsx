@@ -31,6 +31,15 @@ type Profile = {
   email: string | null;
 };
 
+type TeamMember = {
+  id: string;
+  profile_id: string | null;
+  display_name: string;
+  email: string | null;
+  role_title: string | null;
+  status: string;
+};
+
 const inputStyle: CSSProperties = {
   display: "block",
   width: "100%",
@@ -51,6 +60,7 @@ export default function NewTaskPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -58,6 +68,7 @@ export default function NewTaskPage() {
   const [priority, setPriority] = useState("Normal");
   const [status, setStatus] = useState("Open");
   const [assignedTo, setAssignedTo] = useState(USER_ID);
+  const [assignedTeamMemberId, setAssignedTeamMemberId] = useState("");
   const [companyId, setCompanyId] = useState("");
   const [contactId, setContactId] = useState("");
   const [opportunityId, setOpportunityId] = useState("");
@@ -79,6 +90,7 @@ export default function NewTaskPage() {
     const prefillCompanyId = params.get("company_id");
     const prefillContactId = params.get("contact_id");
     const prefillOpportunityId = params.get("opportunity_id");
+    const prefillAssignedTeamMemberId = params.get("assigned_team_member_id");
 
     if (prefillTitle) setTitle(prefillTitle);
     if (prefillDescription) setDescription(prefillDescription);
@@ -88,6 +100,7 @@ export default function NewTaskPage() {
     if (prefillCompanyId) setCompanyId(prefillCompanyId);
     if (prefillContactId) setContactId(prefillContactId);
     if (prefillOpportunityId) setOpportunityId(prefillOpportunityId);
+    if (prefillAssignedTeamMemberId) setAssignedTeamMemberId(prefillAssignedTeamMemberId);
 
     setPrefilledFromAssistant(true);
   }, []);
@@ -141,6 +154,29 @@ export default function NewTaskPage() {
       }
 
       setProfiles(profileRows ?? []);
+
+      const { data: teamMemberRows, error: teamMemberError } = await supabase
+        .from("team_members")
+        .select("id, profile_id, display_name, email, role_title, status")
+        .eq("status", "Active")
+        .order("display_name", { ascending: true });
+
+      if (teamMemberError) {
+        setErrorMessage(teamMemberError.message);
+        return;
+      }
+
+      const loadedTeamMembers = (teamMemberRows ?? []) as TeamMember[];
+
+      setTeamMembers(loadedTeamMembers);
+
+      const currentUserTeamMember = loadedTeamMembers.find(
+        (member) => member.profile_id === USER_ID
+      );
+
+      if (currentUserTeamMember) {
+        setAssignedTeamMemberId(currentUserTeamMember.id);
+      }
     }
 
     loadOptions();
@@ -152,6 +188,10 @@ export default function NewTaskPage() {
     setSaving(true);
     setErrorMessage("");
 
+    const selectedTeamMember = teamMembers.find(
+      (member) => member.id === assignedTeamMemberId
+    );
+
     const { error } = await supabase.from("tasks").insert({
       workspace_id: WORKSPACE_ID,
       title,
@@ -159,7 +199,8 @@ export default function NewTaskPage() {
       due_date: dueDate || null,
       priority,
       status,
-      assigned_to: assignedTo || null,
+      assigned_to: selectedTeamMember?.profile_id || assignedTo || null,
+      assigned_team_member_id: assignedTeamMemberId || null,
       company_id: companyId || null,
       contact_id: contactId || null,
       opportunity_id: opportunityId || null,
@@ -324,21 +365,30 @@ export default function NewTaskPage() {
         </label>
 
         <label>
-          Assigned To
-          <select
-            value={assignedTo}
-            onChange={(event) => setAssignedTo(event.target.value)}
-            style={inputStyle}
-          >
-            <option value="">Unassigned</option>
+              Assigned To
+              <select
+                value={assignedTeamMemberId}
+                onChange={(event) => {
+                  const nextTeamMemberId = event.target.value;
+                  const nextTeamMember = teamMembers.find(
+                    (member) => member.id === nextTeamMemberId
+                  );
 
-            {profiles.map((profile) => (
-              <option key={profile.id} value={profile.id}>
-                {profile.full_name || profile.email || profile.id}
-              </option>
-            ))}
-          </select>
-        </label>
+                  setAssignedTeamMemberId(nextTeamMemberId);
+                  setAssignedTo(nextTeamMember?.profile_id || "");
+                }}
+                style={inputStyle}
+              >
+                <option value="">Unassigned</option>
+                {teamMembers.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.display_name}
+                    {member.role_title ? ` - ${member.role_title}` : ""}
+                    {member.profile_id ? "" : " (placeholder)"}
+                  </option>
+                ))}
+              </select>
+            </label>
 
         <label>
           Related Company

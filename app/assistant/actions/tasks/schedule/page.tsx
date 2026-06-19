@@ -38,6 +38,15 @@ type Profile = {
   email: string | null;
 };
 
+type TeamMember = {
+  id: string;
+  profile_id: string | null;
+  display_name: string;
+  email: string | null;
+  role_title: string | null;
+  status: string;
+};
+
 type Task = {
   id: string;
   title: string;
@@ -46,6 +55,7 @@ type Task = {
   priority: string;
   status: string;
   assigned_to: string | null;
+  assigned_team_member_id: string | null;
   company_id: string | null;
   contact_id: string | null;
   opportunity_id: string | null;
@@ -127,6 +137,10 @@ function profileLabel(profile: Profile) {
   return profile.full_name || profile.email || "Unnamed user";
 }
 
+function teamMemberLabel(member: TeamMember) {
+  return member.display_name || member.email || "Unnamed team member";
+}
+
 function contactLabel(contact: Contact) {
   return `${contact.first_name} ${contact.last_name || ""}`.trim();
 }
@@ -139,6 +153,7 @@ function AssistantScheduleTaskClient() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
 
   const [sourceTask, setSourceTask] = useState<Task | null>(null);
   const [sourceTaskId, setSourceTaskId] = useState("");
@@ -149,6 +164,7 @@ function AssistantScheduleTaskClient() {
   const [priority, setPriority] = useState("Normal");
   const [status, setStatus] = useState("Open");
   const [assignedTo, setAssignedTo] = useState(USER_ID);
+  const [assignedTeamMemberId, setAssignedTeamMemberId] = useState("");
   const [companyId, setCompanyId] = useState("");
   const [contactId, setContactId] = useState("");
   const [opportunityId, setOpportunityId] = useState("");
@@ -172,6 +188,8 @@ function AssistantScheduleTaskClient() {
       const paramDueDate = searchParams.get("due_date") || "";
       const paramPriority = searchParams.get("priority") || "Normal";
       const paramAssignedTo = searchParams.get("assigned_to") || USER_ID;
+      const paramAssignedTeamMemberId =
+        searchParams.get("assigned_team_member_id") || "";
       const paramCompanyId = searchParams.get("company_id") || "";
       const paramContactId = searchParams.get("contact_id") || "";
       const paramOpportunityId = searchParams.get("opportunity_id") || "";
@@ -182,6 +200,7 @@ function AssistantScheduleTaskClient() {
       setDueDate(paramDueDate);
       setPriority(paramPriority);
       setAssignedTo(paramAssignedTo);
+      setAssignedTeamMemberId(paramAssignedTeamMemberId);
       setCompanyId(paramCompanyId);
       setContactId(paramContactId);
       setOpportunityId(paramOpportunityId);
@@ -238,11 +257,37 @@ function AssistantScheduleTaskClient() {
 
       setProfiles(profileRows ?? []);
 
+      const { data: teamMemberRows, error: teamMemberError } = await supabase
+        .from("team_members")
+        .select("id, profile_id, display_name, email, role_title, status")
+        .eq("status", "Active")
+        .order("display_name", { ascending: true });
+
+      if (teamMemberError) {
+        setLoading(false);
+        setErrorMessage(teamMemberError.message);
+        return;
+      }
+
+      const loadedTeamMembers = (teamMemberRows ?? []) as TeamMember[];
+
+      setTeamMembers(loadedTeamMembers);
+
+      const defaultTeamMember =
+        loadedTeamMembers.find((member) => member.id === paramAssignedTeamMemberId) ||
+        loadedTeamMembers.find((member) => member.profile_id === paramAssignedTo) ||
+        loadedTeamMembers.find((member) => member.profile_id === USER_ID);
+
+      if (defaultTeamMember) {
+        setAssignedTeamMemberId(defaultTeamMember.id);
+        setAssignedTo(defaultTeamMember.profile_id || "");
+      }
+
       if (paramSourceTaskId) {
         const { data: taskRow, error: taskError } = await supabase
           .from("tasks")
           .select(
-            "id, title, description, due_date, priority, status, assigned_to, company_id, contact_id, opportunity_id, completed_at, completed_by"
+            "id, title, description, due_date, priority, status, assigned_to, assigned_team_member_id, company_id, contact_id, opportunity_id, completed_at, completed_by"
           )
           .eq("id", paramSourceTaskId)
           .single();
@@ -265,7 +310,20 @@ function AssistantScheduleTaskClient() {
             ? "Open"
             : loadedTask.status || "Open"
         );
-        setAssignedTo(paramAssignedTo || loadedTask.assigned_to || USER_ID);
+        const loadedTaskTeamMember =
+          loadedTeamMembers.find(
+            (member) => member.id === loadedTask.assigned_team_member_id
+          ) ||
+          loadedTeamMembers.find(
+            (member) => member.profile_id === loadedTask.assigned_to
+          );
+
+        setAssignedTeamMemberId(
+          paramAssignedTeamMemberId || loadedTaskTeamMember?.id || ""
+        );
+        setAssignedTo(
+          loadedTaskTeamMember?.profile_id || paramAssignedTo || loadedTask.assigned_to || USER_ID
+        );
         setCompanyId(paramCompanyId || loadedTask.company_id || "");
         setContactId(paramContactId || loadedTask.contact_id || "");
         setOpportunityId(paramOpportunityId || loadedTask.opportunity_id || "");
@@ -302,6 +360,9 @@ function AssistantScheduleTaskClient() {
 
     const changedAt = new Date().toISOString();
     const nextStatus = status || "Open";
+    const selectedTeamMember = teamMembers.find(
+      (member) => member.id === assignedTeamMemberId
+    );
     const isCompleted = nextStatus === "Completed";
     const completionAt = isCompleted
       ? sourceTask?.completed_at || changedAt
@@ -319,7 +380,8 @@ function AssistantScheduleTaskClient() {
           due_date: dueDate,
           priority,
           status: nextStatus,
-          assigned_to: assignedTo || null,
+          assigned_to: selectedTeamMember?.profile_id || assignedTo || null,
+          assigned_team_member_id: assignedTeamMemberId || null,
           company_id: companyId || null,
           contact_id: contactId || null,
           opportunity_id: opportunityId || null,
@@ -352,7 +414,8 @@ function AssistantScheduleTaskClient() {
         due_date: dueDate,
         priority,
         status: nextStatus,
-        assigned_to: assignedTo || null,
+        assigned_to: selectedTeamMember?.profile_id || assignedTo || null,
+        assigned_team_member_id: assignedTeamMemberId || null,
         company_id: companyId || null,
         contact_id: contactId || null,
         opportunity_id: opportunityId || null,
@@ -573,17 +636,25 @@ function AssistantScheduleTaskClient() {
         <label>
           Assigned To
           <select
-            value={assignedTo}
+            value={assignedTeamMemberId}
             onChange={(event) => {
-              setAssignedTo(event.target.value);
+              const nextTeamMemberId = event.target.value;
+              const nextTeamMember = teamMembers.find(
+                (member) => member.id === nextTeamMemberId
+              );
+
+              setAssignedTeamMemberId(nextTeamMemberId);
+              setAssignedTo(nextTeamMember?.profile_id || "");
               setConfirmed(false);
             }}
             style={inputStyle}
           >
             <option value="">Unassigned</option>
-            {profiles.map((profile) => (
-              <option key={profile.id} value={profile.id}>
-                {profileLabel(profile)}
+            {teamMembers.map((member) => (
+              <option key={member.id} value={member.id}>
+                {teamMemberLabel(member)}
+                {member.role_title ? ` - ${member.role_title}` : ""}
+                {member.profile_id ? "" : " (placeholder)"}
               </option>
             ))}
           </select>

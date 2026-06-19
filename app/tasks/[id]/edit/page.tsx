@@ -31,6 +31,15 @@ type Profile = {
   email: string | null;
 };
 
+type TeamMember = {
+  id: string;
+  profile_id: string | null;
+  display_name: string;
+  email: string | null;
+  role_title: string | null;
+  status: string;
+};
+
 type Task = {
   id: string;
   title: string;
@@ -39,6 +48,7 @@ type Task = {
   priority: string;
   status: string;
   assigned_to: string | null;
+  assigned_team_member_id: string | null;
   company_id: string | null;
   contact_id: string | null;
   opportunity_id: string | null;
@@ -70,6 +80,7 @@ export default function EditTaskPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -84,6 +95,7 @@ export default function EditTaskPage() {
   const [completedAt, setCompletedAt] = useState<string | null>(null);
   const [completedBy, setCompletedBy] = useState<string | null>(null);
   const [assignedTo, setAssignedTo] = useState("");
+  const [assignedTeamMemberId, setAssignedTeamMemberId] = useState("");
   const [companyId, setCompanyId] = useState("");
   const [contactId, setContactId] = useState("");
   const [opportunityId, setOpportunityId] = useState("");
@@ -146,10 +158,23 @@ export default function EditTaskPage() {
 
       setProfiles(profileRows ?? []);
 
+      const { data: teamMemberRows, error: teamMemberError } = await supabase
+        .from("team_members")
+        .select("id, profile_id, display_name, email, role_title, status")
+        .eq("status", "Active")
+        .order("display_name", { ascending: true });
+
+      if (teamMemberError) {
+        setErrorMessage(teamMemberError.message);
+        return;
+      }
+
+      setTeamMembers((teamMemberRows ?? []) as TeamMember[]);
+
       const { data, error } = await supabase
         .from("tasks")
         .select(
-          "id, title, description, due_date, priority, status, assigned_to, company_id, contact_id, opportunity_id, updated_at, completed_at, completed_by"
+          "id, title, description, due_date, priority, status, assigned_to, assigned_team_member_id, company_id, contact_id, opportunity_id, updated_at, completed_at, completed_by"
         )
         .eq("id", taskId)
         .single();
@@ -172,6 +197,7 @@ export default function EditTaskPage() {
       setCompletedAt(task.completed_at);
       setCompletedBy(task.completed_by);
       setAssignedTo(task.assigned_to || "");
+      setAssignedTeamMemberId(task.assigned_team_member_id || "");
       setCompanyId(task.company_id || "");
       setContactId(task.contact_id || "");
       setOpportunityId(task.opportunity_id || "");
@@ -194,6 +220,10 @@ export default function EditTaskPage() {
     const nextCompletedAt = isCompleted ? completedAt || changedAt : null;
     const nextCompletedBy = isCompleted ? completedBy || USER_ID : null;
 
+    const selectedTeamMember = teamMembers.find(
+      (member) => member.id === assignedTeamMemberId
+    );
+
     const { error } = await supabase
       .from("tasks")
       .update({
@@ -202,7 +232,8 @@ export default function EditTaskPage() {
         due_date: dueDate || null,
         priority,
         status,
-        assigned_to: assignedTo || null,
+        assigned_to: selectedTeamMember?.profile_id || assignedTo || null,
+        assigned_team_member_id: assignedTeamMemberId || null,
         company_id: companyId || null,
         contact_id: contactId || null,
         opportunity_id: opportunityId || null,
@@ -395,21 +426,30 @@ export default function EditTaskPage() {
           )}
 
           <label>
-            Assigned To
-            <select
-              value={assignedTo}
-              onChange={(event) => setAssignedTo(event.target.value)}
-              style={inputStyle}
-            >
-              <option value="">Unassigned</option>
+              Assigned To
+              <select
+                value={assignedTeamMemberId}
+                onChange={(event) => {
+                  const nextTeamMemberId = event.target.value;
+                  const nextTeamMember = teamMembers.find(
+                    (member) => member.id === nextTeamMemberId
+                  );
 
-              {profiles.map((profile) => (
-                <option key={profile.id} value={profile.id}>
-                  {profile.full_name || profile.email || profile.id}
-                </option>
-              ))}
-            </select>
-          </label>
+                  setAssignedTeamMemberId(nextTeamMemberId);
+                  setAssignedTo(nextTeamMember?.profile_id || "");
+                }}
+                style={inputStyle}
+              >
+                <option value="">Unassigned</option>
+                {teamMembers.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.display_name}
+                    {member.role_title ? ` - ${member.role_title}` : ""}
+                    {member.profile_id ? "" : " (placeholder)"}
+                  </option>
+                ))}
+              </select>
+            </label>
 
           <label>
             Related Company
