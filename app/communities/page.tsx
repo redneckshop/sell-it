@@ -1,4 +1,5 @@
-import Link from "next/link";
+﻿import Link from "next/link";
+import type { CSSProperties } from "react";
 import { supabase } from "../lib/supabase";
 
 type Community = {
@@ -155,11 +156,7 @@ function matchesCommunitySearch(community: Community, search: string) {
 
 function uniqueValues(values: Array<string | null | undefined>) {
   return Array.from(
-    new Set(
-      values
-        .map((value) => (value ?? "").trim())
-        .filter(Boolean)
-    )
+    new Set(values.map((value) => (value ?? "").trim()).filter(Boolean))
   ).sort((a, b) => a.localeCompare(b));
 }
 
@@ -179,6 +176,154 @@ const STANDARD_COMMUNITY_STATUSES = [
   "Paused",
   "Not Relevant",
 ];
+
+function initialsFromCommunity(name: string) {
+  const parts = name
+    .split(/\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+
+  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+}
+
+function previewText(value: string | null) {
+  if (!value) return "";
+
+  if (value.length > 145) {
+    return `${value.slice(0, 145)}...`;
+  }
+
+  return value;
+}
+
+function pageStyle(): CSSProperties {
+  return {
+    minHeight: "calc(100vh - 64px)",
+    backgroundColor: "#101010",
+    color: "white",
+    padding: "38px",
+    fontFamily: "Arial, sans-serif",
+    boxSizing: "border-box",
+  };
+}
+
+function panelStyle(): CSSProperties {
+  return {
+    border: "1px solid #2f2f2f",
+    background:
+      "linear-gradient(180deg, rgba(31,31,31,0.96), rgba(22,22,22,0.96))",
+    padding: "16px",
+    borderRadius: "14px",
+    boxShadow: "0 14px 35px rgba(0,0,0,0.18)",
+  };
+}
+
+function inputStyle(): CSSProperties {
+  return {
+    width: "100%",
+    boxSizing: "border-box",
+    padding: "11px 12px",
+    borderRadius: "10px",
+    border: "1px solid #3d3d3d",
+    backgroundColor: "#111",
+    color: "white",
+    outline: "none",
+  };
+}
+
+function fieldLabelStyle(): CSSProperties {
+  return {
+    display: "block",
+    marginBottom: "7px",
+    color: "#e5e5e5",
+    fontSize: "13px",
+    fontWeight: 800,
+  };
+}
+
+function primaryButtonStyle(): CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "42px",
+    backgroundColor: "#7c3aed",
+    color: "white",
+    padding: "0 16px",
+    borderRadius: "12px",
+    textDecoration: "none",
+    fontWeight: 900,
+    border: "1px solid #8b5cf6",
+    boxShadow: "0 12px 24px rgba(124,58,237,0.24)",
+  };
+}
+
+function secondaryButtonStyle(): CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "42px",
+    color: "white",
+    border: "1px solid #3d3d3d",
+    backgroundColor: "#151515",
+    padding: "0 16px",
+    borderRadius: "12px",
+    textDecoration: "none",
+    fontWeight: 900,
+  };
+}
+
+function badgeStyle(value: string | null): CSSProperties {
+  const normalized = (value ?? "").toLowerCase();
+
+  const backgroundColor =
+    normalized === "active" || normalized === "joined"
+      ? "rgba(34, 197, 94, 0.20)"
+      : normalized === "watching"
+        ? "rgba(124, 58, 237, 0.22)"
+        : normalized === "paused"
+          ? "rgba(245, 158, 11, 0.22)"
+          : normalized === "not relevant"
+            ? "rgba(239, 68, 68, 0.18)"
+            : normalized === "facebook" || normalized === "linkedin"
+              ? "rgba(59, 130, 246, 0.22)"
+              : "rgba(156, 163, 175, 0.18)";
+
+  const color =
+    normalized === "active" || normalized === "joined"
+      ? "#86efac"
+      : normalized === "watching"
+        ? "#c4b5fd"
+        : normalized === "paused"
+          ? "#fcd34d"
+          : normalized === "not relevant"
+            ? "#fca5a5"
+            : normalized === "facebook" || normalized === "linkedin"
+              ? "#93c5fd"
+              : "#d1d5db";
+
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    borderRadius: "999px",
+    padding: "3px 9px",
+    fontSize: "12px",
+    fontWeight: 900,
+    backgroundColor,
+    color,
+    border: "1px solid rgba(255,255,255,0.08)",
+  };
+}
+
+function mutedTextStyle(): CSSProperties {
+  return {
+    color: "#a7a7a7",
+  };
+}
 
 export default async function CommunitiesPage({ searchParams }: PageProps) {
   const params = searchParams ? await searchParams : {};
@@ -230,303 +375,299 @@ export default async function CommunitiesPage({ searchParams }: PageProps) {
   }`;
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#111",
-        color: "white",
-        padding: "40px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          gap: "12px",
-          marginBottom: "32px",
-          flexWrap: "wrap",
-        }}
-      >
-        <Link
-          href="/"
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Home
-        </Link>
-
-        <Link
-          href="/communities/new"
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Add Community
-        </Link>
-      </div>
-
-      <h1>Communities</h1>
-
-      <p style={{ color: "#aaa", marginBottom: "24px" }}>
-        Track Facebook groups, LinkedIn groups, Reddit communities, forums, and
-        other places where market intelligence can be gathered.
-      </p>
-
-      <form
-        action="/communities"
-        style={{
-          border: "1px solid #333",
-          backgroundColor: "#181818",
-          padding: "16px",
-          borderRadius: "10px",
-          marginBottom: "18px",
-          display: "grid",
-          gap: "12px",
-        }}
-      >
+    <main style={pageStyle()}>
+      <section style={{ maxWidth: "1180px", margin: "0 auto" }}>
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            gap: "12px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            marginBottom: "22px",
+            gap: "16px",
+            flexWrap: "wrap",
           }}
         >
-          <label>
-            <span style={{ display: "block", marginBottom: "6px" }}>
-              Search
-            </span>
-            <input
-              name="q"
-              defaultValue={params.q ?? ""}
-              placeholder="Keyword"
+          <div>
+            <p
               style={{
-                width: "100%",
-                boxSizing: "border-box",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "1px solid #555",
-              }}
-            />
-          </label>
-
-          <label>
-            <span style={{ display: "block", marginBottom: "6px" }}>
-              Platform
-            </span>
-            <select
-              name="platform"
-              defaultValue={platformFilter}
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "1px solid #555",
+                ...mutedTextStyle(),
+                textTransform: "uppercase",
+                letterSpacing: "1.8px",
+                fontSize: "12px",
+                fontWeight: 900,
+                margin: "0 0 8px",
               }}
             >
-              <option value="">All</option>
-              {platforms.map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            <span style={{ display: "block", marginBottom: "6px" }}>
-              Status
-            </span>
-            <select
-              name="status"
-              defaultValue={statusFilter}
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "1px solid #555",
-              }}
-            >
-              <option value="">All</option>
-              {statuses.map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            <span style={{ display: "block", marginBottom: "6px" }}>
-              Industry
-            </span>
-            <input
-              name="industry"
-              defaultValue={params.industry ?? ""}
-              placeholder="Trucking, aggregate..."
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "1px solid #555",
-              }}
-            />
-          </label>
-
-          <label>
-            <span style={{ display: "block", marginBottom: "6px" }}>
-              Location Focus
-            </span>
-            <input
-              name="location"
-              defaultValue={params.location ?? ""}
-              placeholder="Idaho, Spokane..."
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "1px solid #555",
-              }}
-            />
-          </label>
-        </div>
-
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-          <button
-            type="submit"
-            style={{
-              backgroundColor: "#f5d76e",
-              color: "black",
-              padding: "10px 14px",
-              borderRadius: "6px",
-              border: "none",
-              fontWeight: "bold",
-              cursor: "pointer",
-            }}
-          >
-            Apply Filters
-          </button>
-
-          <a
-            href="/communities"
-            style={{
-              color: "white",
-              border: "1px solid #555",
-              padding: "10px 14px",
-              borderRadius: "6px",
-              textDecoration: "none",
-              fontWeight: "bold",
-            }}
-          >
-            Clear Filters
-          </a>
-        </div>
-      </form>
-
-      <p style={{ color: "#aaa", marginBottom: "18px" }}>
-        {resultCountLabel}
-      </p>
-
-      {error && (
-        <p style={{ color: "red", marginTop: "32px" }}>
-          Database error: {error.message}
-        </p>
-      )}
-
-      {!error && allCommunities.length === 0 && (
-        <p style={{ color: "#aaa" }}>No communities added yet.</p>
-      )}
-
-      {!error && allCommunities.length > 0 && communities.length === 0 && (
-        <p>No communities match the current filters.</p>
-      )}
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: "16px",
-        }}
-      >
-        {communities.map((community) => (
-          <Link
-            key={community.id}
-            href={`/communities/${community.id}`}
-            style={{
-              display: "block",
-              border: "1px solid #333",
-              padding: "18px",
-              borderRadius: "10px",
-              backgroundColor: "#1a1a1a",
-              color: "white",
-              textDecoration: "none",
-            }}
-          >
-            <h2 style={{ marginTop: 0 }}>{community.name}</h2>
-
-            <p>
-              <strong>Platform:</strong> {community.platform}
+              Intelligence
             </p>
 
-            <p>
-              <strong>Status:</strong> {community.status}
+            <h1 style={{ fontSize: "32px", margin: "0 0 8px" }}>
+              Communities
+            </h1>
+
+            <p style={{ ...mutedTextStyle(), margin: 0, lineHeight: 1.5 }}>
+              Track Facebook groups, LinkedIn groups, Reddit communities,
+              forums, and other places where market intelligence can be gathered.
             </p>
+          </div>
 
-            {community.member_count !== null && (
-              <p>
-                <strong>Members:</strong>{" "}
-                {Number(community.member_count).toLocaleString()}
-              </p>
-            )}
-
-            {community.industry && (
-              <p>
-                <strong>Industry:</strong> {community.industry}
-              </p>
-            )}
-
-            {community.location_focus && (
-              <p>
-                <strong>Location Focus:</strong> {community.location_focus}
-              </p>
-            )}
-
-            {community.relevance_score !== null && (
-              <p>
-                <strong>Relevance Score:</strong> {community.relevance_score}
-              </p>
-            )}
-
-            {community.description && (
-              <p style={{ color: "#aaa" }}>
-                {community.description.length > 150
-                  ? `${community.description.slice(0, 150)}...`
-                  : community.description}
-              </p>
-            )}
-
-            {community.tags && (
-              <p>
-                <strong>Tags:</strong> {community.tags}
-              </p>
-            )}
+          <Link href="/communities/new" style={primaryButtonStyle()}>
+            + Add Community
           </Link>
-        ))}
-      </div>
+        </div>
+
+        <form
+          action="/communities"
+          style={{ ...panelStyle(), marginBottom: "18px" }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+              gap: "12px",
+              alignItems: "end",
+            }}
+          >
+            <label>
+              <span style={fieldLabelStyle()}>Search</span>
+              <input
+                name="q"
+                defaultValue={params.q ?? ""}
+                placeholder="Search communities..."
+                style={inputStyle()}
+              />
+            </label>
+
+            <label>
+              <span style={fieldLabelStyle()}>Platform</span>
+              <select
+                name="platform"
+                defaultValue={platformFilter}
+                style={inputStyle()}
+              >
+                <option value="">All</option>
+                {platforms.map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span style={fieldLabelStyle()}>Status</span>
+              <select
+                name="status"
+                defaultValue={statusFilter}
+                style={inputStyle()}
+              >
+                <option value="">All</option>
+                {statuses.map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span style={fieldLabelStyle()}>Industry</span>
+              <input
+                name="industry"
+                defaultValue={params.industry ?? ""}
+                placeholder="Trucking, aggregate..."
+                style={inputStyle()}
+              />
+            </label>
+
+            <label>
+              <span style={fieldLabelStyle()}>Location Focus</span>
+              <input
+                name="location"
+                defaultValue={params.location ?? ""}
+                placeholder="Idaho, Spokane..."
+                style={inputStyle()}
+              />
+            </label>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              flexWrap: "wrap",
+              marginTop: "14px",
+            }}
+          >
+            <button
+              type="submit"
+              style={{
+                ...primaryButtonStyle(),
+                cursor: "pointer",
+              }}
+            >
+              Apply Filters
+            </button>
+
+            <a href="/communities" style={secondaryButtonStyle()}>
+              Clear Filters
+            </a>
+          </div>
+        </form>
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "12px",
+            flexWrap: "wrap",
+            marginBottom: "14px",
+          }}
+        >
+          <p style={{ ...mutedTextStyle(), margin: 0 }}>{resultCountLabel}</p>
+
+          <p style={{ ...mutedTextStyle(), margin: 0, fontSize: "13px" }}>
+            Sorted by newest first
+          </p>
+        </div>
+
+        {error && (
+          <p style={{ color: "#fca5a5", marginTop: "32px" }}>
+            Database error: {error.message}
+          </p>
+        )}
+
+        {!error && allCommunities.length === 0 && (
+          <p style={mutedTextStyle()}>No communities added yet.</p>
+        )}
+
+        {!error && allCommunities.length > 0 && communities.length === 0 && (
+          <p>No communities match the current filters.</p>
+        )}
+
+        <div style={{ display: "grid", gap: "10px" }}>
+          {communities.map((community) => (
+            <Link
+              key={community.id}
+              href={`/communities/${community.id}`}
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  "48px minmax(0, 1.25fr) minmax(190px, 0.85fr) 26px",
+                gap: "14px",
+                alignItems: "center",
+                border: "1px solid #2f2f2f",
+                padding: "14px",
+                borderRadius: "14px",
+                background:
+                  "linear-gradient(180deg, rgba(31,31,31,0.96), rgba(22,22,22,0.96))",
+                color: "white",
+                textDecoration: "none",
+                boxShadow: "0 10px 24px rgba(0,0,0,0.16)",
+              }}
+            >
+              <div
+                style={{
+                  width: "42px",
+                  height: "42px",
+                  borderRadius: "999px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: "#2b2b2b",
+                  color: "white",
+                  fontWeight: 900,
+                  border: "1px solid #3d3d3d",
+                }}
+              >
+                {initialsFromCommunity(community.name)}
+              </div>
+
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    flexWrap: "wrap",
+                    marginBottom: "5px",
+                  }}
+                >
+                  <strong>{community.name}</strong>
+
+                  <span style={badgeStyle(community.platform)}>
+                    {community.platform}
+                  </span>
+
+                  <span style={badgeStyle(community.status)}>
+                    {community.status}
+                  </span>
+                </div>
+
+                {community.description && (
+                  <p
+                    style={{
+                      ...mutedTextStyle(),
+                      margin: "0 0 8px",
+                      lineHeight: 1.4,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {previewText(community.description)}
+                  </p>
+                )}
+
+                <p style={{ ...mutedTextStyle(), margin: "0 0 4px" }}>
+                  Industry: {community.industry || "Not set"}
+                </p>
+
+                <p style={{ ...mutedTextStyle(), margin: 0 }}>
+                  Location Focus: {community.location_focus || "Not set"}
+                </p>
+              </div>
+
+              <div style={{ minWidth: 0 }}>
+                <p style={{ ...mutedTextStyle(), margin: "0 0 6px" }}>
+                  Members:{" "}
+                  {community.member_count !== null
+                    ? Number(community.member_count).toLocaleString()
+                    : "Not set"}
+                </p>
+
+                <p style={{ ...mutedTextStyle(), margin: "0 0 6px" }}>
+                  Relevance:{" "}
+                  {community.relevance_score !== null
+                    ? community.relevance_score
+                    : "Not set"}
+                </p>
+
+                {community.tags && (
+                  <p
+                    style={{
+                      ...mutedTextStyle(),
+                      margin: 0,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    Tags: {community.tags}
+                  </p>
+                )}
+              </div>
+
+              <div
+                style={{
+                  color: "#a7a7a7",
+                  fontSize: "26px",
+                  textAlign: "right",
+                }}
+              >
+                ›
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
     </main>
   );
 }
