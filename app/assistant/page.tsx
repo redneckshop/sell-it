@@ -309,6 +309,32 @@ function firstAssistantScheduleTaskLink(links: AssistantActionLink[]) {
   );
 }
 
+function parseAssistantAssignTaskActionLinks(text: string): AssistantActionLink[] {
+  const matches = Array.from(
+    text.matchAll(/__ASSISTANT_ASSIGN_TASK_LINK__(\/assistant\/actions\/tasks\/assign\?[^\s\n]+)/g)
+  );
+
+  return matches.map((match) => {
+    const href = match[1];
+    const query = href.includes("?") ? href.split("?").slice(1).join("?") : "";
+    const params = new URLSearchParams(query);
+    const assigneeName = params.get("assignee_name") || "Team Member";
+
+    return {
+      label: `Assign to ${assigneeName}`,
+      href,
+      kind: "unknown" as const,
+      id: "",
+    };
+  });
+}
+
+function firstAssistantAssignTaskLinks(links: AssistantActionLink[]) {
+  return links.filter((link) =>
+    link.href.startsWith("/assistant/actions/tasks/assign")
+  );
+}
+
 function assistantActionButtonLabel(link: AssistantActionLink) {
   const labelByKind: Record<AssistantActionLink["kind"], string> = {
     company: "Open Company",
@@ -481,8 +507,9 @@ function buildAssistantActivityHrefForMode(
 
 function renderAssistantActionCenter(messageText: string) {
   const scheduleLinks = parseAssistantScheduleActionLinks(messageText);
+  const assignmentLinks = parseAssistantAssignTaskActionLinks(messageText);
   const recordLinks = parseAssistantActionLinks(messageText);
-  const links = [...scheduleLinks, ...recordLinks].filter(
+  const links = [...scheduleLinks, ...assignmentLinks, ...recordLinks].filter(
     (link, index, allLinks) =>
       allLinks.findIndex((candidate) => candidate.href === link.href) === index
   );
@@ -505,6 +532,7 @@ function renderAssistantActionCenter(messageText: string) {
   const taskCompleteLink = firstAssistantTaskCompleteLink(messageText, links);
   const opportunityStageLink = firstAssistantLinkOfKind(links, "opportunity");
   const scheduleTaskLink = firstAssistantScheduleTaskLink(links);
+  const assignmentTaskLinks = firstAssistantAssignTaskLinks(links);
   const showScheduleOnly = Boolean(scheduleTaskLink) && isScheduleActionAnswer;
 
   return (
@@ -575,6 +603,24 @@ function renderAssistantActionCenter(messageText: string) {
       </p>
 
       <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+        {assignmentTaskLinks.map((assignmentLink) => (
+          <Link
+            key={assignmentLink.href}
+            href={assignmentLink.href}
+            style={{
+              backgroundColor: "#ffcc66",
+              color: "black",
+              padding: "9px 12px",
+              borderRadius: "6px",
+              textDecoration: "none",
+              fontWeight: "bold",
+              fontSize: "14px",
+            }}
+          >
+            {assignmentLink.label}
+          </Link>
+        ))}
+
         {scheduleTaskLink && (
           <Link
             href={scheduleTaskLink.href}
@@ -718,7 +764,7 @@ function renderAssistantActionCenter(messageText: string) {
           marginBottom: "10px",
         }}
       >
-        Drafts are review-only. Sell It does not call, text, email, or save anything automatically. Schedule Task, Mark Complete, and Move Stage open confirmation screens before changing records.
+        Drafts are review-only. Sell It does not call, text, email, assign, or save anything automatically. Assign Task, Schedule Task, Mark Complete, and Move Stage open confirmation screens before changing records.
       </p>
 
       <details style={{ marginTop: "8px" }}>
@@ -740,7 +786,7 @@ function renderAssistantActionCenter(messageText: string) {
             marginTop: "10px",
           }}
         >
-          {primaryLinks.filter((link) => !link.href.startsWith("/assistant/actions/tasks/schedule")).map((link) => (
+          {primaryLinks.filter((link) => !link.href.startsWith("/assistant/actions/tasks/schedule") && !link.href.startsWith("/assistant/actions/tasks/assign")).map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -2209,10 +2255,15 @@ function communityLine(community: Community) {
 
 function renderMessageText(text: string) {
   const hiddenScheduleTaskMarker = "__ASSISTANT_SCHEDULE_TASK_LINK__";
+  const hiddenAssignTaskMarker = "__ASSISTANT_ASSIGN_TASK_LINK__";
 
   text = text
     .split("\n")
-    .filter((line) => !line.startsWith(hiddenScheduleTaskMarker))
+    .filter(
+      (line) =>
+        !line.startsWith(hiddenScheduleTaskMarker) &&
+        !line.startsWith(hiddenAssignTaskMarker)
+    )
     .join("\n");
   const routeSplitPattern =
     /(\/(?:companies|contacts|opportunities|tasks|activities|notes|communities|posts|pain-points)\/[a-zA-Z0-9-]+)/g;
@@ -3902,6 +3953,7 @@ type RecommendationStageHistory = {
 };
 type RecommendationPainPoint = PainPoint & { mentionCount?: number; recentMentionCount?: number };
 type RecommendationProfile = Record<string, unknown>;
+type RecommendationTeamMember = Record<string, unknown>;
 type RecommendationLink = {
   label: string;
   href: string;
@@ -3924,6 +3976,7 @@ type RecommendationData = {
   painPoints: RecommendationPainPoint[];
   posts: Post[];
   profiles: RecommendationProfile[];
+  teamMembers: RecommendationTeamMember[];
   painPointLinks: Record<string, Array<Record<string, unknown>>>;
   stageHistory: RecommendationStageHistory[];
 };
@@ -4206,9 +4259,55 @@ function getOwnerProfileMatches(ownerName: string, profiles: RecommendationProfi
   return profiles.filter((profile) => profileSearchText(profile).includes(normalizedOwner));
 }
 
+function teamMemberIds(member: RecommendationTeamMember) {
+  return [
+    getStringField(member, "id"),
+    getStringField(member, "profile_id"),
+    getStringField(member, "user_id"),
+    getStringField(member, "auth_user_id"),
+  ].filter(Boolean);
+}
+
+function teamMemberDisplayName(member: RecommendationTeamMember) {
+  return (
+    getStringField(member, "display_name") ||
+    getStringField(member, "full_name") ||
+    getStringField(member, "name") ||
+    getStringField(member, "email") ||
+    "Unnamed team member"
+  );
+}
+
+function teamMemberSearchText(member: RecommendationTeamMember) {
+  return normalizeText(
+    [
+      getStringField(member, "id"),
+      getStringField(member, "profile_id"),
+      getStringField(member, "display_name"),
+      getStringField(member, "full_name"),
+      getStringField(member, "name"),
+      getStringField(member, "email"),
+      getStringField(member, "role_title"),
+      getStringField(member, "status"),
+    ].join(" ")
+  );
+}
+
+function getOwnerTeamMemberMatches(
+  ownerName: string,
+  teamMembers: RecommendationTeamMember[]
+) {
+  const normalizedOwner = normalizeText(ownerName);
+
+  if (!normalizedOwner) return [];
+
+  return teamMembers.filter((member) => teamMemberSearchText(member).includes(normalizedOwner));
+}
+
 function recordAssignmentValues(row: Record<string, unknown>) {
   const fields = [
     "assigned_to",
+    "assigned_team_member_id",
     "assigned_user_id",
     "assigned_to_user_id",
     "owner_id",
@@ -4218,6 +4317,8 @@ function recordAssignmentValues(row: Record<string, unknown>) {
     "sales_owner",
     "assignee",
     "assigned_to_name",
+    "assigned_team_member_name",
+    "team_member_name",
     "created_by_name",
   ];
 
@@ -4229,6 +4330,7 @@ function recordAssignmentValues(row: Record<string, unknown>) {
 function recordHasAssignmentFields(row: Record<string, unknown>) {
   const fields = [
     "assigned_to",
+    "assigned_team_member_id",
     "assigned_user_id",
     "assigned_to_user_id",
     "owner_id",
@@ -4245,12 +4347,17 @@ function recordHasAssignmentFields(row: Record<string, unknown>) {
 function recordMatchesRequestedOwner(
   row: Record<string, unknown>,
   ownerName: string,
-  profiles: RecommendationProfile[]
+  profiles: RecommendationProfile[],
+  teamMembers: RecommendationTeamMember[] = []
 ) {
   const normalizedOwner = normalizeText(ownerName);
   const matchingProfiles = getOwnerProfileMatches(ownerName, profiles);
   const matchingProfileIds = new Set(
     matchingProfiles.flatMap(profileIds).map((value) => value.toLowerCase())
+  );
+  const matchingTeamMembers = getOwnerTeamMemberMatches(ownerName, teamMembers);
+  const matchingTeamMemberIds = new Set(
+    matchingTeamMembers.flatMap(teamMemberIds).map((value) => value.toLowerCase())
   );
 
   for (const value of recordAssignmentValues(row)) {
@@ -4260,9 +4367,24 @@ function recordMatchesRequestedOwner(
       return true;
     }
 
+    if (lowerValue && matchingTeamMemberIds.has(lowerValue)) {
+      return true;
+    }
+
     if (normalizeText(value).includes(normalizedOwner)) {
       return true;
     }
+  }
+
+  const nestedTeamMember = row.assigned_team_member || row.team_member;
+
+  if (
+    nestedTeamMember &&
+    typeof nestedTeamMember === "object" &&
+    !Array.isArray(nestedTeamMember) &&
+    teamMemberSearchText(nestedTeamMember as RecommendationTeamMember).includes(normalizedOwner)
+  ) {
+    return true;
   }
 
   return false;
@@ -4286,7 +4408,42 @@ function formatRecommendationLink(link: RecommendationLink) {
   return `- ${link.label}: ${link.href}`;
 }
 
+function taskAssignmentMarkersForRecommendation(item: RecommendationItem) {
+  const taskLink = recommendationLinks(item.links).find((link) =>
+    link.href.startsWith("/tasks/")
+  );
+
+  if (!taskLink) return "";
+
+  const taskId = taskLink.href.split("/").filter(Boolean)[1] || "";
+
+  if (!taskId) return "";
+
+  const taskRow =
+    item.ownerRows.find((row) => getStringField(row, "id") === taskId) ||
+    item.ownerRows[0];
+
+  const alreadyAssigned =
+    Boolean(getStringField(taskRow, "assigned_team_member_id")) ||
+    Boolean(getStringField(taskRow, "assigned_to"));
+
+  if (alreadyAssigned) return "";
+
+  return ["Trent", "Angel", "Charles"]
+    .map((name) => {
+      const params = new URLSearchParams();
+
+      params.set("task_id", taskId);
+      params.set("assignee_name", name);
+
+      return `__ASSISTANT_ASSIGN_TASK_LINK__/assistant/actions/tasks/assign?${params.toString()}`;
+    })
+    .join("\n");
+}
+
 function formatRecommendationItem(item: RecommendationItem, index: number) {
+  const assignmentMarkers = taskAssignmentMarkersForRecommendation(item);
+
   return `${index + 1}. ${item.title}
 Priority Score: ${item.score}
 Category: ${item.category}
@@ -4298,7 +4455,7 @@ Suggested action:
 ${item.suggestedAction}
 
 Related record links:
-${recommendationLinks(item.links).map(formatRecommendationLink).join("\n") || "- No direct record link found."}`;
+${recommendationLinks(item.links).map(formatRecommendationLink).join("\n") || "- No direct record link found."}${assignmentMarkers ? `\n${assignmentMarkers}` : ""}`;
 }
 
 function formatRecommendationAnswer(
@@ -5094,6 +5251,15 @@ async function loadRecommendationData(): Promise<RecommendationData> {
     ? []
     : ((profileResult.data ?? []) as unknown as RecommendationProfile[]);
 
+  const teamMemberResult = await supabase
+    .from("team_members")
+    .select("*")
+    .order("display_name", { ascending: true })
+    .limit(250);
+  const teamMembers = teamMemberResult.error
+    ? []
+    : ((teamMemberResult.data ?? []) as unknown as RecommendationTeamMember[]);
+
   const stageHistoryRows = (stageHistoryResult.data ?? []) as unknown as
     RecommendationStageHistory[];
 
@@ -5113,6 +5279,7 @@ async function loadRecommendationData(): Promise<RecommendationData> {
     painPoints: ((painPointResult.data ?? []) as unknown as RecommendationPainPoint[]).filter(isRealPainPoint),
     posts: (postResult.data ?? []) as unknown as Post[],
     profiles,
+    teamMembers,
     painPointLinks: {
       companyLinks: (companyLinks.data ?? []) as Array<Record<string, unknown>>,
       contactLinks: (contactLinks.data ?? []) as Array<Record<string, unknown>>,
@@ -5134,15 +5301,21 @@ function assignmentStatusMessage(data: RecommendationData, ownerName: string) {
 
   const hasAssignmentFields = assignmentRows.some(recordHasAssignmentFields);
   const matchingProfiles = getOwnerProfileMatches(ownerName, data.profiles);
+  const matchingTeamMembers = getOwnerTeamMemberMatches(ownerName, data.teamMembers);
 
   return `Assignment check for ${capitalizeName(ownerName)}
+- Team members matched: ${
+    matchingTeamMembers.length > 0
+      ? matchingTeamMembers.map(teamMemberDisplayName).join(", ")
+      : "none found"
+  }
 - Profiles matched: ${
     matchingProfiles.length > 0
       ? matchingProfiles.map(profileDisplayName).join(", ")
       : "none found"
   }
 - Assignment fields found in loaded records: ${hasAssignmentFields ? "yes" : "no"}
-- Checked fields where present: assigned_to, created_by, updated_by, owner_id, assignee`;
+- Checked fields where present: assigned_team_member_id, assigned_to, created_by, updated_by, owner_id, assignee`;
 }
 
 function answerOwnerRecommendations(
@@ -5150,21 +5323,58 @@ function answerOwnerRecommendations(
   ownerName: string,
   recommendations: RecommendationItem[]
 ) {
-  const filtered = recommendations.filter((recommendation) =>
-    recommendation.ownerRows.some((row) =>
-      recordMatchesRequestedOwner(row, ownerName, data.profiles)
+  const assignedTaskRecommendations = data.tasks
+    .filter(
+      (task) =>
+        isOpenTask(task) &&
+        recordMatchesRequestedOwner(task, ownerName, data.profiles, data.teamMembers)
     )
-  );
+    .map((task) => {
+      const dueOffset = daysUntil(task.due_date);
+      const category =
+        dueOffset !== null && dueOffset < 0
+          ? "Overdue Assigned Task"
+          : dueOffset !== null && dueOffset <= 7
+            ? "Due This Week"
+            : "Assigned Task";
+
+      return buildTaskRecommendation(task, category);
+    });
+
+  const assignedOpportunityRecommendations = data.opportunities
+    .filter(
+      (opportunity) =>
+        !isClosedOpportunity(opportunity) &&
+        recordMatchesRequestedOwner(opportunity, ownerName, data.profiles, data.teamMembers)
+    )
+    .map((opportunity) =>
+      buildOpportunityRecommendation(
+        opportunity,
+        data.tasks,
+        data.activities,
+        "Assigned Opportunity"
+      )
+    );
+
+  const filtered = dedupeRecommendationItems([
+    ...assignedTaskRecommendations,
+    ...assignedOpportunityRecommendations,
+    ...recommendations.filter((recommendation) =>
+      recommendation.ownerRows.some((row) =>
+        recordMatchesRequestedOwner(row, ownerName, data.profiles, data.teamMembers)
+      )
+    ),
+  ]);
 
   if (filtered.length === 0) {
     return `I did not find any recommended work assigned to ${capitalizeName(ownerName)}.
 
 ${assignmentStatusMessage(data, ownerName)}
 
-I am not going to guess or assign work to ${capitalizeName(ownerName)} without saved assignment data.
+No assignment was changed.
 
 Suggested action:
-Add assigned_to on tasks/opportunities or create tasks specifically assigned to ${capitalizeName(ownerName)}, then ask again.`;
+Assign an existing task to ${capitalizeName(ownerName)} through the Assistant assignment review page, then ask again.`;
   }
 
   return `${assignmentStatusMessage(data, ownerName)}
@@ -6094,6 +6304,348 @@ async function answerComparisonQuestion(userQuestion: string) {
   return answerCompanyComparison(userQuestion);
 }
 
+type AssistantAssignTaskRow = {
+  id: string;
+  title: string;
+  description: string | null;
+  due_date: string | null;
+  priority: string | null;
+  status: string | null;
+  assigned_to: string | null;
+  assigned_team_member_id: string | null;
+  company_id: string | null;
+  contact_id: string | null;
+  opportunity_id: string | null;
+  companies: { id: string; name: string | null } | null;
+  contacts: { id: string; first_name: string | null; last_name: string | null } | null;
+  opportunities: { id: string; name: string | null } | null;
+};
+
+type AssistantAssignTeamMemberRow = {
+  id: string;
+  profile_id: string | null;
+  display_name: string;
+  email: string | null;
+  role_title: string | null;
+  status: string;
+};
+
+function assistantAssignmentNormalize(value: string | null | undefined) {
+  return (value ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isAssistantAssignmentRequest(lowerQuestion: string) {
+  const hasAssignmentVerb =
+    lowerQuestion.includes("assign") ||
+    lowerQuestion.includes("give") ||
+    lowerQuestion.includes("move");
+
+  const hasKnownAssignee =
+    lowerQuestion.includes("trent") ||
+    lowerQuestion.includes("angel") ||
+    lowerQuestion.includes("charles") ||
+    lowerQuestion.includes("charley");
+
+  const hasWorkSignal =
+    lowerQuestion.includes("task") ||
+    lowerQuestion.includes("follow") ||
+    lowerQuestion.includes("lead") ||
+    lowerQuestion.includes("this") ||
+    lowerQuestion.includes("to ");
+
+  return hasAssignmentVerb && hasKnownAssignee && hasWorkSignal;
+}
+
+function canonicalAssistantAssigneeName(userQuestion: string) {
+  const lowerQuestion = userQuestion.toLowerCase();
+
+  if (lowerQuestion.includes("trent")) return "Trent";
+  if (lowerQuestion.includes("angel")) return "Angel";
+  if (lowerQuestion.includes("charles") || lowerQuestion.includes("charley")) {
+    return "Charles";
+  }
+
+  return "";
+}
+
+function extractAssistantAssignmentSearchName(userQuestion: string, assigneeName: string) {
+  const assigneePattern =
+    assigneeName.toLowerCase() === "charles"
+      ? "(?:charles|charley)"
+      : assigneeName.toLowerCase();
+
+  const directPattern = new RegExp(
+    `\\b(?:assign|give|move)\\s+(.+?)\\s+(?:to|over to)\\s+${assigneePattern}\\b`,
+    "i"
+  );
+  const directMatch = userQuestion.match(directPattern);
+
+  let value = directMatch?.[1] || "";
+
+  value = value
+    .replace(/\bthis\b/gi, "")
+    .replace(/\bthat\b/gi, "")
+    .replace(/\bit\b/gi, "")
+    .replace(/\btask\b/gi, "")
+    .replace(/\blead\b/gi, "")
+    .replace(/\bfrom\s+(trent|angel|charles|charley)\b/gi, "")
+    .replace(/\bfollow[-\s]?up\b/gi, "follow up")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const normalized = assistantAssignmentNormalize(value);
+
+  if (!normalized || normalized === "it" || normalized === "this" || normalized === "that") {
+    return "";
+  }
+
+  return value;
+}
+
+function assistantAssignTeamMemberMatchesName(
+  member: AssistantAssignTeamMemberRow,
+  assigneeName: string
+) {
+  const target = assistantAssignmentNormalize(assigneeName);
+  const text = assistantAssignmentNormalize(
+    [
+      member.display_name,
+      member.email,
+      member.role_title,
+      member.profile_id,
+      member.id,
+    ].join(" ")
+  );
+
+  return Boolean(target) && text.includes(target);
+}
+
+function assistantAssignmentTaskSearchText(task: AssistantAssignTaskRow) {
+  return assistantAssignmentNormalize(
+    [
+      task.title,
+      task.description,
+      task.priority,
+      task.status,
+      task.companies?.name,
+      task.contacts
+        ? fullContactName({
+            first_name: task.contacts.first_name,
+            last_name: task.contacts.last_name,
+          })
+        : "",
+      task.opportunities?.name,
+    ].join(" ")
+  );
+}
+
+function isAssistantAssignmentOpenTask(task: AssistantAssignTaskRow) {
+  const status = assistantAssignmentNormalize(task.status);
+
+  return status !== "completed" && status !== "cancelled";
+}
+
+function scoreAssistantAssignmentTask(task: AssistantAssignTaskRow, searchName: string) {
+  const text = assistantAssignmentTaskSearchText(task);
+  const title = assistantAssignmentNormalize(task.title);
+  const tokens = assistantAssignmentNormalize(searchName)
+    .split(" ")
+    .filter((token) => token.length >= 3);
+
+  if (tokens.length === 0) return 0;
+
+  let score = 0;
+
+  for (const token of tokens) {
+    if (title.includes(token)) {
+      score += 12;
+    } else if (text.includes(token)) {
+      score += 6;
+    }
+  }
+
+  if (isAssistantAssignmentOpenTask(task)) {
+    score += 8;
+  }
+
+  if (!task.assigned_team_member_id && !task.assigned_to) {
+    score += 2;
+  }
+
+  return score;
+}
+
+function assistantAssignmentTaskLine(task: AssistantAssignTaskRow) {
+  const company = task.companies?.name ? ` | Company: ${task.companies.name}` : "";
+  const contact = task.contacts
+    ? ` | Contact: ${fullContactName({
+        first_name: task.contacts.first_name,
+        last_name: task.contacts.last_name,
+      })}`
+    : "";
+
+  return `- ${task.title}
+  Status: ${task.status || "Unknown"} | Priority: ${task.priority || "Normal"} | Due: ${formatDate(task.due_date)}${company}${contact}
+  Open: /tasks/${task.id}`;
+}
+
+function buildAssistantAssignReviewHref(input: {
+  taskId: string;
+  assignee: AssistantAssignTeamMemberRow;
+}) {
+  const params = new URLSearchParams();
+
+  params.set("task_id", input.taskId);
+  params.set("assigned_team_member_id", input.assignee.id);
+  params.set("assignee_name", input.assignee.display_name || "Team Member");
+
+  return `/assistant/actions/tasks/assign?${params.toString()}`;
+}
+
+async function answerAssistantAssignmentRequest(userQuestion: string) {
+  const assigneeName = canonicalAssistantAssigneeName(userQuestion);
+
+  const { data: teamMemberRows, error: teamMemberError } = await supabase
+    .from("team_members")
+    .select("id, profile_id, display_name, email, role_title, status")
+    .eq("status", "Active")
+    .order("display_name", { ascending: true });
+
+  if (teamMemberError) {
+    throw new Error(teamMemberError.message);
+  }
+
+  const teamMembers = (teamMemberRows ?? []) as AssistantAssignTeamMemberRow[];
+  const assignee =
+    teamMembers.find((member) =>
+      assistantAssignTeamMemberMatchesName(member, assigneeName)
+    ) || null;
+
+  if (!assignee) {
+    return `I could not find an active team member matching "${assigneeName || userQuestion}".
+
+No assignment was changed.
+
+Try one of:
+- Assign Corcoran follow-up to Trent
+- Assign this task to Angel
+- Move this task to Charles`;
+  }
+
+  const searchName = extractAssistantAssignmentSearchName(userQuestion, assigneeName);
+
+  if (!searchName) {
+    return `I know you want to assign work to ${assignee.display_name}, but I need the task name or a clearer clue.
+
+No assignment was changed.
+
+Try:
+- Assign Corcoran follow-up to ${assignee.display_name}
+- Assign the ABC Trucking follow-up to ${assignee.display_name}`;
+  }
+
+  const { data: taskRows, error: taskError } = await supabase
+    .from("tasks")
+    .select(`
+      id,
+      title,
+      description,
+      due_date,
+      priority,
+      status,
+      assigned_to,
+      assigned_team_member_id,
+      company_id,
+      contact_id,
+      opportunity_id,
+      companies (
+        id,
+        name
+      ),
+      contacts (
+        id,
+        first_name,
+        last_name
+      ),
+      opportunities (
+        id,
+        name
+      )
+    `)
+    .order("created_at", { ascending: false })
+    .limit(250);
+
+  if (taskError) {
+    throw new Error(taskError.message);
+  }
+
+  const tasks = (taskRows ?? []) as unknown as AssistantAssignTaskRow[];
+
+  const rankedTasks = tasks
+    .map((task) => ({
+      task,
+      score: scoreAssistantAssignmentTask(task, searchName),
+    }))
+    .filter((row) => row.score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  const bestScore = rankedTasks[0]?.score ?? 0;
+  const bestMatches = rankedTasks.filter((row) => row.score === bestScore);
+
+  if (rankedTasks.length === 0) {
+    return `I could not find a task matching "${searchName}".
+
+No assignment was changed.
+
+Try including the exact task title, company name, or contact name.`;
+  }
+
+  if (bestMatches.length > 1 && bestScore < 30) {
+    return `I found multiple possible task matches for "${searchName}". Which one do you want to assign to ${assignee.display_name}?
+
+${rankedTasks
+  .slice(0, 5)
+  .map((row, index) => `${index + 1}. ${assistantAssignmentTaskLine(row.task)}`)
+  .join("\n\n")}
+
+No assignment was changed.`;
+  }
+
+  const selectedTask = rankedTasks[0].task;
+  const assignHref = buildAssistantAssignReviewHref({
+    taskId: selectedTask.id,
+    assignee,
+  });
+
+  return [
+    "Assignment Review",
+    "",
+    `I found this task: ${selectedTask.title}`,
+    `New assignee: ${assignee.display_name}`,
+    `Due: ${formatDate(selectedTask.due_date)}`,
+    `Priority: ${selectedTask.priority || "Normal"}`,
+    `Status: ${selectedTask.status || "Unknown"}`,
+    "Nothing has been saved yet.",
+    "",
+    "__ASSISTANT_ASSIGN_TASK_LINK__" + assignHref,
+    "",
+    "Recommended next action:",
+    "Open the assignment review page, confirm the task and assignee, then save the assignment.",
+    "",
+    "Related record links:",
+    `- Task: /tasks/${selectedTask.id}`,
+    selectedTask.company_id ? `- Company: /companies/${selectedTask.company_id}` : "",
+    selectedTask.contact_id ? `- Contact: /contacts/${selectedTask.contact_id}` : "",
+    selectedTask.opportunity_id ? `- Opportunity: /opportunities/${selectedTask.opportunity_id}` : "",
+  ]
+    .filter((line) => line !== "")
+    .join("\n");
+}
+
 function isAssistantScheduleTaskRequest(lowerQuestion: string) {
   return (
     lowerQuestion.includes("schedule") ||
@@ -6492,6 +7044,10 @@ async function answerAssistantScheduleTaskRequest(userQuestion: string) {
 async function routeQuestion(userQuestion: string) {
   const lower = userQuestion.toLowerCase();
 
+  if (isAssistantAssignmentRequest(lower)) {
+    return answerAssistantAssignmentRequest(userQuestion);
+  }
+
   if (isAssistantScheduleTaskRequest(lower)) {
     return answerAssistantScheduleTaskRequest(userQuestion);
   }
@@ -6864,7 +7420,8 @@ ${answer}`,
                 {renderMessageText(message.text)}
 
                   {message.role === "assistant" &&
-                    message.text.includes("__ASSISTANT_SCHEDULE_TASK_LINK__") &&
+                    (message.text.includes("__ASSISTANT_SCHEDULE_TASK_LINK__") ||
+                      message.text.includes("__ASSISTANT_ASSIGN_TASK_LINK__")) &&
                     renderAssistantActionCenter(message.text)}
               </div>
 
@@ -6919,6 +7476,10 @@ ${answer}`,
     </main>
   );
 }
+
+
+
+
 
 
 
