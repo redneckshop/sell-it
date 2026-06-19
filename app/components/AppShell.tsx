@@ -349,14 +349,6 @@ export default function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const [quickAddOpen, setQuickAddOpen] = useState(false);
 
-  /*
-    Temporary safety:
-    The homepage still has its own old sidebar.
-    We will update the homepage next, then remove this bypass.
-  */
-  if (pathname === "/") {
-    return <>{children}</>;
-  }
 
   const currentSection = getCurrentSection(pathname);
   const sidebarItems = contextNavItems[currentSection];
@@ -495,3 +487,4 @@ export default function AppShell({ children }: AppShellProps) {
     </div>
   );
 }
+

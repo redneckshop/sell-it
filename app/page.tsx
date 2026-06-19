@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import type { CSSProperties } from "react";
 import { supabase } from "./lib/supabase";
 import HomeSearch from "./components/HomeSearch";
@@ -96,52 +96,27 @@ function formatDateTime(value: string | null) {
 
 function cardStyle(): CSSProperties {
   return {
-    border: "1px solid #333",
-    borderRadius: "10px",
-    padding: "14px",
-    backgroundColor: "#1a1a1a",
+    border: "1px solid #2f2f2f",
+    borderRadius: "14px",
+    padding: "16px",
+    background:
+      "linear-gradient(180deg, rgba(31,31,31,0.96), rgba(22,22,22,0.96))",
+    boxShadow: "0 14px 35px rgba(0,0,0,0.18)",
   };
 }
 
 function widgetStyle(): CSSProperties {
   return {
     ...cardStyle(),
-    minHeight: "205px",
+    minHeight: "230px",
   };
 }
 
 function scrollAreaStyle(): CSSProperties {
   return {
-    maxHeight: "116px",
+    maxHeight: "140px",
     overflowY: "auto",
     paddingRight: "6px",
-  };
-}
-
-function buttonStyle(): CSSProperties {
-  return {
-    display: "block",
-    backgroundColor: "white",
-    color: "black",
-    padding: "10px 12px",
-    borderRadius: "6px",
-    textDecoration: "none",
-    fontWeight: "bold",
-    textAlign: "center",
-  };
-}
-
-function sidebarLinkStyle(): CSSProperties {
-  return {
-    display: "block",
-    color: "white",
-    textDecoration: "none",
-    padding: "10px 12px",
-    borderRadius: "6px",
-    backgroundColor: "#1a1a1a",
-    border: "1px solid #333",
-    marginBottom: "8px",
-    fontWeight: "bold",
   };
 }
 
@@ -150,8 +125,14 @@ function listLinkStyle(): CSSProperties {
     display: "block",
     color: "white",
     textDecoration: "none",
-    marginBottom: "10px",
+    marginBottom: "12px",
     lineHeight: "1.35",
+  };
+}
+
+function mutedTextStyle(): CSSProperties {
+  return {
+    color: "#a7a7a7",
   };
 }
 
@@ -244,133 +225,59 @@ export default async function Home() {
 
   const recentNotes = (noteRows ?? []) as unknown as Note[];
 
-  const navigationLinks = [
-    { title: "Companies", href: "/companies" },
-    { title: "Contacts", href: "/contacts" },
-    { title: "Opportunities", href: "/opportunities" },
-    { title: "Tasks", href: "/tasks" },
-    { title: "Planner", href: "/planner" },
-  { title: "Team", href: "/team" },
-    { title: "Activities", href: "/activities" },
-    { title: "Notes", href: "/notes" },
-    { title: "Communities", href: "/communities" },
-    { title: "Posts", href: "/posts" },
-    { title: "Pain Points", href: "/pain-points" },
-    { title: "Capture", href: "/capture" },
-    { title: "Import", href: "/import" },
-    { title: "Import Leads", href: "/import-leads" },
-    { title: "Assistant", href: "/assistant" },
-  ];
-
-  const quickAdds = [
-    { title: "+ Company", href: "/companies/new" },
-    { title: "+ Contact", href: "/contacts/new" },
-    { title: "+ Opportunity", href: "/opportunities/new" },
-    { title: "+ Task", href: "/tasks/new" },
-    { title: "+ Activity", href: "/activities/new" },
-    { title: "+ Note", href: "/notes/new" },
-    { title: "+ Community", href: "/communities/new" },
-    { title: "+ Post", href: "/posts/new" },
-    { title: "+ Pain Point", href: "/pain-points/new" },
-  ];
-
   return (
     <main
       style={{
-        minHeight: "100vh",
-        backgroundColor: "#111",
+        minHeight: "calc(100vh - 64px)",
+        background:
+          "radial-gradient(circle at top left, rgba(124,58,237,0.16), transparent 34%), #101010",
         color: "white",
         fontFamily: "Arial, sans-serif",
+        padding: "34px",
+        boxSizing: "border-box",
       }}
     >
-      <div
+      <section
         style={{
-          display: "flex",
-          alignItems: "flex-start",
-          gap: "20px",
-          padding: "24px",
+          maxWidth: "1220px",
+          margin: "0 auto",
         }}
       >
-        <aside
+        <div
           style={{
-            width: "220px",
-            flexShrink: 0,
-            position: "sticky",
-            top: "24px",
-            border: "1px solid #333",
-            borderRadius: "12px",
-            backgroundColor: "#151515",
-            padding: "16px",
-            maxHeight: "calc(100vh - 48px)",
-            overflowY: "auto",
+            display: "grid",
+            gridTemplateColumns: "minmax(0, 1fr) minmax(280px, 420px)",
+            gap: "18px",
+            alignItems: "start",
+            marginBottom: "22px",
           }}
         >
-          <p
-            style={{
-              color: "#aaa",
-              textTransform: "uppercase",
-              letterSpacing: "2px",
-              fontSize: "11px",
-              margin: "0 0 8px 0",
-            }}
-          >
-            Sell It
-          </p>
-
-          <h2 style={{ margin: "0 0 16px 0", fontSize: "24px" }}>CRM</h2>
-
-          <p style={{ color: "#aaa", marginBottom: "8px", fontSize: "13px" }}>
-            Navigate
-          </p>
-
-          {navigationLinks.map((item) => (
-            <Link key={item.href} href={item.href} style={sidebarLinkStyle()}>
-              {item.title}
-            </Link>
-          ))}
-
-          <p
-            style={{
-              color: "#aaa",
-              margin: "18px 0 8px 0",
-              fontSize: "13px",
-            }}
-          >
-            Quick Add
-          </p>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {quickAdds.map((item) => (
-              <Link key={item.href} href={item.href} style={buttonStyle()}>
-                {item.title}
-              </Link>
-            ))}
-          </div>
-        </aside>
-
-        <section
-          style={{
-            flex: 1,
-            minWidth: 0,
-            maxWidth: "1250px",
-          }}
-        >
-          <div style={{ marginBottom: "20px" }}>
+          <div>
             <p
               style={{
-                color: "#aaa",
+                ...mutedTextStyle(),
                 textTransform: "uppercase",
                 letterSpacing: "2px",
-                marginBottom: "6px",
-                fontSize: "13px",
+                margin: "0 0 8px",
+                fontSize: "12px",
+                fontWeight: 800,
               }}
             >
               Business Command Center
             </p>
 
-            <h1 style={{ fontSize: "42px", margin: "0 0 8px 0" }}>SELL IT</h1>
+            <h1 style={{ fontSize: "40px", margin: "0 0 8px" }}>
+              Good morning, Charles
+            </h1>
 
-            <p style={{ color: "#aaa", fontSize: "16px", lineHeight: "1.4" }}>
+            <p
+              style={{
+                ...mutedTextStyle(),
+                fontSize: "16px",
+                lineHeight: "1.5",
+                margin: 0,
+              }}
+            >
               Sales follow-ups, leads, contacts, tasks, opportunities, notes,
               and daily activity in one place.
             </p>
@@ -379,354 +286,361 @@ export default async function Home() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
               gap: "12px",
-              marginBottom: "20px",
             }}
           >
             <div style={cardStyle()}>
-              <p style={{ color: "#aaa", margin: "0 0 6px 0" }}>
+              <p style={{ ...mutedTextStyle(), margin: "0 0 8px" }}>
                 Connected Workspace
               </p>
               <strong>{workspaceName}</strong>
             </div>
 
             <div style={cardStyle()}>
-              <p style={{ color: "#aaa", margin: "0 0 6px 0" }}>
+              <p style={{ ...mutedTextStyle(), margin: "0 0 8px" }}>
                 Logged In As
               </p>
               <strong>{fullName}</strong>
             </div>
           </div>
+        </div>
 
-          <h2 style={{ margin: "0 0 10px 0" }}>Snapshot</h2>
+        <h2 style={{ margin: "0 0 12px" }}>Snapshot</h2>
 
-          <div
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(155px, 1fr))",
+            gap: "12px",
+            marginBottom: "24px",
+          }}
+        >
+          <Link
+            href="/companies"
             style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-              gap: "12px",
-              marginBottom: "20px",
+              ...cardStyle(),
+              color: "white",
+              textDecoration: "none",
             }}
           >
-            <Link
-              href="/companies"
-              style={{
-                ...cardStyle(),
-                color: "white",
-                textDecoration: "none",
-              }}
-            >
-              <p style={{ color: "#aaa", margin: "0 0 8px 0" }}>Companies</p>
-              <h2 style={{ fontSize: "34px", margin: 0 }}>
-                {companyCount ?? 0}
-              </h2>
-            </Link>
+            <p style={{ ...mutedTextStyle(), margin: "0 0 10px" }}>
+              Companies
+            </p>
+            <h2 style={{ fontSize: "34px", margin: 0 }}>{companyCount ?? 0}</h2>
+            <p style={{ ...mutedTextStyle(), margin: "8px 0 0" }}>Active</p>
+          </Link>
 
-            <Link
-              href="/contacts"
-              style={{
-                ...cardStyle(),
-                color: "white",
-                textDecoration: "none",
-              }}
-            >
-              <p style={{ color: "#aaa", margin: "0 0 8px 0" }}>Contacts</p>
-              <h2 style={{ fontSize: "34px", margin: 0 }}>
-                {contactCount ?? 0}
-              </h2>
-            </Link>
-
-            <Link
-              href="/opportunities"
-              style={{
-                ...cardStyle(),
-                color: "white",
-                textDecoration: "none",
-              }}
-            >
-              <p style={{ color: "#aaa", margin: "0 0 8px 0" }}>
-                Opportunities
-              </p>
-              <h2 style={{ fontSize: "34px", margin: 0 }}>
-                {opportunityCount ?? 0}
-              </h2>
-            </Link>
-
-            <Link
-              href="/tasks"
-              style={{
-                ...cardStyle(),
-                color: "white",
-                textDecoration: "none",
-              }}
-            >
-              <p style={{ color: "#aaa", margin: "0 0 8px 0" }}>Open Tasks</p>
-              <h2 style={{ fontSize: "34px", margin: 0 }}>
-                {openTasks.length}
-              </h2>
-            </Link>
-
-            <Link
-              href="/planner"
-              style={{
-                ...cardStyle(),
-                color: "white",
-                textDecoration: "none",
-              }}
-            >
-              <p style={{ color: "#aaa", margin: "0 0 8px 0" }}>
-                Planner Today
-              </p>
-              <h2 style={{ fontSize: "34px", margin: 0 }}>
-                {tasksDueToday.length}
-              </h2>
-              <p style={{ color: "#aaa", margin: "8px 0 0 0" }}>
-                {overdueTasks.length} overdue
-              </p>
-            </Link>
-          </div>
-
-          <h2 style={{ margin: "0 0 10px 0" }}>Dashboard</h2>
-
-          <div
+          <Link
+            href="/contacts"
             style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-              gap: "12px",
-              marginBottom: "20px",
+              ...cardStyle(),
+              color: "white",
+              textDecoration: "none",
             }}
           >
-            <div style={widgetStyle()}>
-              <p style={{ color: "#aaa", margin: "0 0 6px 0" }}>
-                Tasks Due Today
-              </p>
+            <p style={{ ...mutedTextStyle(), margin: "0 0 10px" }}>Contacts</p>
+            <h2 style={{ fontSize: "34px", margin: 0 }}>{contactCount ?? 0}</h2>
+            <p style={{ ...mutedTextStyle(), margin: "8px 0 0" }}>Total</p>
+          </Link>
 
-              <h2 style={{ fontSize: "32px", margin: "0 0 8px 0" }}>
-                {tasksDueToday.length}
-              </h2>
+          <Link
+            href="/opportunities"
+            style={{
+              ...cardStyle(),
+              color: "white",
+              textDecoration: "none",
+            }}
+          >
+            <p style={{ ...mutedTextStyle(), margin: "0 0 10px" }}>
+              Opportunities
+            </p>
+            <h2 style={{ fontSize: "34px", margin: 0 }}>
+              {opportunityCount ?? 0}
+            </h2>
+            <p style={{ ...mutedTextStyle(), margin: "8px 0 0" }}>Active</p>
+          </Link>
 
-              <div style={scrollAreaStyle()}>
-                {tasksDueToday.length === 0 && (
-                  <p style={{ color: "#aaa", marginTop: 0 }}>
-                    No tasks due today.
-                  </p>
-                )}
+          <Link
+            href="/tasks"
+            style={{
+              ...cardStyle(),
+              color: "white",
+              textDecoration: "none",
+            }}
+          >
+            <p style={{ ...mutedTextStyle(), margin: "0 0 10px" }}>
+              Open Tasks
+            </p>
+            <h2 style={{ fontSize: "34px", margin: 0 }}>{openTasks.length}</h2>
+            <p style={{ ...mutedTextStyle(), margin: "8px 0 0" }}>
+              Outstanding
+            </p>
+          </Link>
 
-                {tasksDueToday.map((task) => (
-                  <Link
-                    key={task.id}
-                    href={`/tasks/${task.id}`}
-                    style={listLinkStyle()}
-                  >
-                    <strong>{task.title}</strong>
-                    <br />
-                    <span style={{ color: "#aaa" }}>
-                      {task.priority || "No priority"} -{" "}
-                      {task.status || "No status"}
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </div>
+          <Link
+            href="/planner"
+            style={{
+              ...cardStyle(),
+              color: "white",
+              textDecoration: "none",
+            }}
+          >
+            <p style={{ ...mutedTextStyle(), margin: "0 0 10px" }}>
+              Planner Today
+            </p>
+            <h2 style={{ fontSize: "34px", margin: 0 }}>
+              {tasksDueToday.length}
+            </h2>
+            <p
+              style={{
+                color: overdueTasks.length > 0 ? "#f97316" : "#a7a7a7",
+                margin: "8px 0 0",
+              }}
+            >
+              {overdueTasks.length} overdue
+            </p>
+          </Link>
+        </div>
 
-            <div style={widgetStyle()}>
-              <p style={{ color: "#aaa", margin: "0 0 6px 0" }}>
-                Overdue Tasks
-              </p>
+        <h2 style={{ margin: "0 0 12px" }}>Today</h2>
 
-              <h2 style={{ fontSize: "32px", margin: "0 0 8px 0" }}>
-                {overdueTasks.length}
-              </h2>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(285px, 1fr))",
+            gap: "12px",
+            marginBottom: "24px",
+          }}
+        >
+          <div style={widgetStyle()}>
+            <p style={{ ...mutedTextStyle(), margin: "0 0 8px" }}>
+              Tasks Due Today
+            </p>
 
-              <div style={scrollAreaStyle()}>
-                {overdueTasks.length === 0 && (
-                  <p style={{ color: "#aaa", marginTop: 0 }}>
-                    No overdue tasks.
-                  </p>
-                )}
+            <h2 style={{ fontSize: "32px", margin: "0 0 10px" }}>
+              {tasksDueToday.length}
+            </h2>
 
-                {overdueTasks.map((task) => (
-                  <Link
-                    key={task.id}
-                    href={`/tasks/${task.id}`}
-                    style={listLinkStyle()}
-                  >
-                    <strong>{task.title}</strong>
-                    <br />
-                    <span style={{ color: "#aaa" }}>
-                      Due {formatDate(task.due_date)} -{" "}
-                      {task.priority || "No priority"}
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </div>
+            <div style={scrollAreaStyle()}>
+              {tasksDueToday.length === 0 && (
+                <p style={{ ...mutedTextStyle(), marginTop: 0 }}>
+                  No tasks due today.
+                </p>
+              )}
 
-            <div style={widgetStyle()}>
-              <p style={{ color: "#aaa", margin: "0 0 6px 0" }}>
-                Hot Opportunities
-              </p>
-
-              <h2 style={{ fontSize: "32px", margin: "0 0 8px 0" }}>
-                {hotOpportunities.length}
-              </h2>
-
-              <div style={scrollAreaStyle()}>
-                {hotOpportunities.length === 0 && (
-                  <p style={{ color: "#aaa", marginTop: 0 }}>
-                    No hot opportunities yet.
-                  </p>
-                )}
-
-                {hotOpportunities.map((opportunity) => {
-                  const company = singleRelation(opportunity.companies);
-
-                  return (
-                    <Link
-                      key={opportunity.id}
-                      href={`/opportunities/${opportunity.id}`}
-                      style={listLinkStyle()}
-                    >
-                      <strong>{opportunity.name}</strong>
-                      <br />
-                      <span style={{ color: "#aaa" }}>
-                        {company?.name || "No company"} - {opportunity.stage}
-                        {opportunity.estimated_monthly_value !== null
-                          ? ` - $${Number(
-                              opportunity.estimated_monthly_value
-                            ).toLocaleString()}/mo`
-                          : ""}
-                      </span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div style={widgetStyle()}>
-              <p style={{ color: "#aaa", margin: "0 0 6px 0" }}>
-                Recent Activities
-              </p>
-
-              <h2 style={{ fontSize: "32px", margin: "0 0 8px 0" }}>
-                {recentActivities.length}
-              </h2>
-
-              <div style={scrollAreaStyle()}>
-                {recentActivities.length === 0 && (
-                  <p style={{ color: "#aaa", marginTop: 0 }}>
-                    No recent activities yet.
-                  </p>
-                )}
-
-                {recentActivities.map((activity) => (
-                  <Link
-                    key={activity.id}
-                    href={`/activities/${activity.id}`}
-                    style={listLinkStyle()}
-                  >
-                    <strong>{activity.subject}</strong>
-                    <br />
-                    <span style={{ color: "#aaa" }}>
-                      {activity.activity_type} -{" "}
-                      {activity.outcome || "No outcome"} -{" "}
-                      {formatDateTime(activity.activity_date)}
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            <div style={widgetStyle()}>
-              <p style={{ color: "#aaa", margin: "0 0 6px 0" }}>
-                Recent Notes
-              </p>
-
-              <h2 style={{ fontSize: "32px", margin: "0 0 8px 0" }}>
-                {recentNotes.length}
-              </h2>
-
-              <div style={scrollAreaStyle()}>
-                {recentNotes.length === 0 && (
-                  <p style={{ color: "#aaa", marginTop: 0 }}>
-                    No recent notes yet.
-                  </p>
-                )}
-
-                {recentNotes.map((note) => (
-                  <Link
-                    key={note.id}
-                    href={`/notes/${note.id}`}
-                    style={listLinkStyle()}
-                  >
-                    <strong>{note.title}</strong>
-                    <br />
-                    <span style={{ color: "#aaa" }}>
-                      {note.body
-                        ? note.body.length > 70
-                          ? `${note.body.slice(0, 70)}...`
-                          : note.body
-                        : "No note body"}
-                    </span>
-                  </Link>
-                ))}
-              </div>
+              {tasksDueToday.map((task) => (
+                <Link
+                  key={task.id}
+                  href={`/tasks/${task.id}`}
+                  style={listLinkStyle()}
+                >
+                  <strong>{task.title}</strong>
+                  <br />
+                  <span style={mutedTextStyle()}>
+                    {task.priority || "No priority"} -{" "}
+                    {task.status || "No status"}
+                  </span>
+                </Link>
+              ))}
             </div>
           </div>
 
-          <HomeSearch />
-
-          {profileError && (
-            <p style={{ color: "red", marginTop: "32px" }}>
-              Profile error: {profileError.message}
+          <div style={widgetStyle()}>
+            <p style={{ ...mutedTextStyle(), margin: "0 0 8px" }}>
+              Overdue Tasks
             </p>
-          )}
 
-          {companyCountError && (
-            <p style={{ color: "red", marginTop: "32px" }}>
-              Company count error: {companyCountError.message}
-            </p>
-          )}
+            <h2 style={{ fontSize: "32px", margin: "0 0 10px" }}>
+              {overdueTasks.length}
+            </h2>
 
-          {contactCountError && (
-            <p style={{ color: "red", marginTop: "32px" }}>
-              Contact count error: {contactCountError.message}
-            </p>
-          )}
+            <div style={scrollAreaStyle()}>
+              {overdueTasks.length === 0 && (
+                <p style={{ ...mutedTextStyle(), marginTop: 0 }}>
+                  Great. No overdue tasks.
+                </p>
+              )}
 
-          {opportunityCountError && (
-            <p style={{ color: "red", marginTop: "32px" }}>
-              Opportunity count error: {opportunityCountError.message}
-            </p>
-          )}
+              {overdueTasks.map((task) => (
+                <Link
+                  key={task.id}
+                  href={`/tasks/${task.id}`}
+                  style={listLinkStyle()}
+                >
+                  <strong>{task.title}</strong>
+                  <br />
+                  <span style={mutedTextStyle()}>
+                    Due {formatDate(task.due_date)} -{" "}
+                    {task.priority || "No priority"}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
 
-          {taskError && (
-            <p style={{ color: "red", marginTop: "32px" }}>
-              Task error: {taskError.message}
+          <div style={widgetStyle()}>
+            <p style={{ ...mutedTextStyle(), margin: "0 0 8px" }}>
+              Hot Opportunities
             </p>
-          )}
 
-          {hotOpportunityError && (
-            <p style={{ color: "red", marginTop: "32px" }}>
-              Hot opportunity error: {hotOpportunityError.message}
-            </p>
-          )}
+            <h2 style={{ fontSize: "32px", margin: "0 0 10px" }}>
+              {hotOpportunities.length}
+            </h2>
 
-          {activityError && (
-            <p style={{ color: "red", marginTop: "32px" }}>
-              Activity error: {activityError.message}
-            </p>
-          )}
+            <div style={scrollAreaStyle()}>
+              {hotOpportunities.length === 0 && (
+                <p style={{ ...mutedTextStyle(), marginTop: 0 }}>
+                  No hot opportunities yet.
+                </p>
+              )}
 
-          {noteError && (
-            <p style={{ color: "red", marginTop: "32px" }}>
-              Note error: {noteError.message}
+              {hotOpportunities.map((opportunity) => {
+                const company = singleRelation(opportunity.companies);
+
+                return (
+                  <Link
+                    key={opportunity.id}
+                    href={`/opportunities/${opportunity.id}`}
+                    style={listLinkStyle()}
+                  >
+                    <strong>{opportunity.name}</strong>
+                    <br />
+                    <span style={mutedTextStyle()}>
+                      {company?.name || "No company"} - {opportunity.stage}
+                      {opportunity.estimated_monthly_value !== null
+                        ? ` - $${Number(
+                            opportunity.estimated_monthly_value
+                          ).toLocaleString()}/mo`
+                        : ""}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={widgetStyle()}>
+            <p style={{ ...mutedTextStyle(), margin: "0 0 8px" }}>
+              Recent Activities
             </p>
-          )}
-        </section>
-      </div>
+
+            <h2 style={{ fontSize: "32px", margin: "0 0 10px" }}>
+              {recentActivities.length}
+            </h2>
+
+            <div style={scrollAreaStyle()}>
+              {recentActivities.length === 0 && (
+                <p style={{ ...mutedTextStyle(), marginTop: 0 }}>
+                  No recent activities yet.
+                </p>
+              )}
+
+              {recentActivities.map((activity) => (
+                <Link
+                  key={activity.id}
+                  href={`/activities/${activity.id}`}
+                  style={listLinkStyle()}
+                >
+                  <strong>{activity.subject}</strong>
+                  <br />
+                  <span style={mutedTextStyle()}>
+                    {activity.activity_type} -{" "}
+                    {activity.outcome || "No outcome"} -{" "}
+                    {formatDateTime(activity.activity_date)}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div style={widgetStyle()}>
+            <p style={{ ...mutedTextStyle(), margin: "0 0 8px" }}>
+              Recent Notes
+            </p>
+
+            <h2 style={{ fontSize: "32px", margin: "0 0 10px" }}>
+              {recentNotes.length}
+            </h2>
+
+            <div style={scrollAreaStyle()}>
+              {recentNotes.length === 0 && (
+                <p style={{ ...mutedTextStyle(), marginTop: 0 }}>
+                  No recent notes yet.
+                </p>
+              )}
+
+              {recentNotes.map((note) => (
+                <Link
+                  key={note.id}
+                  href={`/notes/${note.id}`}
+                  style={listLinkStyle()}
+                >
+                  <strong>{note.title}</strong>
+                  <br />
+                  <span style={mutedTextStyle()}>
+                    {note.body
+                      ? note.body.length > 70
+                        ? `${note.body.slice(0, 70)}...`
+                        : note.body
+                      : "No note body"}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <HomeSearch />
+
+        {profileError && (
+          <p style={{ color: "red", marginTop: "32px" }}>
+            Profile error: {profileError.message}
+          </p>
+        )}
+
+        {companyCountError && (
+          <p style={{ color: "red", marginTop: "32px" }}>
+            Company count error: {companyCountError.message}
+          </p>
+        )}
+
+        {contactCountError && (
+          <p style={{ color: "red", marginTop: "32px" }}>
+            Contact count error: {contactCountError.message}
+          </p>
+        )}
+
+        {opportunityCountError && (
+          <p style={{ color: "red", marginTop: "32px" }}>
+            Opportunity count error: {opportunityCountError.message}
+          </p>
+        )}
+
+        {taskError && (
+          <p style={{ color: "red", marginTop: "32px" }}>
+            Task error: {taskError.message}
+          </p>
+        )}
+
+        {hotOpportunityError && (
+          <p style={{ color: "red", marginTop: "32px" }}>
+            Hot opportunity error: {hotOpportunityError.message}
+          </p>
+        )}
+
+        {activityError && (
+          <p style={{ color: "red", marginTop: "32px" }}>
+            Activity error: {activityError.message}
+          </p>
+        )}
+
+        {noteError && (
+          <p style={{ color: "red", marginTop: "32px" }}>
+            Note error: {noteError.message}
+          </p>
+        )}
+      </section>
     </main>
   );
 }
-
