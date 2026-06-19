@@ -56,42 +56,129 @@ type ExistingCompany = {
   assets_equipment: string | null;
 };
 
-const inputStyle: CSSProperties = {
-  display: "block",
-  width: "100%",
-  padding: "12px",
-  marginTop: "6px",
-  backgroundColor: "white",
-  color: "black",
-  border: "1px solid #555",
-  borderRadius: "6px",
-  fontSize: "16px",
-};
+function pageStyle(): CSSProperties {
+  return {
+    minHeight: "calc(100vh - 64px)",
+    backgroundColor: "#101010",
+    color: "white",
+    padding: "38px",
+    fontFamily: "Arial, sans-serif",
+    boxSizing: "border-box",
+  };
+}
 
-const buttonStyle: CSSProperties = {
-  padding: "12px 14px",
-  cursor: "pointer",
-  fontWeight: "bold",
-  borderRadius: "6px",
-  border: "none",
-  backgroundColor: "white",
-  color: "black",
-  fontSize: "15px",
-};
+function panelStyle(): CSSProperties {
+  return {
+    border: "1px solid #2f2f2f",
+    background:
+      "linear-gradient(180deg, rgba(31,31,31,0.96), rgba(22,22,22,0.96))",
+    padding: "16px",
+    borderRadius: "14px",
+    boxShadow: "0 14px 35px rgba(0,0,0,0.18)",
+  };
+}
 
-const secondaryButtonStyle: CSSProperties = {
-  ...buttonStyle,
-  backgroundColor: "#333",
-  color: "white",
-  border: "1px solid #555",
-};
+function inputStyle(): CSSProperties {
+  return {
+    display: "block",
+    width: "100%",
+    boxSizing: "border-box",
+    padding: "11px 12px",
+    marginTop: "7px",
+    borderRadius: "10px",
+    border: "1px solid #3d3d3d",
+    backgroundColor: "#111",
+    color: "white",
+    outline: "none",
+    fontSize: "15px",
+  };
+}
 
-const cardStyle: CSSProperties = {
-  border: "1px solid #333",
-  borderRadius: "10px",
-  padding: "16px",
-  backgroundColor: "#1a1a1a",
-};
+function fieldLabelStyle(): CSSProperties {
+  return {
+    display: "block",
+    color: "#e5e5e5",
+    fontSize: "13px",
+    fontWeight: 800,
+  };
+}
+
+function primaryButtonStyle(): CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "42px",
+    backgroundColor: "#7c3aed",
+    color: "white",
+    padding: "0 16px",
+    borderRadius: "12px",
+    textDecoration: "none",
+    fontWeight: 900,
+    border: "1px solid #8b5cf6",
+    boxShadow: "0 12px 24px rgba(124,58,237,0.24)",
+    cursor: "pointer",
+    fontSize: "15px",
+  };
+}
+
+function secondaryButtonStyle(): CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "42px",
+    color: "white",
+    border: "1px solid #3d3d3d",
+    backgroundColor: "#151515",
+    padding: "0 16px",
+    borderRadius: "12px",
+    textDecoration: "none",
+    fontWeight: 900,
+    cursor: "pointer",
+    fontSize: "15px",
+  };
+}
+
+function mutedTextStyle(): CSSProperties {
+  return {
+    color: "#a7a7a7",
+  };
+}
+
+function badgeStyle(value: string): CSSProperties {
+  const normalized = value.toLowerCase();
+
+  const backgroundColor =
+    normalized.includes("saved")
+      ? "rgba(34, 197, 94, 0.20)"
+      : normalized.includes("existing") || normalized.includes("update")
+        ? "rgba(245, 158, 11, 0.22)"
+        : normalized.includes("skip")
+          ? "rgba(239, 68, 68, 0.18)"
+          : "rgba(124, 58, 237, 0.22)";
+
+  const color =
+    normalized.includes("saved")
+      ? "#86efac"
+      : normalized.includes("existing") || normalized.includes("update")
+        ? "#fcd34d"
+        : normalized.includes("skip")
+          ? "#fca5a5"
+          : "#c4b5fd";
+
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    borderRadius: "999px",
+    padding: "3px 9px",
+    fontSize: "12px",
+    fontWeight: 900,
+    backgroundColor,
+    color,
+    border: "1px solid rgba(255,255,255,0.08)",
+  };
+}
 
 function extractPreviewSearchPhrase(value: string) {
   const trimmedValue = value.trim();
@@ -540,359 +627,438 @@ export default function ImportLeadsPage() {
   }
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#111",
-        color: "white",
-        padding: "40px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <div style={{ marginBottom: "24px" }}>
-        <Link href="/" style={{ color: "white" }}>
-          ← Back to Dashboard
-        </Link>
-      </div>
-
-      <h1>Import Leads</h1>
-
-      <p style={{ color: "#aaa", marginBottom: "28px", maxWidth: "950px" }}>
-        Paste a Google search URL or type a search phrase. Sell It will search
-        business results, flag possible existing companies, let you enrich
-        websites, and let you choose whether to update or create records.
-      </p>
-
-      <section style={{ ...cardStyle, maxWidth: "1000px", marginBottom: "24px" }}>
-        <form onSubmit={handleSearch}>
-          <label>
-            Google search URL or search phrase
-            <textarea
-              value={searchInput}
-              onChange={(event) => setSearchInput(event.target.value)}
-              placeholder="Example: dirt haulers dickinson nd"
-              rows={5}
-              required
-              style={inputStyle}
-            />
-          </label>
-
-          {previewSearchPhrase && (
-            <p style={{ color: "#aaa", marginTop: "10px" }}>
-              Search phrase detected:{" "}
-              <strong style={{ color: "white" }}>{previewSearchPhrase}</strong>
+    <main style={pageStyle()}>
+      <section style={{ maxWidth: "1120px", margin: "0 auto" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            marginBottom: "22px",
+            gap: "16px",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <p
+              style={{
+                ...mutedTextStyle(),
+                textTransform: "uppercase",
+                letterSpacing: "1.8px",
+                fontSize: "12px",
+                fontWeight: 900,
+                margin: "0 0 8px",
+              }}
+            >
+              Intelligence
             </p>
-          )}
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: "16px",
-              marginTop: "18px",
-            }}
-          >
-            <label>
-              Max Results
-              <select
-                value={maxResults}
-                onChange={(event) => setMaxResults(event.target.value)}
-                style={inputStyle}
-              >
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="15">15</option>
-                <option value="20">20</option>
-              </select>
-            </label>
+            <h1 style={{ fontSize: "32px", margin: "0 0 8px" }}>
+              Import Leads
+            </h1>
 
-            <label>
-              Saved Lead Temperature
-              <select
-                value={leadTemperature}
-                onChange={(event) => setLeadTemperature(event.target.value)}
-                style={inputStyle}
-              >
-                <option value="Cold">Cold</option>
-                <option value="Warm">Warm</option>
-                <option value="Hot">Hot</option>
-                <option value="Active">Active</option>
-                <option value="Dead">Dead</option>
-              </select>
-            </label>
+            <p
+              style={{
+                ...mutedTextStyle(),
+                margin: 0,
+                lineHeight: 1.5,
+                maxWidth: "920px",
+              }}
+            >
+              Paste a Google search URL or type a search phrase. Sell It will
+              search business results, flag possible existing companies, enrich
+              websites, and let you choose whether to update or create records.
+            </p>
           </div>
 
-          <button
-            type="submit"
-            disabled={searching}
-            style={{ ...buttonStyle, marginTop: "18px" }}
-          >
-            {searching ? "Searching..." : "Find Leads"}
-          </button>
-        </form>
-      </section>
+          <Link href="/companies" style={secondaryButtonStyle()}>
+            View Companies
+          </Link>
+        </div>
 
-      {errorMessage && (
-        <p style={{ color: "#ff7777", maxWidth: "1000px" }}>
-          Error: {errorMessage}
-        </p>
-      )}
+        <section style={{ ...panelStyle(), marginBottom: "18px" }}>
+          <form onSubmit={handleSearch}>
+            <label style={fieldLabelStyle()}>
+              Google search URL or search phrase
+              <textarea
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+                placeholder="Example: dirt haulers dickinson nd"
+                rows={5}
+                required
+                style={{ ...inputStyle(), resize: "vertical", lineHeight: 1.4 }}
+              />
+            </label>
 
-      {successMessage && (
-        <p style={{ color: "#72e072", maxWidth: "1000px" }}>
-          {successMessage}
-        </p>
-      )}
-
-      {leads.length > 0 && (
-        <section style={{ maxWidth: "1000px" }}>
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "12px",
-              marginBottom: "16px",
-            }}
-          >
-            <div>
-              <h2 style={{ marginBottom: "6px" }}>Review Results</h2>
-              <p style={{ color: "#aaa", marginTop: 0 }}>
-                {leads.length} result(s) found. {selectedCount} selected.{" "}
-                {unsavedCount} not saved yet.
+            {previewSearchPhrase && (
+              <p style={{ ...mutedTextStyle(), marginTop: "10px" }}>
+                Search phrase detected:{" "}
+                <strong style={{ color: "white" }}>{previewSearchPhrase}</strong>
               </p>
+            )}
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: "16px",
+                marginTop: "18px",
+              }}
+            >
+              <label style={fieldLabelStyle()}>
+                Max Results
+                <select
+                  value={maxResults}
+                  onChange={(event) => setMaxResults(event.target.value)}
+                  style={inputStyle()}
+                >
+                  <option value="5">5</option>
+                  <option value="10">10</option>
+                  <option value="15">15</option>
+                  <option value="20">20</option>
+                </select>
+              </label>
+
+              <label style={fieldLabelStyle()}>
+                Saved Lead Temperature
+                <select
+                  value={leadTemperature}
+                  onChange={(event) => setLeadTemperature(event.target.value)}
+                  style={inputStyle()}
+                >
+                  <option value="Cold">Cold</option>
+                  <option value="Warm">Warm</option>
+                  <option value="Hot">Hot</option>
+                  <option value="Active">Active</option>
+                  <option value="Dead">Dead</option>
+                </select>
+              </label>
             </div>
 
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-              <button type="button" onClick={selectAllUnsaved} style={secondaryButtonStyle}>
-                Select All
-              </button>
-              <button type="button" onClick={clearSelections} style={secondaryButtonStyle}>
-                Clear Selections
-              </button>
-              <button
-                type="button"
-                onClick={saveSelectedLeads}
-                disabled={saving || selectedCount === 0}
-                style={buttonStyle}
-              >
-                {saving ? "Saving..." : "Save / Update Selected"}
-              </button>
-            </div>
-          </div>
+            <button
+              type="submit"
+              disabled={searching}
+              style={{
+                ...primaryButtonStyle(),
+                marginTop: "18px",
+                opacity: searching ? 0.65 : 1,
+              }}
+            >
+              {searching ? "Searching..." : "Find Leads"}
+            </button>
+          </form>
+        </section>
 
-          <div style={{ display: "grid", gap: "14px" }}>
-            {leads.map((lead, index) => (
-              <article
-                key={lead.resultKey}
-                style={{
-                  ...cardStyle,
-                  borderColor: lead.existingCompany ? "#d1a938" : "#333",
-                  opacity: lead.saved ? 0.65 : 1,
-                }}
-              >
-                <label
+        {errorMessage && (
+          <p style={{ color: "#fca5a5", maxWidth: "1000px" }}>
+            Error: {errorMessage}
+          </p>
+        )}
+
+        {successMessage && (
+          <p style={{ color: "#86efac", maxWidth: "1000px" }}>
+            {successMessage}
+          </p>
+        )}
+
+        {leads.length > 0 && (
+          <section>
+            <div
+              style={{
+                ...panelStyle(),
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "12px",
+                marginBottom: "16px",
+              }}
+            >
+              <div>
+                <h2 style={{ margin: "0 0 6px" }}>Review Results</h2>
+                <p style={{ ...mutedTextStyle(), margin: 0 }}>
+                  {leads.length} result(s) found. {selectedCount} selected.{" "}
+                  {unsavedCount} not saved yet.
+                </p>
+              </div>
+
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+                <button
+                  type="button"
+                  onClick={selectAllUnsaved}
+                  style={secondaryButtonStyle()}
+                >
+                  Select All
+                </button>
+
+                <button
+                  type="button"
+                  onClick={clearSelections}
+                  style={secondaryButtonStyle()}
+                >
+                  Clear Selections
+                </button>
+
+                <button
+                  type="button"
+                  onClick={saveSelectedLeads}
+                  disabled={saving || selectedCount === 0}
                   style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: "12px",
-                    cursor: lead.saved ? "default" : "pointer",
+                    ...primaryButtonStyle(),
+                    opacity: saving || selectedCount === 0 ? 0.65 : 1,
                   }}
                 >
-                  <input
-                    type="checkbox"
-                    checked={lead.selected}
-                    disabled={lead.saved}
-                    onChange={() => toggleLead(lead.resultKey)}
-                    style={{ marginTop: "6px", transform: "scale(1.2)" }}
-                  />
+                  {saving ? "Saving..." : "Save / Update Selected"}
+                </button>
+              </div>
+            </div>
 
-                  <div style={{ flex: 1 }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        justifyContent: "space-between",
-                        gap: "10px",
-                      }}
-                    >
-                      <h3 style={{ marginTop: 0, marginBottom: "8px" }}>
-                        #{index + 1} {lead.name}
-                      </h3>
+            <div style={{ display: "grid", gap: "14px" }}>
+              {leads.map((lead, index) => (
+                <article
+                  key={lead.resultKey}
+                  style={{
+                    ...panelStyle(),
+                    borderColor: lead.existingCompany
+                      ? "rgba(245, 158, 11, 0.55)"
+                      : "#2f2f2f",
+                    opacity: lead.saved ? 0.65 : 1,
+                  }}
+                >
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "12px",
+                      cursor: lead.saved ? "default" : "pointer",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={lead.selected}
+                      disabled={lead.saved}
+                      onChange={() => toggleLead(lead.resultKey)}
+                      style={{ marginTop: "6px", transform: "scale(1.2)" }}
+                    />
 
-                      {lead.saved && (
-                        <strong style={{ color: "#72e072" }}>Saved</strong>
-                      )}
-                    </div>
-
-                    {lead.existingCompany && (
+                    <div style={{ flex: 1, minWidth: 0 }}>
                       <div
                         style={{
-                          border: "1px solid #d1a938",
-                          borderRadius: "8px",
-                          padding: "10px",
-                          backgroundColor: "#2a2412",
-                          marginBottom: "12px",
+                          display: "flex",
+                          flexWrap: "wrap",
+                          justifyContent: "space-between",
+                          gap: "10px",
+                          marginBottom: "8px",
                         }}
                       >
-                        <strong>Possible existing company found</strong>
-                        <p style={{ margin: "6px 0" }}>
-                          Match:{" "}
-                          <Link
-                            href={`/companies/${lead.existingCompany.id}`}
-                            style={{ color: "white" }}
-                          >
-                            {lead.existingCompany.name}
-                          </Link>
-                        </p>
-                        <p style={{ margin: "6px 0" }}>
-                          Reason: {lead.existingCompany.reason}
-                        </p>
+                        <div>
+                          <h3 style={{ margin: "0 0 6px" }}>
+                            #{index + 1} {lead.name}
+                          </h3>
 
-                        <label>
-                          Save choice
-                          <select
-                            value={lead.saveMode}
-                            onChange={(event) =>
-                              changeSaveMode(
-                                lead.resultKey,
-                                event.target.value as SaveMode
-                              )
-                            }
-                            disabled={lead.saved}
-                            style={inputStyle}
-                          >
-                            <option value="update">Update existing company</option>
-                            <option value="skip">Skip this result</option>
-                            <option value="create">Create new anyway</option>
-                          </select>
-                        </label>
+                          <p style={{ ...mutedTextStyle(), margin: 0 }}>
+                            {leadAddressText(lead)}
+                          </p>
+                        </div>
+
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "8px",
+                            flexWrap: "wrap",
+                            alignItems: "flex-start",
+                          }}
+                        >
+                          {lead.existingCompany && (
+                            <span style={badgeStyle("Existing")}>
+                              Existing Match
+                            </span>
+                          )}
+
+                          {lead.saved && <span style={badgeStyle("Saved")}>Saved</span>}
+
+                          {!lead.saved && (
+                            <span style={badgeStyle(lead.saveMode)}>
+                              {lead.saveMode === "update"
+                                ? "Update"
+                                : lead.saveMode === "skip"
+                                  ? "Skip"
+                                  : "Create"}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    )}
 
-                    <p style={{ color: "#ddd", marginTop: 0 }}>
-                      {leadAddressText(lead)}
-                    </p>
-
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                        gap: "8px",
-                        color: "#bbb",
-                        fontSize: "14px",
-                      }}
-                    >
-                      <div>Phone: {lead.phone || "Not returned"}</div>
-                      <div>Type: {lead.primaryType || "Not returned"}</div>
-                      <div>Status: {lead.businessStatus || "Not returned"}</div>
-                    </div>
-
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        alignItems: "center",
-                        gap: "10px",
-                        marginTop: "12px",
-                      }}
-                    >
-                      {lead.website && (
-                        <a
-                          href={lead.website}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={{ color: "white" }}
+                      {lead.existingCompany && (
+                        <div
+                          style={{
+                            border: "1px solid rgba(245, 158, 11, 0.35)",
+                            borderRadius: "12px",
+                            padding: "12px",
+                            backgroundColor: "rgba(245, 158, 11, 0.10)",
+                            marginBottom: "12px",
+                          }}
                         >
-                          Website
-                        </a>
+                          <strong>Possible existing company found</strong>
+
+                          <p style={{ margin: "6px 0" }}>
+                            Match:{" "}
+                            <Link
+                              href={`/companies/${lead.existingCompany.id}`}
+                              style={{ color: "#fcd34d", fontWeight: 900 }}
+                            >
+                              {lead.existingCompany.name}
+                            </Link>
+                          </p>
+
+                          <p style={{ margin: "6px 0" }}>
+                            Reason: {lead.existingCompany.reason}
+                          </p>
+
+                          <label style={fieldLabelStyle()}>
+                            Save choice
+                            <select
+                              value={lead.saveMode}
+                              onChange={(event) =>
+                                changeSaveMode(
+                                  lead.resultKey,
+                                  event.target.value as SaveMode
+                                )
+                              }
+                              disabled={lead.saved}
+                              style={inputStyle()}
+                            >
+                              <option value="update">Update existing company</option>
+                              <option value="skip">Skip this result</option>
+                              <option value="create">Create new anyway</option>
+                            </select>
+                          </label>
+                        </div>
                       )}
 
-                      {lead.googleMapsUri && (
-                        <a
-                          href={lead.googleMapsUri}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={{ color: "white" }}
-                        >
-                          Google Maps
-                        </a>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() => enrichLead(lead.resultKey)}
-                        disabled={lead.saved || lead.enriching || !lead.website}
-                        style={{
-                          ...secondaryButtonStyle,
-                          padding: "8px 10px",
-                          opacity: lead.saved || lead.enriching || !lead.website ? 0.55 : 1,
-                        }}
-                      >
-                        {lead.enriching ? "Enriching..." : "Enrich Website"}
-                      </button>
-                    </div>
-
-                    {lead.enrichmentError && (
-                      <p style={{ color: "#ff7777", marginBottom: 0 }}>
-                        Enrichment error: {lead.enrichmentError}
-                      </p>
-                    )}
-
-                    {lead.enrichment && (
                       <div
                         style={{
-                          marginTop: "14px",
-                          padding: "12px",
-                          border: "1px solid #444",
-                          borderRadius: "8px",
-                          backgroundColor: "#111",
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                          gap: "8px",
+                          color: "#d1d5db",
+                          fontSize: "14px",
                         }}
                       >
-                        <strong>Website Enrichment</strong>
-
-                        {lead.enrichment.title && (
-                          <p style={{ marginBottom: "6px" }}>
-                            Title: {lead.enrichment.title}
-                          </p>
-                        )}
-
-                        {lead.enrichment.description && (
-                          <p style={{ marginBottom: "6px" }}>
-                            Description: {lead.enrichment.description}
-                          </p>
-                        )}
-
-                        <p style={{ marginBottom: "6px" }}>
-                          Emails:{" "}
-                          {lead.enrichment.emails.length > 0
-                            ? lead.enrichment.emails.join(", ")
-                            : "None found"}
-                        </p>
-
-                        <p style={{ marginBottom: "6px" }}>
-                          Phones:{" "}
-                          {lead.enrichment.phones.length > 0
-                            ? lead.enrichment.phones.join(", ")
-                            : "None found"}
-                        </p>
-
-                        <p style={{ marginBottom: 0 }}>
-                          Keywords:{" "}
-                          {lead.enrichment.keywords.length > 0
-                            ? lead.enrichment.keywords.join(", ")
-                            : "None found"}
-                        </p>
+                        <div>Phone: {lead.phone || "Not returned"}</div>
+                        <div>Type: {lead.primaryType || "Not returned"}</div>
+                        <div>Status: {lead.businessStatus || "Not returned"}</div>
                       </div>
-                    )}
-                  </div>
-                </label>
-              </article>
-            ))}
-          </div>
-        </section>
-      )}
+
+                      <div
+                        style={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          alignItems: "center",
+                          gap: "10px",
+                          marginTop: "12px",
+                        }}
+                      >
+                        {lead.website && (
+                          <a
+                            href={lead.website}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ color: "#c4b5fd", fontWeight: 900 }}
+                          >
+                            Website
+                          </a>
+                        )}
+
+                        {lead.googleMapsUri && (
+                          <a
+                            href={lead.googleMapsUri}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ color: "#c4b5fd", fontWeight: 900 }}
+                          >
+                            Google Maps
+                          </a>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => enrichLead(lead.resultKey)}
+                          disabled={lead.saved || lead.enriching || !lead.website}
+                          style={{
+                            ...secondaryButtonStyle(),
+                            minHeight: "36px",
+                            padding: "0 12px",
+                            opacity:
+                              lead.saved || lead.enriching || !lead.website
+                                ? 0.55
+                                : 1,
+                          }}
+                        >
+                          {lead.enriching ? "Enriching..." : "Enrich Website"}
+                        </button>
+                      </div>
+
+                      {lead.enrichmentError && (
+                        <p style={{ color: "#fca5a5", marginBottom: 0 }}>
+                          Enrichment error: {lead.enrichmentError}
+                        </p>
+                      )}
+
+                      {lead.enrichment && (
+                        <div
+                          style={{
+                            marginTop: "14px",
+                            padding: "12px",
+                            border: "1px solid #2f2f2f",
+                            borderRadius: "12px",
+                            backgroundColor: "#111",
+                          }}
+                        >
+                          <strong>Website Enrichment</strong>
+
+                          {lead.enrichment.title && (
+                            <p style={{ marginBottom: "6px" }}>
+                              Title: {lead.enrichment.title}
+                            </p>
+                          )}
+
+                          {lead.enrichment.description && (
+                            <p style={{ marginBottom: "6px" }}>
+                              Description: {lead.enrichment.description}
+                            </p>
+                          )}
+
+                          <p style={{ marginBottom: "6px" }}>
+                            Emails:{" "}
+                            {lead.enrichment.emails.length > 0
+                              ? lead.enrichment.emails.join(", ")
+                              : "None found"}
+                          </p>
+
+                          <p style={{ marginBottom: "6px" }}>
+                            Phones:{" "}
+                            {lead.enrichment.phones.length > 0
+                              ? lead.enrichment.phones.join(", ")
+                              : "None found"}
+                          </p>
+
+                          <p style={{ marginBottom: 0 }}>
+                            Keywords:{" "}
+                            {lead.enrichment.keywords.length > 0
+                              ? lead.enrichment.keywords.join(", ")
+                              : "None found"}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </label>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+      </section>
     </main>
   );
 }
