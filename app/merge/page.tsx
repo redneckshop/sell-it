@@ -1,6 +1,5 @@
 ﻿"use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { supabase } from "../lib/supabase";
 import UniversalDuplicateReview from "./UniversalDuplicateReview";
@@ -64,45 +63,84 @@ type ContactDetail = ContactRow & RelationCounts;
 
 const pageStyle: CSSProperties = {
   minHeight: "100vh",
-  backgroundColor: "#111",
-  color: "white",
-  padding: "40px",
+  color: "#f8fafc",
+  padding: "28px",
   fontFamily: "Arial, sans-serif",
 };
 
 const cardStyle: CSSProperties = {
-  border: "1px solid #333",
-  borderRadius: "10px",
-  padding: "16px",
-  backgroundColor: "#1a1a1a",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "20px",
+  padding: "18px",
+  background:
+    "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
   boxSizing: "border-box",
   minWidth: 0,
   overflowWrap: "anywhere",
   wordBreak: "break-word",
+  boxShadow: "0 20px 70px rgba(2, 6, 23, 0.24)",
 };
 
 const buttonStyle: CSSProperties = {
-  padding: "12px 14px",
+  padding: "12px 16px",
   cursor: "pointer",
-  fontWeight: "bold",
-  borderRadius: "6px",
-  border: "none",
-  backgroundColor: "white",
-  color: "black",
+  fontWeight: 800,
+  borderRadius: "999px",
+  border: "1px solid rgba(167, 139, 250, 0.45)",
+  background:
+    "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
+  color: "white",
   fontSize: "15px",
+  boxShadow: "0 16px 36px rgba(79, 70, 229, 0.28)",
 };
 
 const secondaryButtonStyle: CSSProperties = {
   ...buttonStyle,
-  backgroundColor: "#333",
-  color: "white",
-  border: "1px solid #555",
+  background: "rgba(15, 23, 42, 0.74)",
+  color: "#e2e8f0",
+  border: "1px solid rgba(148, 163, 184, 0.25)",
+  boxShadow: "none",
 };
 
 const dangerButtonStyle: CSSProperties = {
   ...buttonStyle,
-  backgroundColor: "#ffcccc",
-  color: "black",
+  background:
+    "linear-gradient(135deg, rgba(220, 38, 38, 1), rgba(124, 58, 237, 1))",
+  border: "1px solid rgba(248, 113, 113, 0.42)",
+};
+
+const headerStyle: CSSProperties = {
+  maxWidth: "1120px",
+  marginBottom: "24px",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "24px",
+  padding: "24px",
+  background:
+    "radial-gradient(circle at top left, rgba(124, 58, 237, 0.24), transparent 32%), linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.72))",
+  boxShadow: "0 24px 80px rgba(2, 6, 23, 0.28)",
+};
+
+const eyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  color: "#a78bfa",
+  fontSize: "13px",
+  fontWeight: 900,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+};
+
+const titleStyle: CSSProperties = {
+  margin: "0 0 10px",
+  fontSize: "34px",
+  lineHeight: 1.05,
+  letterSpacing: "-0.04em",
+};
+
+const mutedTextStyle: CSSProperties = {
+  color: "#cbd5e1",
+  margin: 0,
+  maxWidth: "900px",
+  lineHeight: 1.65,
 };
 
 
@@ -621,13 +659,13 @@ export default function MergeManagerPage() {
           textAlign: "left",
           color: "white",
           cursor: "pointer",
-          borderColor: selected ? "#f5d76e" : "#333",
+          borderColor: selected ? "rgba(167, 139, 250, 0.75)" : "rgba(148, 163, 184, 0.16)",
         }}
       >
         <strong>
           {candidate.leftName} ↔ {candidate.rightName}
         </strong>
-        <p style={{ color: "#aaa", marginBottom: 0 }}>
+        <p style={{ color: "#94a3b8", marginBottom: 0 }}>
           Score: {candidate.score} | {candidate.reasons.join(", ")}
         </p>
       </button>
@@ -642,7 +680,7 @@ export default function MergeManagerPage() {
       return (
         <div style={cardStyle}>
           <strong>{label}</strong>
-          <p style={{ color: "#aaa" }}>Select a candidate to review details.</p>
+          <p style={{ color: "#94a3b8" }}>Select a candidate to review details.</p>
         </div>
       );
     }
@@ -685,26 +723,24 @@ export default function MergeManagerPage() {
 
   return (
     <main style={pageStyle}>
-      <div style={{ marginBottom: "24px" }}>
-        <Link href="/" style={{ color: "white" }}>
-          ← Back to Dashboard
-        </Link>
-      </div>
+      <header style={headerStyle}>
+        <p style={eyebrowStyle}>Management</p>
 
-      <h1>Merge Manager</h1>
+        <h1 style={titleStyle}>Merge Manager</h1>
 
-      <p style={{ color: "#aaa", maxWidth: "950px", lineHeight: 1.5 }}>
-        Find possible duplicate companies and contacts, review side-by-side,
-        choose the surviving record, move related history, then archive the
-        duplicate.
-      </p>
+        <p style={mutedTextStyle}>
+          Find possible duplicate companies and contacts, review side-by-side,
+          choose the surviving record, move related history, then archive the
+          duplicate.
+        </p>
+      </header>
 
       <UniversalDuplicateReview />
 
       {loading && <p>Loading merge candidates...</p>}
 
-      {errorMessage && <p style={{ color: "#ff7777" }}>Error: {errorMessage}</p>}
-      {successMessage && <p style={{ color: "#72e072" }}>{successMessage}</p>}
+      {errorMessage && <p style={{ color: "#fca5a5" }}>Error: {errorMessage}</p>}
+      {successMessage && <p style={{ color: "#86efac" }}>{successMessage}</p>}
 
       {!loading && (
         <div
@@ -717,7 +753,7 @@ export default function MergeManagerPage() {
         >
           <section style={cardStyle}>
             <h2 style={{ marginTop: 0 }}>Possible Duplicate Companies</h2>
-            <p style={{ color: "#aaa" }}>
+            <p style={{ color: "#94a3b8" }}>
               {companyCandidates.length} candidate pair(s) found.
             </p>
 
@@ -725,7 +761,7 @@ export default function MergeManagerPage() {
               {companyCandidates.length > 0 ? (
                 companyCandidates.map(renderCandidate)
               ) : (
-                <p style={{ color: "#aaa" }}>
+                <p style={{ color: "#94a3b8" }}>
                   No possible duplicate companies found.
                 </p>
               )}
@@ -734,7 +770,7 @@ export default function MergeManagerPage() {
 
           <section style={cardStyle}>
             <h2 style={{ marginTop: 0 }}>Possible Duplicate Contacts</h2>
-            <p style={{ color: "#aaa" }}>
+            <p style={{ color: "#94a3b8" }}>
               {contactCandidates.length} candidate pair(s) found.
             </p>
 
@@ -742,7 +778,7 @@ export default function MergeManagerPage() {
               {contactCandidates.length > 0 ? (
                 contactCandidates.map(renderCandidate)
               ) : (
-                <p style={{ color: "#aaa" }}>
+                <p style={{ color: "#94a3b8" }}>
                   No possible duplicate contacts found.
                 </p>
               )}
@@ -755,7 +791,7 @@ export default function MergeManagerPage() {
         <section style={{ marginTop: "28px" }}>
           <h2>Review Merge Candidate</h2>
 
-          <p style={{ color: "#aaa" }}>
+          <p style={{ color: "#94a3b8" }}>
             Match reasons: {selectedCandidate.reasons.join(", ")}
           </p>
 
@@ -822,7 +858,7 @@ export default function MergeManagerPage() {
               </>
             )}
 
-            <p style={{ color: "#f5d76e", marginTop: "18px" }}>
+            <p style={{ color: "#c4b5fd", marginTop: "18px" }}>
               The duplicate record will be archived, not permanently deleted.
             </p>
 
@@ -882,6 +918,7 @@ export default function MergeManagerPage() {
     </main>
   );
 }
+
 
 
 
