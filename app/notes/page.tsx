@@ -1,4 +1,5 @@
-import Link from "next/link";
+﻿import Link from "next/link";
+import type { CSSProperties } from "react";
 import { supabase } from "../lib/supabase";
 
 type SupabaseRelation<T> = T | T[] | null;
@@ -97,11 +98,147 @@ function formatDateTime(value: string | null) {
 function previewText(value: string | null) {
   if (!value) return "";
 
-  if (value.length > 180) {
-    return `${value.slice(0, 180)}...`;
+  if (value.length > 140) {
+    return `${value.slice(0, 140)}...`;
   }
 
   return value;
+}
+
+function initialsFromTitle(title: string) {
+  const parts = title
+    .split(/\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+
+  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+}
+
+function contactName(contact: RelatedContact | null) {
+  if (!contact) return "Not linked";
+
+  return `${contact.first_name} ${contact.last_name || ""}`.trim();
+}
+
+function pageStyle(): CSSProperties {
+  return {
+    minHeight: "calc(100vh - 64px)",
+    backgroundColor: "#101010",
+    color: "white",
+    padding: "38px",
+    fontFamily: "Arial, sans-serif",
+    boxSizing: "border-box",
+  };
+}
+
+function panelStyle(): CSSProperties {
+  return {
+    border: "1px solid #2f2f2f",
+    background:
+      "linear-gradient(180deg, rgba(31,31,31,0.96), rgba(22,22,22,0.96))",
+    padding: "16px",
+    borderRadius: "14px",
+    boxShadow: "0 14px 35px rgba(0,0,0,0.18)",
+  };
+}
+
+function inputStyle(): CSSProperties {
+  return {
+    width: "100%",
+    boxSizing: "border-box",
+    padding: "11px 12px",
+    borderRadius: "10px",
+    border: "1px solid #3d3d3d",
+    backgroundColor: "#111",
+    color: "white",
+    outline: "none",
+  };
+}
+
+function fieldLabelStyle(): CSSProperties {
+  return {
+    display: "block",
+    marginBottom: "7px",
+    color: "#e5e5e5",
+    fontSize: "13px",
+    fontWeight: 800,
+  };
+}
+
+function primaryButtonStyle(): CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "42px",
+    backgroundColor: "#7c3aed",
+    color: "white",
+    padding: "0 16px",
+    borderRadius: "12px",
+    textDecoration: "none",
+    fontWeight: 900,
+    border: "1px solid #8b5cf6",
+    boxShadow: "0 12px 24px rgba(124,58,237,0.24)",
+  };
+}
+
+function secondaryButtonStyle(): CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "42px",
+    color: "white",
+    border: "1px solid #3d3d3d",
+    backgroundColor: "#151515",
+    padding: "0 16px",
+    borderRadius: "12px",
+    textDecoration: "none",
+    fontWeight: 900,
+  };
+}
+
+function badgeStyle(value: string | null): CSSProperties {
+  const normalized = (value ?? "").toLowerCase();
+
+  const backgroundColor =
+    normalized.includes("capture") || normalized.includes("assistant")
+      ? "rgba(124, 58, 237, 0.22)"
+      : normalized.includes("email")
+        ? "rgba(59, 130, 246, 0.22)"
+        : normalized.includes("call") || normalized.includes("meeting")
+          ? "rgba(34, 197, 94, 0.18)"
+          : "rgba(156, 163, 175, 0.18)";
+
+  const color =
+    normalized.includes("capture") || normalized.includes("assistant")
+      ? "#c4b5fd"
+      : normalized.includes("email")
+        ? "#93c5fd"
+        : normalized.includes("call") || normalized.includes("meeting")
+          ? "#86efac"
+          : "#d1d5db";
+
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    borderRadius: "999px",
+    padding: "3px 9px",
+    fontSize: "12px",
+    fontWeight: 900,
+    backgroundColor,
+    color,
+    border: "1px solid rgba(255,255,255,0.08)",
+  };
+}
+
+function mutedTextStyle(): CSSProperties {
+  return {
+    color: "#a7a7a7",
+  };
 }
 
 export default async function NotesPage({ searchParams }: PageProps) {
@@ -154,223 +291,255 @@ export default async function NotesPage({ searchParams }: PageProps) {
   }`;
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#111",
-        color: "white",
-        padding: "40px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          gap: "12px",
-          marginBottom: "32px",
-          flexWrap: "wrap",
-        }}
-      >
-        <Link
-          href="/"
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Home
-        </Link>
-
-        <Link
-          href="/notes/new"
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Add Note
-        </Link>
-      </div>
-
-      <h1>Notes</h1>
-
-      <p style={{ color: "#aaa", marginBottom: "24px" }}>
-        Notes connected to companies, contacts, and opportunities.
-      </p>
-
-      <form
-        action="/notes"
-        style={{
-          border: "1px solid #333",
-          backgroundColor: "#181818",
-          padding: "16px",
-          borderRadius: "10px",
-          marginBottom: "18px",
-          display: "grid",
-          gap: "12px",
-          maxWidth: "900px",
-        }}
-      >
+    <main style={pageStyle()}>
+      <section style={{ maxWidth: "1180px", margin: "0 auto" }}>
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            gap: "12px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            marginBottom: "22px",
+            gap: "16px",
+            flexWrap: "wrap",
           }}
         >
-          <label>
-            <span style={{ display: "block", marginBottom: "6px" }}>
-              Search
-            </span>
-            <input
-              name="q"
-              defaultValue={params.q ?? ""}
-              placeholder="Keyword"
+          <div>
+            <p
               style={{
-                width: "100%",
-                boxSizing: "border-box",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "1px solid #555",
+                ...mutedTextStyle(),
+                textTransform: "uppercase",
+                letterSpacing: "1.8px",
+                fontSize: "12px",
+                fontWeight: 900,
+                margin: "0 0 8px",
               }}
-            />
-          </label>
+            >
+              Sales
+            </p>
 
-          <label>
-            <span style={{ display: "block", marginBottom: "6px" }}>
-              Source
-            </span>
-            <input
-              name="source"
-              defaultValue={params.source ?? ""}
-              placeholder="Call, meeting, capture..."
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "1px solid #555",
-              }}
-            />
-          </label>
+            <h1 style={{ fontSize: "32px", margin: "0 0 8px" }}>Notes</h1>
 
-          <label>
-            <span style={{ display: "block", marginBottom: "6px" }}>
-              Tags
-            </span>
-            <input
-              name="tags"
-              defaultValue={params.tags ?? ""}
-              placeholder="Tags"
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "1px solid #555",
-              }}
-            />
-          </label>
-        </div>
+            <p style={{ ...mutedTextStyle(), margin: 0, lineHeight: 1.5 }}>
+              Notes connected to companies, contacts, and opportunities.
+            </p>
+          </div>
 
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-          <button
-            type="submit"
-            style={{
-              backgroundColor: "#f5d76e",
-              color: "black",
-              padding: "10px 14px",
-              borderRadius: "6px",
-              border: "none",
-              fontWeight: "bold",
-              cursor: "pointer",
-            }}
-          >
-            Apply Filters
-          </button>
-
-          <a
-            href="/notes"
-            style={{
-              color: "white",
-              border: "1px solid #555",
-              padding: "10px 14px",
-              borderRadius: "6px",
-              textDecoration: "none",
-              fontWeight: "bold",
-            }}
-          >
-            Clear Filters
-          </a>
-        </div>
-      </form>
-
-      <p style={{ color: "#aaa", marginBottom: "18px" }}>
-        {resultCountLabel}
-      </p>
-
-      {error && (
-        <p style={{ color: "red" }}>Database error: {error.message}</p>
-      )}
-
-      {!error && allNotes.length === 0 && <p>No notes found.</p>}
-
-      {!error && allNotes.length > 0 && notes.length === 0 && (
-        <p>No notes match the current filters.</p>
-      )}
-
-      {notes.map((note) => {
-        const company = singleRelation(note.company);
-        const contact = singleRelation(note.contact);
-        const opportunity = singleRelation(note.opportunity);
-
-        return (
-          <Link
-            key={note.id}
-            href={`/notes/${note.id}`}
-            style={{
-              display: "block",
-              border: "1px solid #333",
-              padding: "18px",
-              marginBottom: "12px",
-              borderRadius: "8px",
-              backgroundColor: "#1a1a1a",
-              color: "white",
-              textDecoration: "none",
-              maxWidth: "900px",
-            }}
-          >
-            <h2 style={{ marginTop: 0 }}>{note.title}</h2>
-
-            {note.body && (
-              <p style={{ color: "#aaa" }}>{previewText(note.body)}</p>
-            )}
-
-            {company && <p>Company: {company.name}</p>}
-
-            {contact && (
-              <p>
-                Contact: {contact.first_name} {contact.last_name || ""}
-              </p>
-            )}
-
-            {opportunity && <p>Opportunity: {opportunity.name}</p>}
-
-            {note.source && <p>Source: {note.source}</p>}
-            {note.tags && <p>Tags: {note.tags}</p>}
-
-            {note.created_at && <p>Created: {formatDateTime(note.created_at)}</p>}
+          <Link href="/notes/new" style={primaryButtonStyle()}>
+            + Add Note
           </Link>
-        );
-      })}
+        </div>
+
+        <form action="/notes" style={{ ...panelStyle(), marginBottom: "18px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+              gap: "12px",
+              alignItems: "end",
+            }}
+          >
+            <label>
+              <span style={fieldLabelStyle()}>Search</span>
+              <input
+                name="q"
+                defaultValue={params.q ?? ""}
+                placeholder="Search notes..."
+                style={inputStyle()}
+              />
+            </label>
+
+            <label>
+              <span style={fieldLabelStyle()}>Source</span>
+              <input
+                name="source"
+                defaultValue={params.source ?? ""}
+                placeholder="Call, meeting, capture..."
+                style={inputStyle()}
+              />
+            </label>
+
+            <label>
+              <span style={fieldLabelStyle()}>Tags</span>
+              <input
+                name="tags"
+                defaultValue={params.tags ?? ""}
+                placeholder="Search tags..."
+                style={inputStyle()}
+              />
+            </label>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              flexWrap: "wrap",
+              marginTop: "14px",
+            }}
+          >
+            <button
+              type="submit"
+              style={{
+                ...primaryButtonStyle(),
+                cursor: "pointer",
+              }}
+            >
+              Apply Filters
+            </button>
+
+            <a href="/notes" style={secondaryButtonStyle()}>
+              Clear Filters
+            </a>
+          </div>
+        </form>
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "12px",
+            flexWrap: "wrap",
+            marginBottom: "14px",
+          }}
+        >
+          <p style={{ ...mutedTextStyle(), margin: 0 }}>{resultCountLabel}</p>
+
+          <p style={{ ...mutedTextStyle(), margin: 0, fontSize: "13px" }}>
+            Sorted by newest first
+          </p>
+        </div>
+
+        {error && (
+          <p style={{ color: "red" }}>Database error: {error.message}</p>
+        )}
+
+        {!error && allNotes.length === 0 && <p>No notes found.</p>}
+
+        {!error && allNotes.length > 0 && notes.length === 0 && (
+          <p>No notes match the current filters.</p>
+        )}
+
+        <div style={{ display: "grid", gap: "10px" }}>
+          {notes.map((note) => {
+            const company = singleRelation(note.company);
+            const contact = singleRelation(note.contact);
+            const opportunity = singleRelation(note.opportunity);
+
+            return (
+              <Link
+                key={note.id}
+                href={`/notes/${note.id}`}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    "48px minmax(0, 1.25fr) minmax(190px, 0.85fr) 26px",
+                  gap: "14px",
+                  alignItems: "center",
+                  border: "1px solid #2f2f2f",
+                  padding: "14px",
+                  borderRadius: "14px",
+                  background:
+                    "linear-gradient(180deg, rgba(31,31,31,0.96), rgba(22,22,22,0.96))",
+                  color: "white",
+                  textDecoration: "none",
+                  boxShadow: "0 10px 24px rgba(0,0,0,0.16)",
+                }}
+              >
+                <div
+                  style={{
+                    width: "42px",
+                    height: "42px",
+                    borderRadius: "999px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "#2b2b2b",
+                    color: "white",
+                    fontWeight: 900,
+                    border: "1px solid #3d3d3d",
+                  }}
+                >
+                  {initialsFromTitle(note.title)}
+                </div>
+
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      flexWrap: "wrap",
+                      marginBottom: "5px",
+                    }}
+                  >
+                    <strong>{note.title}</strong>
+
+                    {note.source && (
+                      <span style={badgeStyle(note.source)}>{note.source}</span>
+                    )}
+
+                    {note.tags && <span style={badgeStyle(note.tags)}>Tags</span>}
+                  </div>
+
+                  {note.body && (
+                    <p
+                      style={{
+                        ...mutedTextStyle(),
+                        margin: "0 0 8px",
+                        lineHeight: 1.4,
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {previewText(note.body)}
+                    </p>
+                  )}
+
+                  <p style={{ ...mutedTextStyle(), margin: "0 0 4px" }}>
+                    Company: {company?.name || "Not linked"}
+                  </p>
+
+                  <p style={{ ...mutedTextStyle(), margin: 0 }}>
+                    Contact: {contactName(contact)}
+                  </p>
+                </div>
+
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ ...mutedTextStyle(), margin: "0 0 6px" }}>
+                    Opportunity: {opportunity?.name || "Not linked"}
+                  </p>
+
+                  <p style={{ ...mutedTextStyle(), margin: "0 0 6px" }}>
+                    Created: {formatDateTime(note.created_at)}
+                  </p>
+
+                  {note.source_url && (
+                    <p
+                      style={{
+                        ...mutedTextStyle(),
+                        margin: 0,
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      Source URL: {note.source_url}
+                    </p>
+                  )}
+                </div>
+
+                <div
+                  style={{
+                    color: "#a7a7a7",
+                    fontSize: "26px",
+                    textAlign: "right",
+                  }}
+                >
+                  ›
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
     </main>
   );
 }
