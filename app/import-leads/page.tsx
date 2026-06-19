@@ -353,6 +353,8 @@ export default function ImportLeadsPage() {
   const [leadTemperature, setLeadTemperature] = useState("Cold");
   const [leads, setLeads] = useState<LeadDraft[]>([]);
   const [searching, setSearching] = useState(false);
+  const [loadingNextPage, setLoadingNextPage] = useState(false);
+  const [nextPageToken, setNextPageToken] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -373,6 +375,7 @@ export default function ImportLeadsPage() {
     setSearching(true);
     setErrorMessage("");
     setSuccessMessage("");
+    setNextPageToken(null);
 
     try {
       const response = await fetch("/api/import-leads/search", {
@@ -388,6 +391,7 @@ export default function ImportLeadsPage() {
 
       const data = (await response.json()) as {
         error?: string;
+        nextPageToken?: string | null;
         leads?: Omit<
           LeadDraft,
           | "selected"
@@ -405,6 +409,8 @@ export default function ImportLeadsPage() {
       }
 
       const existingCompanies = await loadExistingCompanies();
+
+      setNextPageToken(data.nextPageToken ?? null);
 
       setLeads(
         (data.leads ?? []).map((lead) => {
@@ -536,6 +542,101 @@ export default function ImportLeadsPage() {
     }
   }
 
+  async function loadNextPage() {
+    if (!nextPageToken) {
+      setErrorMessage("No additional Google results are available for this search.");
+      return;
+    }
+
+    setLoadingNextPage(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    try {
+      const response = await fetch("/api/import-leads/search", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          searchText: searchInput,
+          maxResults: 20,
+          pageToken: nextPageToken,
+        }),
+      });
+
+      const data = (await response.json()) as {
+        error?: string;
+        nextPageToken?: string | null;
+        leads?: Omit<
+          LeadDraft,
+          | "selected"
+          | "saved"
+          | "enriching"
+          | "enrichment"
+          | "enrichmentError"
+          | "existingCompany"
+          | "saveMode"
+        >[];
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error || "Next page search failed.");
+      }
+
+      const existingCompanies = await loadExistingCompanies();
+      const existingResultKeys = new Set(leads.map((lead) => lead.resultKey));
+      const existingPlaceIds = new Set(
+        leads.map((lead) => lead.placeId).filter(Boolean)
+      );
+
+      const nextLeads = (data.leads ?? [])
+        .filter((lead) => {
+          if (existingResultKeys.has(lead.resultKey)) return false;
+          if (lead.placeId && existingPlaceIds.has(lead.placeId)) return false;
+
+          return true;
+        })
+        .map((lead) => {
+          const existingCompany = findExistingCompanyMatch(
+            lead,
+            existingCompanies
+          );
+
+          return {
+            ...lead,
+            selected: false,
+            saved: false,
+            enriching: false,
+            enrichment: null,
+            enrichmentError: "",
+            existingCompany,
+            saveMode: existingCompany ? "update" : "create" as SaveMode,
+          };
+        });
+
+      setNextPageToken(data.nextPageToken ?? null);
+      setLeads((currentLeads) => [...currentLeads, ...nextLeads]);
+
+      if (nextLeads.length === 0) {
+        setSuccessMessage("No new unique leads were found on the next page.");
+      } else {
+        setSuccessMessage(
+          `Loaded ${nextLeads.length} new unique lead${
+            nextLeads.length === 1 ? "" : "s"
+          } from the next page.`
+        );
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Next page search failed.";
+
+      setErrorMessage(message);
+    } finally {
+      setLoadingNextPage(false);
+    }
+  }
+
   async function saveSelectedLeads() {
     const selectedLeads = leads.filter(
       (lead) => lead.selected && !lead.saved && lead.saveMode !== "skip"
@@ -549,6 +650,7 @@ export default function ImportLeadsPage() {
     setSaving(true);
     setErrorMessage("");
     setSuccessMessage("");
+    setNextPageToken(null);
 
     try {
       const existingCompanies = await loadExistingCompanies();
@@ -798,6 +900,20 @@ export default function ImportLeadsPage() {
                 >
                   Clear Selections
                 </button>
+
+                {nextPageToken && (
+                  <button
+                    type="button"
+                    onClick={loadNextPage}
+                    disabled={loadingNextPage}
+                    style={{
+                      ...secondaryButtonStyle(),
+                      opacity: loadingNextPage ? 0.65 : 1,
+                    }}
+                  >
+                    {loadingNextPage ? "Loading..." : "Get Next 20"}
+                  </button>
+                )}
 
                 <button
                   type="button"
@@ -1062,3 +1178,5 @@ export default function ImportLeadsPage() {
     </main>
   );
 }
+
+

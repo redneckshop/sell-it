@@ -17,6 +17,11 @@ type GooglePlace = {
   };
 };
 
+type GooglePlacesSearchResponse = {
+  places?: GooglePlace[];
+  nextPageToken?: string;
+};
+
 function extractSearchText(value: string) {
   const trimmedValue = value.trim();
 
@@ -57,10 +62,12 @@ export async function POST(request: NextRequest) {
   const body = (await request.json().catch(() => null)) as {
     searchText?: string;
     maxResults?: number;
+    pageToken?: string;
   } | null;
 
   const searchText = extractSearchText(body?.searchText ?? "");
-  const maxResults = Math.min(Math.max(Number(body?.maxResults) || 10, 1), 20);
+  const maxResults = Math.min(Math.max(Number(body?.maxResults) || 20, 1), 20);
+  const pageToken = (body?.pageToken ?? "").trim();
 
   if (!searchText) {
     return NextResponse.json(
@@ -82,6 +89,21 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const requestBody: {
+    textQuery: string;
+    pageSize: number;
+    languageCode: string;
+    pageToken?: string;
+  } = {
+    textQuery: searchText,
+    pageSize: maxResults,
+    languageCode: "en",
+  };
+
+  if (pageToken) {
+    requestBody.pageToken = pageToken;
+  }
+
   const response = await fetch(
     "https://places.googleapis.com/v1/places:searchText",
     {
@@ -90,13 +112,9 @@ export async function POST(request: NextRequest) {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": apiKey,
         "X-Goog-FieldMask":
-          "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.internationalPhoneNumber,places.websiteUri,places.googleMapsUri,places.businessStatus,places.primaryType,places.primaryTypeDisplayName",
+          "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.internationalPhoneNumber,places.websiteUri,places.googleMapsUri,places.businessStatus,places.primaryType,places.primaryTypeDisplayName,nextPageToken",
       },
-      body: JSON.stringify({
-        textQuery: searchText,
-        maxResultCount: maxResults,
-        languageCode: "en",
-      }),
+      body: JSON.stringify(requestBody),
     }
   );
 
@@ -114,7 +132,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const data = (await response.json()) as { places?: GooglePlace[] };
+  const data = (await response.json()) as GooglePlacesSearchResponse;
   const places = Array.isArray(data.places) ? data.places : [];
 
   const leads = places
@@ -126,7 +144,7 @@ export async function POST(request: NextRequest) {
       }
 
       return {
-        resultKey: place.id || `${index}-${name}`,
+        resultKey: place.id || `${pageToken || "first"}-${index}-${name}`,
         placeId: place.id || null,
         name,
         address: place.formattedAddress || null,
@@ -147,5 +165,6 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     searchText,
     leads,
+    nextPageToken: data.nextPageToken || null,
   });
 }
