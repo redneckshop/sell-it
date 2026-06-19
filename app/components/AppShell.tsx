@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -28,6 +28,7 @@ const navItems: NavItem[] = [
   { label: "Posts", href: "/posts" },
   { label: "Pain Points", href: "/pain-points" },
   { label: "Capture", href: "/capture" },
+  { label: "Email Intelligence", href: "/email-intelligence" },
   { label: "Import", href: "/import" },
   { label: "Import Leads", href: "/import-leads" },
   { label: "Merge Manager", href: "/merge" },
@@ -139,5 +140,6 @@ export default function AppShell({ children }: AppShellProps) {
     </div>
   );
 }
+
 
 
