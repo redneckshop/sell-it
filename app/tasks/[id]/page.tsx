@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { supabase } from "../../lib/supabase";
 import AttachmentsSection from "../../components/AttachmentsSection";
 
@@ -66,6 +67,146 @@ type PageProps = {
   }>;
 };
 
+const pageStyle: CSSProperties = {
+  minHeight: "100vh",
+  color: "#f8fafc",
+  padding: "28px",
+  fontFamily: "Arial, sans-serif",
+};
+
+const headerStyle: CSSProperties = {
+  maxWidth: "980px",
+  marginBottom: "24px",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "24px",
+  padding: "24px",
+  background:
+    "radial-gradient(circle at top left, rgba(124, 58, 237, 0.22), transparent 34%), linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.72))",
+  boxShadow: "0 24px 80px rgba(2, 6, 23, 0.28)",
+};
+
+const eyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  color: "#a78bfa",
+  fontSize: "13px",
+  fontWeight: 900,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+};
+
+const titleStyle: CSSProperties = {
+  margin: "0 0 10px",
+  fontSize: "34px",
+  lineHeight: 1.05,
+  letterSpacing: "-0.04em",
+};
+
+const mutedTextStyle: CSSProperties = {
+  color: "#cbd5e1",
+  margin: 0,
+  maxWidth: "860px",
+  lineHeight: 1.65,
+};
+
+const cardStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "20px",
+  padding: "20px",
+  background:
+    "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
+  maxWidth: "980px",
+  marginBottom: "22px",
+  boxShadow: "0 20px 70px rgba(2, 6, 23, 0.24)",
+};
+
+const actionRowStyle: CSSProperties = {
+  display: "flex",
+  gap: "12px",
+  marginBottom: "20px",
+  flexWrap: "wrap",
+};
+
+const primaryButtonStyle: CSSProperties = {
+  color: "white",
+  background:
+    "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
+  border: "1px solid rgba(167, 139, 250, 0.45)",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 900,
+  boxShadow: "0 16px 36px rgba(79, 70, 229, 0.28)",
+};
+
+const secondaryButtonStyle: CSSProperties = {
+  color: "#f8fafc",
+  background: "rgba(15, 23, 42, 0.74)",
+  border: "1px solid rgba(148, 163, 184, 0.25)",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 800,
+};
+
+const dangerButtonStyle: CSSProperties = {
+  color: "#fecaca",
+  background: "rgba(127, 29, 29, 0.24)",
+  border: "1px solid rgba(248, 113, 113, 0.35)",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 800,
+};
+
+const linkStyle: CSSProperties = {
+  color: "#c4b5fd",
+  textDecoration: "none",
+  fontWeight: 800,
+};
+
+const labelStyle: CSSProperties = {
+  color: "#94a3b8",
+  fontSize: "13px",
+  fontWeight: 800,
+  textTransform: "uppercase",
+  letterSpacing: "0.05em",
+};
+
+const valueStyle: CSSProperties = {
+  margin: "4px 0 0",
+  color: "#f8fafc",
+};
+
+const gridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gap: "16px",
+};
+
+const completedBadgeStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  border: "1px solid rgba(34, 197, 94, 0.32)",
+  background: "rgba(20, 83, 45, 0.22)",
+  color: "#bbf7d0",
+  borderRadius: "999px",
+  padding: "8px 12px",
+  fontWeight: 900,
+  fontSize: "13px",
+};
+
+const openBadgeStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  border: "1px solid rgba(167, 139, 250, 0.32)",
+  background: "rgba(88, 28, 135, 0.22)",
+  color: "#ddd6fe",
+  borderRadius: "999px",
+  padding: "8px 12px",
+  fontWeight: 900,
+  fontSize: "13px",
+};
+
 function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
   if (!value) return null;
 
@@ -75,6 +216,7 @@ function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
 
   return value;
 }
+
 function assignedTeamMemberLabel(
   teamMember: AssignedTeamMember | null,
   profile: AssignedProfile | null
@@ -112,6 +254,7 @@ export default async function TaskDetailPage({ params }: PageProps) {
       priority,
       status,
       assigned_to,
+      assigned_team_member_id,
       company_id,
       contact_id,
       opportunity_id,
@@ -164,202 +307,187 @@ export default async function TaskDetailPage({ params }: PageProps) {
   const completedProfile = singleRelation(task?.completed_profile);
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#111",
-        color: "white",
-        padding: "40px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          gap: "12px",
-          marginBottom: "32px",
-          flexWrap: "wrap",
-        }}
-      >
-        <Link
-          href="/"
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Home
-        </Link>
-
-        <Link
-          href="/tasks"
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
+    <main style={pageStyle}>
+      <div style={actionRowStyle}>
+        <Link href="/tasks" style={secondaryButtonStyle}>
           Back to Tasks
         </Link>
 
         {task && (
-          <Link
-            href={`/tasks/${task.id}/edit`}
-            style={{
-              color: "black",
-              backgroundColor: "white",
-              padding: "10px 14px",
-              borderRadius: "6px",
-              textDecoration: "none",
-              fontWeight: "bold",
-            }}
-          >
+          <Link href={`/tasks/${task.id}/edit`} style={secondaryButtonStyle}>
             Edit Task
           </Link>
         )}
 
-        {task && (
+        {task && task.status !== "Completed" && (
           <Link
-            href={`/tasks/${task.id}/delete`}
-            style={{
-              color: "black",
-              backgroundColor: "#ffdddd",
-              padding: "10px 14px",
-              borderRadius: "6px",
-              textDecoration: "none",
-              fontWeight: "bold",
-            }}
+            href={`/assistant/actions/tasks/${task.id}/complete`}
+            style={primaryButtonStyle}
           >
+            Mark Complete
+          </Link>
+        )}
+
+        {task && (
+          <Link href={`/tasks/${task.id}/delete`} style={dangerButtonStyle}>
             Delete Task
           </Link>
         )}
       </div>
 
-      {error && (
-        <p style={{ color: "red", marginTop: "32px" }}>
-          Database error: {error.message}
+      <header style={headerStyle}>
+        <p style={eyebrowStyle}>Task Detail</p>
+
+        <h1 style={titleStyle}>{task?.title || "Task not found"}</h1>
+
+        <p style={mutedTextStyle}>
+          Review the work item, linked sales records, assignment, completion
+          status, and supporting attachments.
         </p>
+      </header>
+
+      {error && (
+        <div
+          style={{
+            ...cardStyle,
+            border: "1px solid rgba(248, 113, 113, 0.36)",
+            background: "rgba(127, 29, 29, 0.22)",
+            color: "#fecaca",
+          }}
+        >
+          Database error: {error.message}
+        </div>
       )}
 
       {task && (
-        <section style={{ marginTop: "32px" }}>
-          <h1>{task.title}</h1>
+        <>
+          <section style={cardStyle}>
+            <div style={{ marginBottom: "18px" }}>
+              {task.status === "Completed" ? (
+                <span style={completedBadgeStyle}>Completed</span>
+              ) : (
+                <span style={openBadgeStyle}>{task.status || "Open"}</span>
+              )}
+            </div>
 
-          <div
-            style={{
-              border: "1px solid #333",
-              padding: "20px",
-              borderRadius: "8px",
-              backgroundColor: "#1a1a1a",
-              maxWidth: "700px",
-              marginBottom: "40px",
-            }}
-          >
-            <p>
-              <strong>Status:</strong> {task.status}
-            </p>
+            <div style={gridStyle}>
+              <div>
+                <div style={labelStyle}>Status</div>
+                <p style={valueStyle}>{task.status || "Not provided"}</p>
+              </div>
 
-            {task.status === "Completed" && (
-              <>
-                <p>
-                  <strong>Completed At:</strong>{" "}
-                  {formatDateTime(task.completed_at)}
+              <div>
+                <div style={labelStyle}>Priority</div>
+                <p style={valueStyle}>{task.priority || "Not provided"}</p>
+              </div>
+
+              <div>
+                <div style={labelStyle}>Due Date</div>
+                <p style={valueStyle}>{task.due_date || "Not provided"}</p>
+              </div>
+
+              <div>
+                <div style={labelStyle}>Assigned To</div>
+                <p style={valueStyle}>
+                  {assignedTeamMemberLabel(assignedTeamMember, assignedProfile)}
                 </p>
+              </div>
 
-                <p>
-                  <strong>Completed By:</strong>{" "}
-                  {completedProfile?.full_name ||
-                    completedProfile?.email ||
-                    "Not available"}
+              {task.status === "Completed" && (
+                <>
+                  <div>
+                    <div style={labelStyle}>Completed At</div>
+                    <p style={valueStyle}>{formatDateTime(task.completed_at)}</p>
+                  </div>
+
+                  <div>
+                    <div style={labelStyle}>Completed By</div>
+                    <p style={valueStyle}>
+                      {completedProfile?.full_name ||
+                        completedProfile?.email ||
+                        "Not available"}
+                    </p>
+                  </div>
+                </>
+              )}
+
+              <div>
+                <div style={labelStyle}>Related Company</div>
+                <p style={valueStyle}>
+                  {company ? (
+                    <Link href={`/companies/${company.id}`} style={linkStyle}>
+                      {company.name}
+                    </Link>
+                  ) : (
+                    "Not linked"
+                  )}
                 </p>
-              </>
-            )}
+              </div>
 
-            <p>
-              <strong>Priority:</strong> {task.priority}
-            </p>
+              <div>
+                <div style={labelStyle}>Related Contact</div>
+                <p style={valueStyle}>
+                  {contact ? (
+                    <Link href={`/contacts/${contact.id}`} style={linkStyle}>
+                      {contact.first_name} {contact.last_name || ""}
+                    </Link>
+                  ) : (
+                    "Not linked"
+                  )}
+                </p>
+              </div>
 
-            <p>
-              <strong>Due Date:</strong> {task.due_date || "Not provided"}
-            </p>
+              <div>
+                <div style={labelStyle}>Related Opportunity</div>
+                <p style={valueStyle}>
+                  {opportunity ? (
+                    <Link
+                      href={`/opportunities/${opportunity.id}`}
+                      style={linkStyle}
+                    >
+                      {opportunity.name}
+                    </Link>
+                  ) : (
+                    "Not linked"
+                  )}
+                </p>
+              </div>
 
-            <p>
-              <strong>Assigned To:</strong>{" "}
-              {assignedTeamMemberLabel(assignedTeamMember, assignedProfile)}
-            </p>
+              <div>
+                <div style={labelStyle}>Created</div>
+                <p style={valueStyle}>{formatDateTime(task.created_at)}</p>
+              </div>
 
-            <p>
-              <strong>Related Company:</strong>{" "}
-              {company ? (
-                <Link
-                  href={`/companies/${company.id}`}
-                  style={{ color: "white" }}
-                >
-                  {company.name}
-                </Link>
-              ) : (
-                "Not linked"
-              )}
-            </p>
+              <div>
+                <div style={labelStyle}>Last Updated</div>
+                <p style={valueStyle}>{formatDateTime(task.updated_at)}</p>
+              </div>
+            </div>
 
-            <p>
-              <strong>Related Contact:</strong>{" "}
-              {contact ? (
-                <Link
-                  href={`/contacts/${contact.id}`}
-                  style={{ color: "white" }}
-                >
-                  {contact.first_name} {contact.last_name || ""}
-                </Link>
-              ) : (
-                "Not linked"
-              )}
-            </p>
+            <div style={{ marginTop: "22px" }}>
+              <div style={labelStyle}>Description</div>
+              <p
+                style={{
+                  whiteSpace: "pre-wrap",
+                  color: "#cbd5e1",
+                  lineHeight: 1.65,
+                  marginBottom: 0,
+                }}
+              >
+                {task.description || "No description provided."}
+              </p>
+            </div>
+          </section>
 
-            <p>
-              <strong>Related Opportunity:</strong>{" "}
-              {opportunity ? (
-                <Link
-                  href={`/opportunities/${opportunity.id}`}
-                  style={{ color: "white" }}
-                >
-                  {opportunity.name}
-                </Link>
-              ) : (
-                "Not linked"
-              )}
-            </p>
-
-            <p>
-              <strong>Description:</strong>
-            </p>
-
-            <p style={{ whiteSpace: "pre-wrap" }}>
-              {task.description || "No description provided."}
-            </p>
-
-            <p>
-              <strong>Created:</strong> {formatDateTime(task.created_at)}
-            </p>
-
-            <p>
-              <strong>Last Updated:</strong> {formatDateTime(task.updated_at)}
-            </p>
-          </div>
-
-          <AttachmentsSection
-            workspaceId={task.workspace_id}
-            relationColumn="related_task_id"
-            relationId={task.id}
-          />
-        </section>
+          <section style={cardStyle}>
+            <p style={eyebrowStyle}>Attachments</p>
+            <AttachmentsSection
+              workspaceId={task.workspace_id}
+              relationColumn="related_task_id"
+              relationId={task.id}
+            />
+          </section>
+        </>
       )}
     </main>
   );
