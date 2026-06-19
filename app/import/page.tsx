@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
@@ -53,41 +53,82 @@ const fieldOptions = [
 
 const pageStyle: CSSProperties = {
   minHeight: "100vh",
-  backgroundColor: "#111",
-  color: "white",
-  padding: "40px",
+  color: "#f8fafc",
+  padding: "28px",
   fontFamily: "Arial, sans-serif",
 };
 
 const cardStyle: CSSProperties = {
-  border: "1px solid #333",
-  borderRadius: "10px",
-  backgroundColor: "#181818",
-  padding: "18px",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "20px",
+  background:
+    "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
+  padding: "20px",
   marginBottom: "18px",
+  maxWidth: "1120px",
+  boxShadow: "0 20px 70px rgba(2, 6, 23, 0.24)",
 };
 
 const inputStyle: CSSProperties = {
   display: "block",
   width: "100%",
-  padding: "12px",
-  marginTop: "6px",
-  backgroundColor: "white",
-  color: "black",
-  border: "1px solid #555",
-  borderRadius: "6px",
-  fontSize: "16px",
+  padding: "12px 14px",
+  marginTop: "8px",
+  marginBottom: "16px",
+  backgroundColor: "#0f172a",
+  color: "#f8fafc",
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+  borderRadius: "12px",
+  fontSize: "15px",
+  boxSizing: "border-box",
+  outline: "none",
 };
 
 const buttonStyle: CSSProperties = {
-  padding: "12px 16px",
+  padding: "12px 18px",
   cursor: "pointer",
-  fontWeight: "bold",
-  borderRadius: "6px",
-  border: "none",
-  backgroundColor: "white",
-  color: "black",
-  fontSize: "16px",
+  fontWeight: 800,
+  borderRadius: "999px",
+  border: "1px solid rgba(167, 139, 250, 0.45)",
+  background:
+    "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
+  color: "white",
+  fontSize: "15px",
+  boxShadow: "0 16px 36px rgba(79, 70, 229, 0.28)",
+};
+
+const headerStyle: CSSProperties = {
+  maxWidth: "1120px",
+  marginBottom: "24px",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "24px",
+  padding: "24px",
+  background:
+    "radial-gradient(circle at top left, rgba(124, 58, 237, 0.24), transparent 32%), linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.72))",
+  boxShadow: "0 24px 80px rgba(2, 6, 23, 0.28)",
+};
+
+const eyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  color: "#a78bfa",
+  fontSize: "13px",
+  fontWeight: 900,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+};
+
+const titleStyle: CSSProperties = {
+  margin: "0 0 10px",
+  fontSize: "34px",
+  lineHeight: 1.05,
+  letterSpacing: "-0.04em",
+};
+
+const mutedTextStyle: CSSProperties = {
+  color: "#cbd5e1",
+  margin: 0,
+  maxWidth: "880px",
+  lineHeight: 1.65,
 };
 
 function normalize(value: string) {
@@ -638,28 +679,16 @@ export default function ImportPage() {
 
   return (
     <main style={pageStyle}>
-      <Link
-        href="/"
-        style={{
-          color: "black",
-          backgroundColor: "white",
-          padding: "10px 14px",
-          borderRadius: "6px",
-          textDecoration: "none",
-          fontWeight: "bold",
-          display: "inline-block",
-          marginBottom: "32px",
-        }}
-      >
-        Back to Dashboard
-      </Link>
+      <header style={headerStyle}>
+        <p style={eyebrowStyle}>Capture</p>
 
-      <h1>CSV Import</h1>
+        <h1 style={titleStyle}>CSV Import</h1>
 
-      <p style={{ color: "#aaa", marginBottom: "28px", maxWidth: "850px" }}>
-        Upload CSV files, preview the rows, map columns to Sell It fields, and
-        import companies or companies with contacts.
-      </p>
+        <p style={mutedTextStyle}>
+          Upload CSV files, preview rows, map columns to Sell It fields, and
+          import companies or companies with contacts.
+        </p>
+      </header>
 
       <section style={cardStyle}>
         <h2 style={{ marginTop: 0 }}>1. Upload CSV</h2>
@@ -672,7 +701,7 @@ export default function ImportPage() {
         />
 
         {selectedFile && (
-          <div style={{ marginTop: "18px", color: "#ddd", lineHeight: "1.6" }}>
+          <div style={{ marginTop: "18px", color: "#cbd5e1", lineHeight: "1.6" }}>
             <strong>File:</strong> {selectedFile.name}
             <br />
             <strong>Rows:</strong> {rows.length}
@@ -741,10 +770,10 @@ export default function ImportPage() {
             >
               <thead>
                 <tr>
-                  <th style={{ textAlign: "left", borderBottom: "1px solid #333", padding: "10px" }}>
+                  <th style={{ textAlign: "left", borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
                     CSV Column
                   </th>
-                  <th style={{ textAlign: "left", borderBottom: "1px solid #333", padding: "10px" }}>
+                  <th style={{ textAlign: "left", borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
                     Sell It Field
                   </th>
                 </tr>
@@ -752,10 +781,10 @@ export default function ImportPage() {
               <tbody>
                 {headers.map((header) => (
                   <tr key={header}>
-                    <td style={{ borderBottom: "1px solid #333", padding: "10px" }}>
+                    <td style={{ borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
                       {header}
                     </td>
-                    <td style={{ borderBottom: "1px solid #333", padding: "10px" }}>
+                    <td style={{ borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
                       <select
                         value={mapping[header] ?? ""}
                         onChange={(event) =>
@@ -800,9 +829,9 @@ export default function ImportPage() {
                       key={header}
                       style={{
                         textAlign: "left",
-                        borderBottom: "1px solid #333",
+                        borderBottom: "1px solid rgba(148, 163, 184, 0.18)",
                         padding: "10px",
-                        color: "#ccc",
+                        color: "#cbd5e1",
                       }}
                     >
                       {header}
@@ -817,10 +846,10 @@ export default function ImportPage() {
                       <td
                         key={`${header}-${cellIndex}`}
                         style={{
-                          borderBottom: "1px solid #333",
+                          borderBottom: "1px solid rgba(148, 163, 184, 0.18)",
                           padding: "10px",
                           verticalAlign: "top",
-                          color: "#eee",
+                          color: "#e2e8f0",
                         }}
                       >
                         {row[cellIndex] ?? ""}
@@ -847,9 +876,9 @@ export default function ImportPage() {
         </section>
       )}
 
-      {statusMessage && <p style={{ color: "#8ee88e" }}>{statusMessage}</p>}
+      {statusMessage && <p style={{ color: "#86efac" }}>{statusMessage}</p>}
 
-      {errorMessage && <p style={{ color: "red" }}>Error: {errorMessage}</p>}
+      {errorMessage && <p style={{ color: "#fca5a5" }}>Error: {errorMessage}</p>}
 
       {result && (
         <section style={cardStyle}>
@@ -864,7 +893,7 @@ export default function ImportPage() {
         <h2 style={{ marginTop: 0 }}>Recent Import History</h2>
 
         {history.length === 0 && (
-          <p style={{ color: "#aaa" }}>No import history yet.</p>
+          <p style={{ color: "#94a3b8" }}>No import history yet.</p>
         )}
 
         {history.length > 0 && (
@@ -878,25 +907,25 @@ export default function ImportPage() {
             >
               <thead>
                 <tr>
-                  <th style={{ textAlign: "left", borderBottom: "1px solid #333", padding: "10px" }}>
+                  <th style={{ textAlign: "left", borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
                     File
                   </th>
-                  <th style={{ textAlign: "left", borderBottom: "1px solid #333", padding: "10px" }}>
+                  <th style={{ textAlign: "left", borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
                     Type
                   </th>
-                  <th style={{ textAlign: "left", borderBottom: "1px solid #333", padding: "10px" }}>
+                  <th style={{ textAlign: "left", borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
                     Duplicates
                   </th>
-                  <th style={{ textAlign: "left", borderBottom: "1px solid #333", padding: "10px" }}>
+                  <th style={{ textAlign: "left", borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
                     Rows
                   </th>
-                  <th style={{ textAlign: "left", borderBottom: "1px solid #333", padding: "10px" }}>
+                  <th style={{ textAlign: "left", borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
                     Imported
                   </th>
-                  <th style={{ textAlign: "left", borderBottom: "1px solid #333", padding: "10px" }}>
+                  <th style={{ textAlign: "left", borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
                     Skipped
                   </th>
-                  <th style={{ textAlign: "left", borderBottom: "1px solid #333", padding: "10px" }}>
+                  <th style={{ textAlign: "left", borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
                     Date
                   </th>
                 </tr>
@@ -904,25 +933,25 @@ export default function ImportPage() {
               <tbody>
                 {history.map((item) => (
                   <tr key={item.id}>
-                    <td style={{ borderBottom: "1px solid #333", padding: "10px" }}>
+                    <td style={{ borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
                       {item.file_name}
                     </td>
-                    <td style={{ borderBottom: "1px solid #333", padding: "10px" }}>
+                    <td style={{ borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
                       {item.import_type}
                     </td>
-                    <td style={{ borderBottom: "1px solid #333", padding: "10px" }}>
+                    <td style={{ borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
                       {item.duplicate_handling}
                     </td>
-                    <td style={{ borderBottom: "1px solid #333", padding: "10px" }}>
+                    <td style={{ borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
                       {item.row_count}
                     </td>
-                    <td style={{ borderBottom: "1px solid #333", padding: "10px" }}>
+                    <td style={{ borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
                       {item.rows_imported}
                     </td>
-                    <td style={{ borderBottom: "1px solid #333", padding: "10px" }}>
+                    <td style={{ borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
                       {item.rows_skipped}
                     </td>
-                    <td style={{ borderBottom: "1px solid #333", padding: "10px" }}>
+                    <td style={{ borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
                       {formatDateTime(item.created_at)}
                     </td>
                   </tr>
@@ -935,4 +964,5 @@ export default function ImportPage() {
     </main>
   );
 }
+
 
