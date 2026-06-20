@@ -1,7 +1,13 @@
 ﻿"use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+  type ChangeEvent,
+} from "react";
 import { supabase } from "../lib/supabase";
 
 const WORKSPACE_ID = "ba491d9b-3b36-426d-b98a-f05b0bf271ed";
@@ -58,15 +64,59 @@ const pageStyle: CSSProperties = {
   fontFamily: "Arial, sans-serif",
 };
 
+const shellStyle: CSSProperties = {
+  maxWidth: "1180px",
+  margin: "0 auto",
+};
+
+const headerStyle: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: "18px",
+  flexWrap: "wrap",
+  marginBottom: "24px",
+};
+
+const eyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  color: "#c4b5fd",
+  fontSize: "13px",
+  fontWeight: 900,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+};
+
+const titleStyle: CSSProperties = {
+  margin: 0,
+  fontSize: "34px",
+  lineHeight: 1.1,
+  letterSpacing: "-0.04em",
+};
+
+const subtitleStyle: CSSProperties = {
+  margin: "10px 0 0",
+  color: "#cbd5e1",
+  fontSize: "15px",
+  lineHeight: 1.55,
+  maxWidth: "860px",
+};
+
+const actionRowStyle: CSSProperties = {
+  display: "flex",
+  gap: "10px",
+  flexWrap: "wrap",
+  alignItems: "center",
+};
+
 const cardStyle: CSSProperties = {
-  border: "1px solid rgba(148, 163, 184, 0.16)",
-  borderRadius: "20px",
+  border: "1px solid rgba(148, 163, 184, 0.18)",
+  padding: "22px",
+  borderRadius: "22px",
   background:
-    "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
-  padding: "20px",
+    "linear-gradient(135deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.94))",
+  boxShadow: "0 18px 50px rgba(0, 0, 0, 0.22)",
   marginBottom: "18px",
-  maxWidth: "1120px",
-  boxShadow: "0 20px 70px rgba(2, 6, 23, 0.24)",
 };
 
 const inputStyle: CSSProperties = {
@@ -74,61 +124,127 @@ const inputStyle: CSSProperties = {
   width: "100%",
   padding: "12px 14px",
   marginTop: "8px",
-  marginBottom: "16px",
-  backgroundColor: "#0f172a",
+  backgroundColor: "rgba(15, 23, 42, 0.9)",
   color: "#f8fafc",
   border: "1px solid rgba(148, 163, 184, 0.28)",
-  borderRadius: "12px",
+  borderRadius: "14px",
   fontSize: "15px",
   boxSizing: "border-box",
   outline: "none",
 };
 
-const buttonStyle: CSSProperties = {
-  padding: "12px 18px",
-  cursor: "pointer",
+const labelStyle: CSSProperties = {
+  display: "block",
+  color: "#e2e8f0",
+  fontSize: "14px",
   fontWeight: 800,
-  borderRadius: "999px",
-  border: "1px solid rgba(167, 139, 250, 0.45)",
-  background:
-    "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
+};
+
+const primaryButtonStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: "46px",
   color: "white",
-  fontSize: "15px",
-  boxShadow: "0 16px 36px rgba(79, 70, 229, 0.28)",
-};
-
-const headerStyle: CSSProperties = {
-  maxWidth: "1120px",
-  marginBottom: "24px",
-  border: "1px solid rgba(148, 163, 184, 0.16)",
-  borderRadius: "24px",
-  padding: "24px",
-  background:
-    "radial-gradient(circle at top left, rgba(124, 58, 237, 0.24), transparent 32%), linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.72))",
-  boxShadow: "0 24px 80px rgba(2, 6, 23, 0.28)",
-};
-
-const eyebrowStyle: CSSProperties = {
-  margin: "0 0 8px",
-  color: "#a78bfa",
-  fontSize: "13px",
+  background: "linear-gradient(135deg, #7c3aed, #a855f7)",
+  padding: "12px 18px",
+  borderRadius: "999px",
+  textDecoration: "none",
   fontWeight: 900,
-  letterSpacing: "0.12em",
-  textTransform: "uppercase",
+  border: "1px solid rgba(255, 255, 255, 0.14)",
+  boxShadow: "0 18px 36px rgba(124, 58, 237, 0.24)",
+  cursor: "pointer",
+  fontSize: "15px",
 };
 
-const titleStyle: CSSProperties = {
-  margin: "0 0 10px",
-  fontSize: "34px",
-  lineHeight: 1.05,
-  letterSpacing: "-0.04em",
+const secondaryButtonStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: "46px",
+  color: "#e2e8f0",
+  backgroundColor: "rgba(15, 23, 42, 0.82)",
+  padding: "12px 18px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 900,
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+  cursor: "pointer",
+  fontSize: "15px",
+};
+
+const disabledStyle: CSSProperties = {
+  opacity: 0.6,
+  cursor: "not-allowed",
 };
 
 const mutedTextStyle: CSSProperties = {
+  color: "#94a3b8",
+};
+
+const formGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+  gap: "18px",
+};
+
+const tableWrapStyle: CSSProperties = {
+  overflowX: "auto",
+  border: "1px solid rgba(148, 163, 184, 0.14)",
+  borderRadius: "18px",
+  backgroundColor: "rgba(15, 23, 42, 0.42)",
+};
+
+const thStyle: CSSProperties = {
+  textAlign: "left",
+  borderBottom: "1px solid rgba(148, 163, 184, 0.18)",
+  padding: "12px",
   color: "#cbd5e1",
-  margin: 0,
-  maxWidth: "880px",
-  lineHeight: 1.65,
+  fontSize: "13px",
+  letterSpacing: "0.04em",
+  textTransform: "uppercase",
+};
+
+const tdStyle: CSSProperties = {
+  borderBottom: "1px solid rgba(148, 163, 184, 0.12)",
+  padding: "12px",
+  verticalAlign: "top",
+  color: "#e2e8f0",
+};
+
+const messageStyle: CSSProperties = {
+  padding: "12px 14px",
+  borderRadius: "16px",
+  margin: "0 0 18px",
+  fontWeight: 800,
+};
+
+const errorMessageStyle: CSSProperties = {
+  ...messageStyle,
+  border: "1px solid rgba(248, 113, 113, 0.32)",
+  backgroundColor: "rgba(127, 29, 29, 0.24)",
+  color: "#fecaca",
+};
+
+const successMessageStyle: CSSProperties = {
+  ...messageStyle,
+  border: "1px solid rgba(74, 222, 128, 0.32)",
+  backgroundColor: "rgba(20, 83, 45, 0.24)",
+  color: "#bbf7d0",
+};
+
+const statGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
+  gap: "12px",
+  marginTop: "18px",
+};
+
+const statTileStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "16px",
+  padding: "14px",
+  backgroundColor: "rgba(15, 23, 42, 0.58)",
 };
 
 function normalize(value: string) {
@@ -234,19 +350,35 @@ function guessField(columnName: string) {
     return "Contact.Title";
   }
 
-  if (column.includes("website") || column.includes("web site") || column.includes("url")) {
+  if (
+    column.includes("website") ||
+    column.includes("web site") ||
+    column.includes("url")
+  ) {
     return "Company.Website";
   }
 
-  if (column.includes("dot") || column.includes("mc number") || column.includes("mc#")) {
+  if (
+    column.includes("dot") ||
+    column.includes("mc number") ||
+    column.includes("mc#")
+  ) {
     return "Company.Notes";
   }
 
-  if (column.includes("equipment") || column.includes("asset") || column.includes("truck")) {
+  if (
+    column.includes("equipment") ||
+    column.includes("asset") ||
+    column.includes("truck")
+  ) {
     return "Company.AssetsEquipment";
   }
 
-  if (column.includes("region") || column.includes("location") || column.includes("area")) {
+  if (
+    column.includes("region") ||
+    column.includes("location") ||
+    column.includes("area")
+  ) {
     return "Company.OperatingRegions";
   }
 
@@ -266,7 +398,11 @@ function guessField(columnName: string) {
     return "Company.Email";
   }
 
-  if (column.includes("phone") || column.includes("mobile") || column.includes("cell")) {
+  if (
+    column.includes("phone") ||
+    column.includes("mobile") ||
+    column.includes("cell")
+  ) {
     return "Company.Phone";
   }
 
@@ -335,7 +471,7 @@ export default function ImportPage() {
     setHistory((data ?? []) as ImportHistory[]);
   }
 
-  async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     setErrorMessage("");
     setStatusMessage("");
     setResult(null);
@@ -679,290 +815,273 @@ export default function ImportPage() {
 
   return (
     <main style={pageStyle}>
-      <header style={headerStyle}>
-        <p style={eyebrowStyle}>Capture</p>
-
-        <h1 style={titleStyle}>CSV Import</h1>
-
-        <p style={mutedTextStyle}>
-          Upload CSV files, preview rows, map columns to Sell It fields, and
-          import companies or companies with contacts.
-        </p>
-      </header>
-
-      <section style={cardStyle}>
-        <h2 style={{ marginTop: 0 }}>1. Upload CSV</h2>
-
-        <input
-          type="file"
-          accept=".csv,text/csv"
-          onChange={handleFileChange}
-          style={inputStyle}
-        />
-
-        {selectedFile && (
-          <div style={{ marginTop: "18px", color: "#cbd5e1", lineHeight: "1.6" }}>
-            <strong>File:</strong> {selectedFile.name}
-            <br />
-            <strong>Rows:</strong> {rows.length}
-            <br />
-            <strong>Columns:</strong> {headers.length}
+      <section style={shellStyle}>
+        <div style={headerStyle}>
+          <div>
+            <p style={eyebrowStyle}>Capture / CSV Import</p>
+            <h1 style={titleStyle}>CSV Import</h1>
+            <p style={subtitleStyle}>
+              Upload CSV files, preview rows, map columns to Sell It fields,
+              and import companies or companies with contacts.
+            </p>
           </div>
+
+          <div style={actionRowStyle}>
+            <Link href="/companies" style={secondaryButtonStyle}>
+              View Companies
+            </Link>
+          </div>
+        </div>
+
+        <section style={cardStyle}>
+          <p style={eyebrowStyle}>Step 1</p>
+          <h2 style={{ marginTop: 0 }}>Upload CSV</h2>
+
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            onChange={handleFileChange}
+            style={inputStyle}
+          />
+
+          {selectedFile && (
+            <div style={statGridStyle}>
+              <div style={statTileStyle}>
+                <div style={mutedTextStyle}>File</div>
+                <strong>{selectedFile.name}</strong>
+              </div>
+
+              <div style={statTileStyle}>
+                <div style={mutedTextStyle}>Rows</div>
+                <strong>{rows.length}</strong>
+              </div>
+
+              <div style={statTileStyle}>
+                <div style={mutedTextStyle}>Columns</div>
+                <strong>{headers.length}</strong>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {headers.length > 0 && (
+          <section style={cardStyle}>
+            <p style={eyebrowStyle}>Step 2</p>
+            <h2 style={{ marginTop: 0 }}>Import Settings</h2>
+
+            <div style={formGridStyle}>
+              <label style={labelStyle}>
+                Import Type
+                <select
+                  value={importType}
+                  onChange={(event) =>
+                    setImportType(event.target.value as ImportType)
+                  }
+                  style={inputStyle}
+                >
+                  <option value="companies_only">Companies only</option>
+                  <option value="companies_contacts">Companies + Contacts</option>
+                </select>
+              </label>
+
+              <label style={labelStyle}>
+                Duplicate Handling
+                <select
+                  value={duplicateHandling}
+                  onChange={(event) =>
+                    setDuplicateHandling(
+                      event.target.value as DuplicateHandling
+                    )
+                  }
+                  style={inputStyle}
+                >
+                  <option value="skip_existing">Skip Existing</option>
+                  <option value="update_existing">Update Existing</option>
+                  <option value="create_duplicate">Create Duplicate</option>
+                </select>
+              </label>
+            </div>
+          </section>
         )}
-      </section>
 
-      {headers.length > 0 && (
-        <section style={cardStyle}>
-          <h2 style={{ marginTop: 0 }}>2. Import Settings</h2>
+        {headers.length > 0 && (
+          <section style={cardStyle}>
+            <p style={eyebrowStyle}>Step 3</p>
+            <h2 style={{ marginTop: 0 }}>Column Mapping</h2>
+            <p style={{ ...mutedTextStyle, lineHeight: 1.55 }}>
+              Sell It guessed these mappings from your CSV headers. Review them
+              before importing.
+            </p>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-              gap: "18px",
-            }}
-          >
-            <label>
-              Import Type
-              <select
-                value={importType}
-                onChange={(event) =>
-                  setImportType(event.target.value as ImportType)
-                }
-                style={inputStyle}
+            <div style={{ ...tableWrapStyle, marginTop: "16px" }}>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  minWidth: "650px",
+                }}
               >
-                <option value="companies_only">Companies only</option>
-                <option value="companies_contacts">
-                  Companies + Contacts
-                </option>
-              </select>
-            </label>
-
-            <label>
-              Duplicate Handling
-              <select
-                value={duplicateHandling}
-                onChange={(event) =>
-                  setDuplicateHandling(event.target.value as DuplicateHandling)
-                }
-                style={inputStyle}
-              >
-                <option value="skip_existing">Skip Existing</option>
-                <option value="update_existing">Update Existing</option>
-                <option value="create_duplicate">Create Duplicate</option>
-              </select>
-            </label>
-          </div>
-        </section>
-      )}
-
-      {headers.length > 0 && (
-        <section style={cardStyle}>
-          <h2 style={{ marginTop: 0 }}>3. Column Mapping</h2>
-
-          <div style={{ overflowX: "auto" }}>
-            <table
-              style={{
-                width: "100%",
-                borderCollapse: "collapse",
-                minWidth: "650px",
-              }}
-            >
-              <thead>
-                <tr>
-                  <th style={{ textAlign: "left", borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
-                    CSV Column
-                  </th>
-                  <th style={{ textAlign: "left", borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
-                    Sell It Field
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {headers.map((header) => (
-                  <tr key={header}>
-                    <td style={{ borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
-                      {header}
-                    </td>
-                    <td style={{ borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
-                      <select
-                        value={mapping[header] ?? ""}
-                        onChange={(event) =>
-                          setMapping((current) => ({
-                            ...current,
-                            [header]: event.target.value,
-                          }))
-                        }
-                        style={inputStyle}
-                      >
-                        {fieldOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
+                <thead>
+                  <tr>
+                    <th style={thStyle}>CSV Column</th>
+                    <th style={thStyle}>Sell It Field</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
-      {previewRows.length > 0 && (
-        <section style={cardStyle}>
-          <h2 style={{ marginTop: 0 }}>4. Preview First 20 Rows</h2>
-
-          <div style={{ overflowX: "auto" }}>
-            <table
-              style={{
-                width: "100%",
-                borderCollapse: "collapse",
-                minWidth: "900px",
-              }}
-            >
-              <thead>
-                <tr>
+                </thead>
+                <tbody>
                   {headers.map((header) => (
-                    <th
-                      key={header}
-                      style={{
-                        textAlign: "left",
-                        borderBottom: "1px solid rgba(148, 163, 184, 0.18)",
-                        padding: "10px",
-                        color: "#cbd5e1",
-                      }}
-                    >
-                      {header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {previewRows.map((row, rowIndex) => (
-                  <tr key={`row-${rowIndex}`}>
-                    {headers.map((header, cellIndex) => (
-                      <td
-                        key={`${header}-${cellIndex}`}
-                        style={{
-                          borderBottom: "1px solid rgba(148, 163, 184, 0.18)",
-                          padding: "10px",
-                          verticalAlign: "top",
-                          color: "#e2e8f0",
-                        }}
-                      >
-                        {row[cellIndex] ?? ""}
+                    <tr key={header}>
+                      <td style={tdStyle}>{header}</td>
+                      <td style={tdStyle}>
+                        <select
+                          value={mapping[header] ?? ""}
+                          onChange={(event) =>
+                            setMapping((current) => ({
+                              ...current,
+                              [header]: event.target.value,
+                            }))
+                          }
+                          style={{ ...inputStyle, marginBottom: 0 }}
+                        >
+                          {fieldOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
                       </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {previewRows.length > 0 && (
+          <section style={cardStyle}>
+            <p style={eyebrowStyle}>Step 4</p>
+            <h2 style={{ marginTop: 0 }}>Preview First 20 Rows</h2>
+
+            <div style={{ ...tableWrapStyle, marginTop: "16px" }}>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  minWidth: "900px",
+                }}
+              >
+                <thead>
+                  <tr>
+                    {headers.map((header) => (
+                      <th key={header} style={thStyle}>
+                        {header}
+                      </th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {previewRows.map((row, rowIndex) => (
+                    <tr key={`row-${rowIndex}`}>
+                      {headers.map((header, cellIndex) => (
+                        <td key={`${header}-${cellIndex}`} style={tdStyle}>
+                          {row[cellIndex] ?? ""}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-          <button
-            type="button"
-            onClick={handleImport}
-            disabled={importing}
-            style={{
-              ...buttonStyle,
-              marginTop: "18px",
-              opacity: importing ? 0.65 : 1,
-            }}
-          >
-            {importing ? "Importing..." : "Import CSV"}
-          </button>
-        </section>
-      )}
-
-      {statusMessage && <p style={{ color: "#86efac" }}>{statusMessage}</p>}
-
-      {errorMessage && <p style={{ color: "#fca5a5" }}>Error: {errorMessage}</p>}
-
-      {result && (
-        <section style={cardStyle}>
-          <h2 style={{ marginTop: 0 }}>Import Result</h2>
-          <p>Rows imported: {result.rowsImported}</p>
-          <p>Rows skipped: {result.rowsSkipped}</p>
-          <p>Original CSV saved as attachment: {result.attachmentSaved ? "Yes" : "No"}</p>
-        </section>
-      )}
-
-      <section style={cardStyle}>
-        <h2 style={{ marginTop: 0 }}>Recent Import History</h2>
-
-        {history.length === 0 && (
-          <p style={{ color: "#94a3b8" }}>No import history yet.</p>
-        )}
-
-        {history.length > 0 && (
-          <div style={{ overflowX: "auto" }}>
-            <table
+            <button
+              type="button"
+              onClick={handleImport}
+              disabled={importing}
               style={{
-                width: "100%",
-                borderCollapse: "collapse",
-                minWidth: "850px",
+                ...primaryButtonStyle,
+                marginTop: "18px",
+                ...(importing ? disabledStyle : {}),
               }}
             >
-              <thead>
-                <tr>
-                  <th style={{ textAlign: "left", borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
-                    File
-                  </th>
-                  <th style={{ textAlign: "left", borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
-                    Type
-                  </th>
-                  <th style={{ textAlign: "left", borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
-                    Duplicates
-                  </th>
-                  <th style={{ textAlign: "left", borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
-                    Rows
-                  </th>
-                  <th style={{ textAlign: "left", borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
-                    Imported
-                  </th>
-                  <th style={{ textAlign: "left", borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
-                    Skipped
-                  </th>
-                  <th style={{ textAlign: "left", borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
-                    Date
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {history.map((item) => (
-                  <tr key={item.id}>
-                    <td style={{ borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
-                      {item.file_name}
-                    </td>
-                    <td style={{ borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
-                      {item.import_type}
-                    </td>
-                    <td style={{ borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
-                      {item.duplicate_handling}
-                    </td>
-                    <td style={{ borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
-                      {item.row_count}
-                    </td>
-                    <td style={{ borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
-                      {item.rows_imported}
-                    </td>
-                    <td style={{ borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
-                      {item.rows_skipped}
-                    </td>
-                    <td style={{ borderBottom: "1px solid rgba(148, 163, 184, 0.18)", padding: "10px" }}>
-                      {formatDateTime(item.created_at)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              {importing ? "Importing..." : "Import CSV"}
+            </button>
+          </section>
         )}
+
+        {statusMessage && <p style={successMessageStyle}>{statusMessage}</p>}
+
+        {errorMessage && <p style={errorMessageStyle}>Error: {errorMessage}</p>}
+
+        {result && (
+          <section style={cardStyle}>
+            <p style={eyebrowStyle}>Import Result</p>
+            <h2 style={{ marginTop: 0 }}>Import Complete</h2>
+
+            <div style={statGridStyle}>
+              <div style={statTileStyle}>
+                <div style={mutedTextStyle}>Rows imported</div>
+                <strong>{result.rowsImported}</strong>
+              </div>
+
+              <div style={statTileStyle}>
+                <div style={mutedTextStyle}>Rows skipped</div>
+                <strong>{result.rowsSkipped}</strong>
+              </div>
+
+              <div style={statTileStyle}>
+                <div style={mutedTextStyle}>Original CSV saved</div>
+                <strong>{result.attachmentSaved ? "Yes" : "No"}</strong>
+              </div>
+            </div>
+          </section>
+        )}
+
+        <section style={cardStyle}>
+          <p style={eyebrowStyle}>History</p>
+          <h2 style={{ marginTop: 0 }}>Recent Import History</h2>
+
+          {history.length === 0 && (
+            <p style={mutedTextStyle}>No import history yet.</p>
+          )}
+
+          {history.length > 0 && (
+            <div style={{ ...tableWrapStyle, marginTop: "16px" }}>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  minWidth: "850px",
+                }}
+              >
+                <thead>
+                  <tr>
+                    <th style={thStyle}>File</th>
+                    <th style={thStyle}>Type</th>
+                    <th style={thStyle}>Duplicates</th>
+                    <th style={thStyle}>Rows</th>
+                    <th style={thStyle}>Imported</th>
+                    <th style={thStyle}>Skipped</th>
+                    <th style={thStyle}>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map((item) => (
+                    <tr key={item.id}>
+                      <td style={tdStyle}>{item.file_name}</td>
+                      <td style={tdStyle}>{item.import_type}</td>
+                      <td style={tdStyle}>{item.duplicate_handling}</td>
+                      <td style={tdStyle}>{item.row_count}</td>
+                      <td style={tdStyle}>{item.rows_imported}</td>
+                      <td style={tdStyle}>{item.rows_skipped}</td>
+                      <td style={tdStyle}>{formatDateTime(item.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
       </section>
     </main>
   );
 }
-
-

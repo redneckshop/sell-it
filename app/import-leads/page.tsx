@@ -1,8 +1,7 @@
 ﻿"use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
-import type { CSSProperties } from "react";
+import { useMemo, useState, type CSSProperties, type FormEvent } from "react";
 import { supabase } from "../lib/supabase";
 
 const WORKSPACE_ID = "ba491d9b-3b36-426d-b98a-f05b0bf271ed";
@@ -56,122 +55,237 @@ type ExistingCompany = {
   assets_equipment: string | null;
 };
 
-function pageStyle(): CSSProperties {
-  return {
-    minHeight: "calc(100vh - 64px)",
-    backgroundColor: "#101010",
-    color: "white",
-    padding: "38px",
-    fontFamily: "Arial, sans-serif",
-    boxSizing: "border-box",
-  };
-}
+const pageStyle: CSSProperties = {
+  minHeight: "100vh",
+  color: "#f8fafc",
+  padding: "28px",
+  fontFamily: "Arial, sans-serif",
+};
 
-function panelStyle(): CSSProperties {
-  return {
-    border: "1px solid #2f2f2f",
-    background:
-      "linear-gradient(180deg, rgba(31,31,31,0.96), rgba(22,22,22,0.96))",
-    padding: "16px",
-    borderRadius: "14px",
-    boxShadow: "0 14px 35px rgba(0,0,0,0.18)",
-  };
-}
+const shellStyle: CSSProperties = {
+  maxWidth: "1180px",
+  margin: "0 auto",
+};
 
-function inputStyle(): CSSProperties {
-  return {
-    display: "block",
-    width: "100%",
-    boxSizing: "border-box",
-    padding: "11px 12px",
-    marginTop: "7px",
-    borderRadius: "10px",
-    border: "1px solid #3d3d3d",
-    backgroundColor: "#111",
-    color: "white",
-    outline: "none",
-    fontSize: "15px",
-  };
-}
+const headerStyle: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: "18px",
+  flexWrap: "wrap",
+  marginBottom: "24px",
+};
 
-function fieldLabelStyle(): CSSProperties {
-  return {
-    display: "block",
-    color: "#e5e5e5",
-    fontSize: "13px",
-    fontWeight: 800,
-  };
-}
+const eyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  color: "#c4b5fd",
+  fontSize: "13px",
+  fontWeight: 900,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+};
 
-function primaryButtonStyle(): CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: "42px",
-    backgroundColor: "#7c3aed",
-    color: "white",
-    padding: "0 16px",
-    borderRadius: "12px",
-    textDecoration: "none",
-    fontWeight: 900,
-    border: "1px solid #8b5cf6",
-    boxShadow: "0 12px 24px rgba(124,58,237,0.24)",
-    cursor: "pointer",
-    fontSize: "15px",
-  };
-}
+const titleStyle: CSSProperties = {
+  margin: 0,
+  fontSize: "34px",
+  lineHeight: 1.1,
+  letterSpacing: "-0.04em",
+};
 
-function secondaryButtonStyle(): CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: "42px",
-    color: "white",
-    border: "1px solid #3d3d3d",
-    backgroundColor: "#151515",
-    padding: "0 16px",
-    borderRadius: "12px",
-    textDecoration: "none",
-    fontWeight: 900,
-    cursor: "pointer",
-    fontSize: "15px",
-  };
-}
+const subtitleStyle: CSSProperties = {
+  margin: "10px 0 0",
+  color: "#cbd5e1",
+  fontSize: "15px",
+  lineHeight: 1.55,
+  maxWidth: "860px",
+};
 
-function mutedTextStyle(): CSSProperties {
-  return {
-    color: "#a7a7a7",
-  };
-}
+const actionRowStyle: CSSProperties = {
+  display: "flex",
+  gap: "10px",
+  flexWrap: "wrap",
+  alignItems: "center",
+};
+
+const cardStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.18)",
+  padding: "22px",
+  borderRadius: "22px",
+  background:
+    "linear-gradient(135deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.94))",
+  boxShadow: "0 18px 50px rgba(0, 0, 0, 0.22)",
+};
+
+const resultCardStyle: CSSProperties = {
+  ...cardStyle,
+  padding: "18px",
+};
+
+const inputStyle: CSSProperties = {
+  display: "block",
+  width: "100%",
+  boxSizing: "border-box",
+  padding: "12px",
+  marginTop: "8px",
+  borderRadius: "14px",
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+  backgroundColor: "rgba(15, 23, 42, 0.9)",
+  color: "#f8fafc",
+  outline: "none",
+  fontSize: "15px",
+};
+
+const textareaStyle: CSSProperties = {
+  ...inputStyle,
+  minHeight: "130px",
+  resize: "vertical",
+  lineHeight: 1.5,
+};
+
+const labelStyle: CSSProperties = {
+  display: "block",
+  color: "#e2e8f0",
+  fontSize: "14px",
+  fontWeight: 800,
+};
+
+const mutedTextStyle: CSSProperties = {
+  color: "#94a3b8",
+};
+
+const primaryButtonStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: "44px",
+  color: "white",
+  background: "linear-gradient(135deg, #7c3aed, #a855f7)",
+  padding: "10px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 900,
+  border: "1px solid rgba(255, 255, 255, 0.14)",
+  boxShadow: "0 18px 36px rgba(124, 58, 237, 0.24)",
+  cursor: "pointer",
+  fontSize: "15px",
+};
+
+const secondaryButtonStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: "44px",
+  color: "#e2e8f0",
+  backgroundColor: "rgba(15, 23, 42, 0.82)",
+  padding: "10px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 900,
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+  cursor: "pointer",
+  fontSize: "15px",
+};
+
+const smallButtonStyle: CSSProperties = {
+  ...secondaryButtonStyle,
+  minHeight: "36px",
+  padding: "7px 12px",
+  fontSize: "14px",
+};
+
+const disabledStyle: CSSProperties = {
+  opacity: 0.6,
+  cursor: "not-allowed",
+};
+
+const formGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gap: "16px",
+};
+
+const detailGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+  gap: "10px",
+};
+
+const detailTileStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "16px",
+  padding: "12px",
+  backgroundColor: "rgba(15, 23, 42, 0.58)",
+  color: "#cbd5e1",
+  fontSize: "14px",
+  lineHeight: 1.45,
+};
+
+const messageStyle: CSSProperties = {
+  padding: "12px 14px",
+  borderRadius: "16px",
+  margin: "0 0 18px",
+  fontWeight: 800,
+};
+
+const errorMessageStyle: CSSProperties = {
+  ...messageStyle,
+  border: "1px solid rgba(248, 113, 113, 0.32)",
+  backgroundColor: "rgba(127, 29, 29, 0.24)",
+  color: "#fecaca",
+};
+
+const successMessageStyle: CSSProperties = {
+  ...messageStyle,
+  border: "1px solid rgba(74, 222, 128, 0.32)",
+  backgroundColor: "rgba(20, 83, 45, 0.24)",
+  color: "#bbf7d0",
+};
+
+const countPillStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: "30px",
+  minWidth: "36px",
+  padding: "4px 10px",
+  borderRadius: "999px",
+  color: "#ddd6fe",
+  backgroundColor: "rgba(124, 58, 237, 0.24)",
+  border: "1px solid rgba(196, 181, 253, 0.28)",
+  fontWeight: 900,
+};
+
+const checkboxStyle: CSSProperties = {
+  width: "18px",
+  height: "18px",
+  marginTop: "5px",
+  accentColor: "#a855f7",
+};
 
 function badgeStyle(value: string): CSSProperties {
   const normalized = value.toLowerCase();
 
-  const backgroundColor =
-    normalized.includes("saved")
-      ? "rgba(34, 197, 94, 0.20)"
-      : normalized.includes("existing") || normalized.includes("update")
-        ? "rgba(245, 158, 11, 0.22)"
-        : normalized.includes("skip")
-          ? "rgba(239, 68, 68, 0.18)"
-          : "rgba(124, 58, 237, 0.22)";
+  const backgroundColor = normalized.includes("saved")
+    ? "rgba(34, 197, 94, 0.20)"
+    : normalized.includes("existing") || normalized.includes("update")
+      ? "rgba(245, 158, 11, 0.22)"
+      : normalized.includes("skip")
+        ? "rgba(239, 68, 68, 0.18)"
+        : "rgba(124, 58, 237, 0.22)";
 
-  const color =
-    normalized.includes("saved")
-      ? "#86efac"
-      : normalized.includes("existing") || normalized.includes("update")
-        ? "#fcd34d"
-        : normalized.includes("skip")
-          ? "#fca5a5"
-          : "#c4b5fd";
+  const color = normalized.includes("saved")
+    ? "#86efac"
+    : normalized.includes("existing") || normalized.includes("update")
+      ? "#fcd34d"
+      : normalized.includes("skip")
+        ? "#fca5a5"
+        : "#c4b5fd";
 
   return {
     display: "inline-flex",
     alignItems: "center",
     borderRadius: "999px",
-    padding: "3px 9px",
+    padding: "4px 10px",
     fontSize: "12px",
     fontWeight: 900,
     backgroundColor,
@@ -368,6 +482,8 @@ export default function ImportLeadsPage() {
     (lead) => lead.selected && !lead.saved && lead.saveMode !== "skip"
   ).length;
   const unsavedCount = leads.filter((lead) => !lead.saved).length;
+  const existingMatchCount = leads.filter((lead) => lead.existingCompany).length;
+  const savedCount = leads.filter((lead) => lead.saved).length;
 
   async function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -611,7 +727,7 @@ export default function ImportLeadsPage() {
             enrichment: null,
             enrichmentError: "",
             existingCompany,
-            saveMode: existingCompany ? "update" : "create" as SaveMode,
+            saveMode: (existingCompany ? "update" : "create") as SaveMode,
           };
         });
 
@@ -729,58 +845,29 @@ export default function ImportLeadsPage() {
   }
 
   return (
-    <main style={pageStyle()}>
-      <section style={{ maxWidth: "1120px", margin: "0 auto" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            marginBottom: "22px",
-            gap: "16px",
-            flexWrap: "wrap",
-          }}
-        >
+    <main style={pageStyle}>
+      <section style={shellStyle}>
+        <div style={headerStyle}>
           <div>
-            <p
-              style={{
-                ...mutedTextStyle(),
-                textTransform: "uppercase",
-                letterSpacing: "1.8px",
-                fontSize: "12px",
-                fontWeight: 900,
-                margin: "0 0 8px",
-              }}
-            >
-              Intelligence
-            </p>
-
-            <h1 style={{ fontSize: "32px", margin: "0 0 8px" }}>
-              Import Leads
-            </h1>
-
-            <p
-              style={{
-                ...mutedTextStyle(),
-                margin: 0,
-                lineHeight: 1.5,
-                maxWidth: "920px",
-              }}
-            >
+            <p style={eyebrowStyle}>Intelligence / Import Leads</p>
+            <h1 style={titleStyle}>Import Leads</h1>
+            <p style={subtitleStyle}>
               Paste a Google search URL or type a search phrase. Sell It will
               search business results, flag possible existing companies, enrich
               websites, and let you choose whether to update or create records.
             </p>
           </div>
 
-          <Link href="/companies" style={secondaryButtonStyle()}>
-            View Companies
-          </Link>
+          <div style={actionRowStyle}>
+            <Link href="/companies" style={secondaryButtonStyle}>
+              View Companies
+            </Link>
+          </div>
         </div>
 
-        <section style={{ ...panelStyle(), marginBottom: "18px" }}>
+        <section style={{ ...cardStyle, marginBottom: "18px" }}>
           <form onSubmit={handleSearch}>
-            <label style={fieldLabelStyle()}>
+            <label style={labelStyle}>
               Google search URL or search phrase
               <textarea
                 value={searchInput}
@@ -788,31 +875,32 @@ export default function ImportLeadsPage() {
                 placeholder="Example: dirt haulers dickinson nd"
                 rows={5}
                 required
-                style={{ ...inputStyle(), resize: "vertical", lineHeight: 1.4 }}
+                style={textareaStyle}
               />
             </label>
 
             {previewSearchPhrase && (
-              <p style={{ ...mutedTextStyle(), marginTop: "10px" }}>
-                Search phrase detected:{" "}
-                <strong style={{ color: "white" }}>{previewSearchPhrase}</strong>
-              </p>
+              <div
+                style={{
+                  marginTop: "12px",
+                  border: "1px solid rgba(196, 181, 253, 0.22)",
+                  borderRadius: "16px",
+                  padding: "12px",
+                  backgroundColor: "rgba(124, 58, 237, 0.12)",
+                }}
+              >
+                <span style={mutedTextStyle}>Search phrase detected: </span>
+                <strong>{previewSearchPhrase}</strong>
+              </div>
             )}
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                gap: "16px",
-                marginTop: "18px",
-              }}
-            >
-              <label style={fieldLabelStyle()}>
+            <div style={{ ...formGridStyle, marginTop: "18px" }}>
+              <label style={labelStyle}>
                 Max Results
                 <select
                   value={maxResults}
                   onChange={(event) => setMaxResults(event.target.value)}
-                  style={inputStyle()}
+                  style={inputStyle}
                 >
                   <option value="5">5</option>
                   <option value="10">10</option>
@@ -821,12 +909,12 @@ export default function ImportLeadsPage() {
                 </select>
               </label>
 
-              <label style={fieldLabelStyle()}>
+              <label style={labelStyle}>
                 Saved Lead Temperature
                 <select
                   value={leadTemperature}
                   onChange={(event) => setLeadTemperature(event.target.value)}
-                  style={inputStyle()}
+                  style={inputStyle}
                 >
                   <option value="Cold">Cold</option>
                   <option value="Warm">Warm</option>
@@ -841,9 +929,9 @@ export default function ImportLeadsPage() {
               type="submit"
               disabled={searching}
               style={{
-                ...primaryButtonStyle(),
+                ...primaryButtonStyle,
                 marginTop: "18px",
-                opacity: searching ? 0.65 : 1,
+                ...(searching ? disabledStyle : {}),
               }}
             >
               {searching ? "Searching..." : "Find Leads"}
@@ -851,44 +939,43 @@ export default function ImportLeadsPage() {
           </form>
         </section>
 
-        {errorMessage && (
-          <p style={{ color: "#fca5a5", maxWidth: "1000px" }}>
-            Error: {errorMessage}
-          </p>
-        )}
+        {errorMessage && <p style={errorMessageStyle}>Error: {errorMessage}</p>}
 
-        {successMessage && (
-          <p style={{ color: "#86efac", maxWidth: "1000px" }}>
-            {successMessage}
-          </p>
-        )}
+        {successMessage && <p style={successMessageStyle}>{successMessage}</p>}
 
         {leads.length > 0 && (
           <section>
             <div
               style={{
-                ...panelStyle(),
+                ...cardStyle,
                 display: "flex",
                 flexWrap: "wrap",
                 alignItems: "center",
                 justifyContent: "space-between",
-                gap: "12px",
+                gap: "14px",
                 marginBottom: "16px",
               }}
             >
               <div>
-                <h2 style={{ margin: "0 0 6px" }}>Review Results</h2>
-                <p style={{ ...mutedTextStyle(), margin: 0 }}>
-                  {leads.length} result(s) found. {selectedCount} selected.{" "}
-                  {unsavedCount} not saved yet.
-                </p>
+                <p style={eyebrowStyle}>Review Results</p>
+                <h2 style={{ margin: "0 0 10px" }}>Choose what to save</h2>
+
+                <div style={actionRowStyle}>
+                  <span style={countPillStyle}>{leads.length} found</span>
+                  <span style={countPillStyle}>{selectedCount} selected</span>
+                  <span style={countPillStyle}>{unsavedCount} unsaved</span>
+                  <span style={countPillStyle}>
+                    {existingMatchCount} existing matches
+                  </span>
+                  <span style={countPillStyle}>{savedCount} saved</span>
+                </div>
               </div>
 
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+              <div style={actionRowStyle}>
                 <button
                   type="button"
                   onClick={selectAllUnsaved}
-                  style={secondaryButtonStyle()}
+                  style={secondaryButtonStyle}
                 >
                   Select All
                 </button>
@@ -896,7 +983,7 @@ export default function ImportLeadsPage() {
                 <button
                   type="button"
                   onClick={clearSelections}
-                  style={secondaryButtonStyle()}
+                  style={secondaryButtonStyle}
                 >
                   Clear Selections
                 </button>
@@ -907,8 +994,8 @@ export default function ImportLeadsPage() {
                     onClick={loadNextPage}
                     disabled={loadingNextPage}
                     style={{
-                      ...secondaryButtonStyle(),
-                      opacity: loadingNextPage ? 0.65 : 1,
+                      ...secondaryButtonStyle,
+                      ...(loadingNextPage ? disabledStyle : {}),
                     }}
                   >
                     {loadingNextPage ? "Loading..." : "Get Next 20"}
@@ -920,8 +1007,8 @@ export default function ImportLeadsPage() {
                   onClick={saveSelectedLeads}
                   disabled={saving || selectedCount === 0}
                   style={{
-                    ...primaryButtonStyle(),
-                    opacity: saving || selectedCount === 0 ? 0.65 : 1,
+                    ...primaryButtonStyle,
+                    ...(saving || selectedCount === 0 ? disabledStyle : {}),
                   }}
                 >
                   {saving ? "Saving..." : "Save / Update Selected"}
@@ -934,16 +1021,17 @@ export default function ImportLeadsPage() {
                 <article
                   key={lead.resultKey}
                   style={{
-                    ...panelStyle(),
+                    ...resultCardStyle,
                     borderColor: lead.existingCompany
                       ? "rgba(245, 158, 11, 0.55)"
-                      : "#2f2f2f",
-                    opacity: lead.saved ? 0.65 : 1,
+                      : "rgba(148, 163, 184, 0.18)",
+                    opacity: lead.saved ? 0.68 : 1,
                   }}
                 >
                   <label
                     style={{
-                      display: "flex",
+                      display: "grid",
+                      gridTemplateColumns: "30px 1fr",
                       alignItems: "flex-start",
                       gap: "12px",
                       cursor: lead.saved ? "default" : "pointer",
@@ -954,25 +1042,25 @@ export default function ImportLeadsPage() {
                       checked={lead.selected}
                       disabled={lead.saved}
                       onChange={() => toggleLead(lead.resultKey)}
-                      style={{ marginTop: "6px", transform: "scale(1.2)" }}
+                      style={checkboxStyle}
                     />
 
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ minWidth: 0 }}>
                       <div
                         style={{
                           display: "flex",
                           flexWrap: "wrap",
                           justifyContent: "space-between",
-                          gap: "10px",
-                          marginBottom: "8px",
+                          gap: "12px",
+                          marginBottom: "12px",
                         }}
                       >
                         <div>
-                          <h3 style={{ margin: "0 0 6px" }}>
+                          <h3 style={{ margin: "0 0 6px", fontSize: "20px" }}>
                             #{index + 1} {lead.name}
                           </h3>
 
-                          <p style={{ ...mutedTextStyle(), margin: 0 }}>
+                          <p style={{ ...mutedTextStyle, margin: 0 }}>
                             {leadAddressText(lead)}
                           </p>
                         </div>
@@ -991,7 +1079,9 @@ export default function ImportLeadsPage() {
                             </span>
                           )}
 
-                          {lead.saved && <span style={badgeStyle("Saved")}>Saved</span>}
+                          {lead.saved && (
+                            <span style={badgeStyle("Saved")}>Saved</span>
+                          )}
 
                           {!lead.saved && (
                             <span style={badgeStyle(lead.saveMode)}>
@@ -1009,15 +1099,15 @@ export default function ImportLeadsPage() {
                         <div
                           style={{
                             border: "1px solid rgba(245, 158, 11, 0.35)",
-                            borderRadius: "12px",
-                            padding: "12px",
+                            borderRadius: "16px",
+                            padding: "14px",
                             backgroundColor: "rgba(245, 158, 11, 0.10)",
-                            marginBottom: "12px",
+                            marginBottom: "14px",
                           }}
                         >
                           <strong>Possible existing company found</strong>
 
-                          <p style={{ margin: "6px 0" }}>
+                          <p style={{ margin: "8px 0" }}>
                             Match:{" "}
                             <Link
                               href={`/companies/${lead.existingCompany.id}`}
@@ -1027,11 +1117,11 @@ export default function ImportLeadsPage() {
                             </Link>
                           </p>
 
-                          <p style={{ margin: "6px 0" }}>
+                          <p style={{ margin: "8px 0" }}>
                             Reason: {lead.existingCompany.reason}
                           </p>
 
-                          <label style={fieldLabelStyle()}>
+                          <label style={labelStyle}>
                             Save choice
                             <select
                               value={lead.saveMode}
@@ -1042,7 +1132,7 @@ export default function ImportLeadsPage() {
                                 )
                               }
                               disabled={lead.saved}
-                              style={inputStyle()}
+                              style={inputStyle}
                             >
                               <option value="update">Update existing company</option>
                               <option value="skip">Skip this result</option>
@@ -1052,29 +1142,27 @@ export default function ImportLeadsPage() {
                         </div>
                       )}
 
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                          gap: "8px",
-                          color: "#d1d5db",
-                          fontSize: "14px",
-                        }}
-                      >
-                        <div>Phone: {lead.phone || "Not returned"}</div>
-                        <div>Type: {lead.primaryType || "Not returned"}</div>
-                        <div>Status: {lead.businessStatus || "Not returned"}</div>
+                      <div style={detailGridStyle}>
+                        <div style={detailTileStyle}>
+                          <strong>Phone</strong>
+                          <br />
+                          {lead.phone || "Not returned"}
+                        </div>
+
+                        <div style={detailTileStyle}>
+                          <strong>Type</strong>
+                          <br />
+                          {lead.primaryType || "Not returned"}
+                        </div>
+
+                        <div style={detailTileStyle}>
+                          <strong>Status</strong>
+                          <br />
+                          {lead.businessStatus || "Not returned"}
+                        </div>
                       </div>
 
-                      <div
-                        style={{
-                          display: "flex",
-                          flexWrap: "wrap",
-                          alignItems: "center",
-                          gap: "10px",
-                          marginTop: "12px",
-                        }}
-                      >
+                      <div style={{ ...actionRowStyle, marginTop: "14px" }}>
                         {lead.website && (
                           <a
                             href={lead.website}
@@ -1102,13 +1190,10 @@ export default function ImportLeadsPage() {
                           onClick={() => enrichLead(lead.resultKey)}
                           disabled={lead.saved || lead.enriching || !lead.website}
                           style={{
-                            ...secondaryButtonStyle(),
-                            minHeight: "36px",
-                            padding: "0 12px",
-                            opacity:
-                              lead.saved || lead.enriching || !lead.website
-                                ? 0.55
-                                : 1,
+                            ...smallButtonStyle,
+                            ...(lead.saved || lead.enriching || !lead.website
+                              ? disabledStyle
+                              : {}),
                           }}
                         >
                           {lead.enriching ? "Enriching..." : "Enrich Website"}
@@ -1116,7 +1201,13 @@ export default function ImportLeadsPage() {
                       </div>
 
                       {lead.enrichmentError && (
-                        <p style={{ color: "#fca5a5", marginBottom: 0 }}>
+                        <p
+                          style={{
+                            color: "#fca5a5",
+                            margin: "12px 0 0",
+                            fontWeight: 800,
+                          }}
+                        >
                           Enrichment error: {lead.enrichmentError}
                         </p>
                       )}
@@ -1125,10 +1216,10 @@ export default function ImportLeadsPage() {
                         <div
                           style={{
                             marginTop: "14px",
-                            padding: "12px",
-                            border: "1px solid #2f2f2f",
-                            borderRadius: "12px",
-                            backgroundColor: "#111",
+                            padding: "14px",
+                            border: "1px solid rgba(148, 163, 184, 0.18)",
+                            borderRadius: "16px",
+                            backgroundColor: "rgba(15, 23, 42, 0.58)",
                           }}
                         >
                           <strong>Website Enrichment</strong>
@@ -1178,5 +1269,3 @@ export default function ImportLeadsPage() {
     </main>
   );
 }
-
-

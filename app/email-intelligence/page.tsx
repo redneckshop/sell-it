@@ -124,6 +124,11 @@ const pageStyle: CSSProperties = {
   fontFamily: "Arial, sans-serif",
 };
 
+const shellStyle: CSSProperties = {
+  maxWidth: "1180px",
+  margin: "0 auto",
+};
+
 const navStyle: CSSProperties = {
   display: "none",
 };
@@ -135,14 +140,13 @@ const linkStyle: CSSProperties = {
 };
 
 const cardStyle: CSSProperties = {
-  border: "1px solid rgba(148, 163, 184, 0.16)",
+  border: "1px solid rgba(148, 163, 184, 0.18)",
   background:
-    "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
-  borderRadius: "20px",
-  padding: "20px",
+    "linear-gradient(135deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.94))",
+  borderRadius: "22px",
+  padding: "22px",
   marginBottom: "18px",
-  maxWidth: "1120px",
-  boxShadow: "0 20px 70px rgba(2, 6, 23, 0.24)",
+  boxShadow: "0 18px 50px rgba(0, 0, 0, 0.22)",
 };
 
 const inputStyle: CSSProperties = {
@@ -151,9 +155,9 @@ const inputStyle: CSSProperties = {
   marginTop: "8px",
   marginBottom: "16px",
   padding: "12px 14px",
-  borderRadius: "12px",
+  borderRadius: "14px",
   border: "1px solid rgba(148, 163, 184, 0.28)",
-  backgroundColor: "#0f172a",
+  backgroundColor: "rgba(15, 23, 42, 0.9)",
   color: "#f8fafc",
   fontSize: "15px",
   boxSizing: "border-box",
@@ -167,35 +171,37 @@ const gridStyle: CSSProperties = {
 };
 
 const buttonStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: "46px",
   marginTop: "16px",
   padding: "12px 18px",
   borderRadius: "999px",
-  border: "1px solid rgba(167, 139, 250, 0.45)",
-  background:
-    "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
+  border: "1px solid rgba(255, 255, 255, 0.14)",
+  background: "linear-gradient(135deg, #7c3aed, #a855f7)",
   color: "white",
-  fontWeight: 800,
+  fontWeight: 900,
   cursor: "pointer",
-  boxShadow: "0 16px 36px rgba(79, 70, 229, 0.28)",
+  boxShadow: "0 18px 36px rgba(124, 58, 237, 0.24)",
 };
 
 const headerStyle: CSSProperties = {
-  maxWidth: "1120px",
   marginBottom: "24px",
-  border: "1px solid rgba(148, 163, 184, 0.16)",
+  border: "1px solid rgba(148, 163, 184, 0.18)",
   borderRadius: "24px",
   padding: "24px",
   background:
-    "radial-gradient(circle at top left, rgba(124, 58, 237, 0.24), transparent 32%), linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.72))",
-  boxShadow: "0 24px 80px rgba(2, 6, 23, 0.28)",
+    "radial-gradient(circle at top left, rgba(124, 58, 237, 0.24), transparent 32%), linear-gradient(135deg, rgba(30, 41, 59, 0.96), rgba(15, 23, 42, 0.88))",
+  boxShadow: "0 18px 50px rgba(0, 0, 0, 0.22)",
 };
 
 const eyebrowStyle: CSSProperties = {
   margin: "0 0 8px",
-  color: "#a78bfa",
+  color: "#c4b5fd",
   fontSize: "13px",
   fontWeight: 900,
-  letterSpacing: "0.12em",
+  letterSpacing: "0.08em",
   textTransform: "uppercase",
 };
 
@@ -210,7 +216,7 @@ const mutedTextStyle: CSSProperties = {
   color: "#cbd5e1",
   margin: 0,
   maxWidth: "880px",
-  lineHeight: 1.65,
+  lineHeight: 1.55,
 };
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -1013,7 +1019,8 @@ export default function EmailIntelligencePage() {
 
   return (
     <main style={pageStyle}>
-      <header style={headerStyle}>
+      <section style={shellStyle}>
+        <header style={headerStyle}>
         <p style={eyebrowStyle}>Capture</p>
 
         <h1 style={titleStyle}>Email Intelligence</h1>
@@ -1400,17 +1407,18 @@ export default function EmailIntelligencePage() {
         </section>
       )}
 
-      <section style={cardStyle}>
-        <h2 style={{ marginTop: 0 }}>Safety Rules</h2>
+        <section style={cardStyle}>
+          <h2 style={{ marginTop: 0 }}>Safety Rules</h2>
 
-        <ul style={{ color: "#ddd", lineHeight: 1.7 }}>
-          <li>No Bluehost connection.</li>
-          <li>No IMAP or SMTP credentials.</li>
-          <li>No email sending.</li>
-          <li>No inbox polling.</li>
-          <li>No silent writes.</li>
-          <li>Review before save.</li>
-        </ul>
+          <ul style={{ color: "#ddd", lineHeight: 1.7 }}>
+            <li>No Bluehost connection.</li>
+            <li>No IMAP or SMTP credentials.</li>
+            <li>No email sending.</li>
+            <li>No inbox polling.</li>
+            <li>No silent writes.</li>
+            <li>Review before save.</li>
+          </ul>
+        </section>
       </section>
     </main>
   );
