@@ -208,6 +208,7 @@ const logoStyle: CSSProperties = {
 };
 
 const brandTitleStyle: CSSProperties = {
+  display: "block",
   fontWeight: 950,
   lineHeight: 1.05,
   fontSize: "18px",
@@ -215,6 +216,7 @@ const brandTitleStyle: CSSProperties = {
 };
 
 const brandSubtitleStyle: CSSProperties = {
+  display: "block",
   color: "#a3a3a3",
   fontSize: "11px",
   marginTop: "2px",
@@ -569,7 +571,7 @@ function renderSidebarItem(item: SidebarItem, pathname: string) {
       {item.badge ? (
         <span style={navBadgeStyle}>{item.badge}</span>
       ) : active ? (
-        <span aria-hidden="true">â†’</span>
+        <span aria-hidden="true">></span>
       ) : null}
     </Link>
   );
@@ -637,7 +639,7 @@ export default function AppShell({ children }: AppShellProps) {
               aria-expanded={quickAddOpen}
               aria-haspopup="menu"
             >
-              + New â–¾
+              + New 
             </button>
 
             {quickAddOpen && (
@@ -699,3 +701,4 @@ export default function AppShell({ children }: AppShellProps) {
     </div>
   );
 }
+
