@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { supabase } from "../../lib/supabase";
 import AttachmentsSection from "../../components/AttachmentsSection";
 import ArchiveRestoreButton from "../../components/ArchiveRestoreButton";
@@ -120,6 +121,148 @@ type PageProps = {
   params: Promise<{
     id: string;
   }>;
+};
+
+const pageStyle: CSSProperties = {
+  minHeight: "100vh",
+  color: "#f8fafc",
+  padding: "28px",
+  fontFamily: "Arial, sans-serif",
+};
+
+const actionRowStyle: CSSProperties = {
+  display: "flex",
+  gap: "12px",
+  marginBottom: "20px",
+  flexWrap: "wrap",
+};
+
+const secondaryButtonStyle: CSSProperties = {
+  color: "#f8fafc",
+  background: "rgba(15, 23, 42, 0.74)",
+  border: "1px solid rgba(148, 163, 184, 0.25)",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 800,
+};
+
+const dangerButtonStyle: CSSProperties = {
+  color: "#fecaca",
+  background: "rgba(127, 29, 29, 0.24)",
+  border: "1px solid rgba(248, 113, 113, 0.35)",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 800,
+};
+
+const headerStyle: CSSProperties = {
+  maxWidth: "1080px",
+  marginBottom: "24px",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "24px",
+  padding: "24px",
+  background:
+    "radial-gradient(circle at top left, rgba(124, 58, 237, 0.22), transparent 34%), linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.72))",
+  boxShadow: "0 24px 80px rgba(2, 6, 23, 0.28)",
+};
+
+const eyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  color: "#a78bfa",
+  fontSize: "13px",
+  fontWeight: 900,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+};
+
+const titleStyle: CSSProperties = {
+  margin: "0 0 10px",
+  fontSize: "34px",
+  lineHeight: 1.05,
+  letterSpacing: "-0.04em",
+};
+
+const mutedTextStyle: CSSProperties = {
+  color: "#cbd5e1",
+  margin: 0,
+  maxWidth: "900px",
+  lineHeight: 1.65,
+};
+
+const cardStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "20px",
+  padding: "20px",
+  background:
+    "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
+  maxWidth: "1080px",
+  marginBottom: "22px",
+  boxShadow: "0 20px 70px rgba(2, 6, 23, 0.24)",
+};
+
+const relatedCardStyle: CSSProperties = {
+  display: "block",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "18px",
+  padding: "16px",
+  marginBottom: "12px",
+  background: "rgba(15, 23, 42, 0.72)",
+  color: "#f8fafc",
+  textDecoration: "none",
+  maxWidth: "860px",
+};
+
+const sectionTitleStyle: CSSProperties = {
+  marginTop: "38px",
+  marginBottom: "14px",
+  color: "#f8fafc",
+};
+
+const labelStyle: CSSProperties = {
+  color: "#94a3b8",
+  fontSize: "13px",
+  fontWeight: 800,
+  textTransform: "uppercase",
+  letterSpacing: "0.05em",
+};
+
+const valueStyle: CSSProperties = {
+  margin: "4px 0 0",
+  color: "#f8fafc",
+};
+
+const gridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gap: "16px",
+};
+
+const archivedStyle: CSSProperties = {
+  border: "1px solid rgba(245, 158, 11, 0.36)",
+  background: "rgba(120, 53, 15, 0.22)",
+  color: "#fde68a",
+  padding: "14px",
+  borderRadius: "16px",
+  maxWidth: "1080px",
+  marginBottom: "18px",
+  fontWeight: 900,
+};
+
+const errorStyle: CSSProperties = {
+  border: "1px solid rgba(248, 113, 113, 0.36)",
+  background: "rgba(127, 29, 29, 0.22)",
+  color: "#fecaca",
+  padding: "14px",
+  borderRadius: "16px",
+  marginBottom: "18px",
+  maxWidth: "1080px",
+};
+
+const emptyTextStyle: CSSProperties = {
+  color: "#94a3b8",
+  marginTop: 0,
 };
 
 function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
@@ -424,63 +567,14 @@ export default async function CompanyDetailPage({ params }: PageProps) {
   ];
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#111",
-        color: "white",
-        padding: "40px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          gap: "12px",
-          marginBottom: "32px",
-          flexWrap: "wrap",
-        }}
-      >
-        <Link
-          href="/"
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Home
-        </Link>
-
-        <Link
-          href="/companies"
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
+    <main style={pageStyle}>
+      <div style={actionRowStyle}>
+        <Link href="/companies" style={secondaryButtonStyle}>
           Back to Companies
         </Link>
 
         {company && (
-          <Link
-            href={`/companies/${company.id}/edit`}
-            style={{
-              color: "black",
-              backgroundColor: "white",
-              padding: "10px 14px",
-              borderRadius: "6px",
-              textDecoration: "none",
-              fontWeight: "bold",
-            }}
-          >
+          <Link href={`/companies/${company.id}/edit`} style={secondaryButtonStyle}>
             Edit Company
           </Link>
         )}
@@ -495,105 +589,97 @@ export default async function CompanyDetailPage({ params }: PageProps) {
         )}
 
         {company && (
-          <Link
-            href={`/companies/${company.id}/delete`}
-            style={{
-              color: "black",
-              backgroundColor: "#ffdddd",
-              padding: "10px 14px",
-              borderRadius: "6px",
-              textDecoration: "none",
-              fontWeight: "bold",
-            }}
-          >
+          <Link href={`/companies/${company.id}/delete`} style={dangerButtonStyle}>
             Delete Company
           </Link>
         )}
       </div>
 
-      {error && <p style={{ color: "red" }}>Database error: {error.message}</p>}
+      {error && <div style={errorStyle}>Database error: {error.message}</div>}
 
       {company && (
         <>
-          {company.is_archived && (
-            <div
-              style={{
-                border: "1px solid #d6a400",
-                backgroundColor: "#211c0d",
-                color: "#f5d76e",
-                padding: "16px",
-                borderRadius: "8px",
-                maxWidth: "650px",
-                marginBottom: "24px",
-                fontWeight: "bold",
-              }}
-            >
-              ARCHIVED
+          {company.is_archived && <div style={archivedStyle}>ARCHIVED</div>}
+
+          <header style={headerStyle}>
+            <p style={eyebrowStyle}>Company Detail</p>
+
+            <h1 style={titleStyle}>{company.name}</h1>
+
+            <p style={mutedTextStyle}>
+              Business-memory view for this company, including contacts,
+              opportunities, tasks, activities, notes, attachments, pain points,
+              timeline, and relationship summary.
+            </p>
+          </header>
+
+          <section style={cardStyle}>
+            <div style={gridStyle}>
+              <div>
+                <div style={labelStyle}>Website</div>
+                <p style={valueStyle}>{company.website || "Not provided"}</p>
+              </div>
+
+              <div>
+                <div style={labelStyle}>Phone</div>
+                <p style={valueStyle}>{company.phone || "Not provided"}</p>
+              </div>
+
+              <div>
+                <div style={labelStyle}>Email</div>
+                <p style={valueStyle}>{company.email || "Not provided"}</p>
+              </div>
+
+              <div>
+                <div style={labelStyle}>Lead Temperature</div>
+                <p style={valueStyle}>
+                  {company.lead_temperature || "Not provided"}
+                </p>
+              </div>
+
+              <div>
+                <div style={labelStyle}>Operating Regions</div>
+                <p style={valueStyle}>
+                  {company.operating_regions || "Not provided"}
+                </p>
+              </div>
+
+              <div>
+                <div style={labelStyle}>Assets / Equipment</div>
+                <p style={valueStyle}>
+                  {company.assets_equipment || "Not provided"}
+                </p>
+              </div>
+
+              <div>
+                <div style={labelStyle}>Created</div>
+                <p style={valueStyle}>{formatDateTime(company.created_at)}</p>
+              </div>
+
+              <div>
+                <div style={labelStyle}>Last Updated</div>
+                <p style={valueStyle}>{formatDateTime(company.updated_at)}</p>
+              </div>
+
+              {company.is_archived && (
+                <>
+                  <div>
+                    <div style={labelStyle}>Archived</div>
+                    <p style={valueStyle}>
+                      {formatDateTime(company.archived_at)}
+                    </p>
+                  </div>
+
+                  <div>
+                    <div style={labelStyle}>Archive Reason</div>
+                    <p style={valueStyle}>
+                      {company.archive_reason || "Not provided"}
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
-          )}
-
-          <h1>{company.name}</h1>
-
-          <div
-            style={{
-              border: "1px solid #333",
-              padding: "20px",
-              borderRadius: "8px",
-              backgroundColor: "#1a1a1a",
-              maxWidth: "650px",
-              marginBottom: "28px",
-            }}
-          >
-            <p>
-              <strong>Website:</strong> {company.website || "Not provided"}
-            </p>
-
-            <p>
-              <strong>Phone:</strong> {company.phone || "Not provided"}
-            </p>
-
-            <p>
-              <strong>Email:</strong> {company.email || "Not provided"}
-            </p>
-
-            <p>
-              <strong>Lead Temperature:</strong>{" "}
-              {company.lead_temperature || "Not provided"}
-            </p>
-
-            <p>
-              <strong>Operating Regions:</strong>{" "}
-              {company.operating_regions || "Not provided"}
-            </p>
-
-            <p>
-              <strong>Assets / Equipment:</strong>{" "}
-              {company.assets_equipment || "Not provided"}
-            </p>
-
-            <p>
-              <strong>Created:</strong> {formatDateTime(company.created_at)}
-            </p>
-
-            <p>
-              <strong>Last Updated:</strong>{" "}
-              {formatDateTime(company.updated_at)}
-            </p>
-
-            {company.is_archived && (
-              <>
-                <p>
-                  <strong>Archived:</strong>{" "}
-                  {formatDateTime(company.archived_at)}
-                </p>
-
-                <p>
-                  <strong>Archive Reason:</strong>{" "}
-                  {company.archive_reason || "Not provided"}
-                </p>
-              </>
-            )}
-          </div>
+          </section>
 
           <RelationshipSummaryPanel
             title={`${company.name} Relationship Summary`}
@@ -607,20 +693,21 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             events={timelineEvents}
           />
 
-          <div id="related-attachments">
+          <section id="related-attachments" style={cardStyle}>
+            <p style={eyebrowStyle}>Attachments</p>
             <AttachmentsSection
               workspaceId={company.workspace_id}
               relationColumn="related_company_id"
               relationId={company.id}
             />
-          </div>
+          </section>
 
-          <h2 id="related-opportunities" style={{ marginTop: "40px" }}>
+          <h2 id="related-opportunities" style={sectionTitleStyle}>
             Related Opportunities
           </h2>
 
           {opportunities.length === 0 && (
-            <p>No opportunities linked to this company.</p>
+            <p style={emptyTextStyle}>No opportunities linked to this company.</p>
           )}
 
           {opportunities.map((opportunity) => {
@@ -630,17 +717,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
               <Link
                 key={opportunity.id}
                 href={`/opportunities/${opportunity.id}`}
-                style={{
-                  display: "block",
-                  border: "1px solid #333",
-                  padding: "16px",
-                  marginBottom: "12px",
-                  borderRadius: "8px",
-                  backgroundColor: "#1a1a1a",
-                  color: "white",
-                  textDecoration: "none",
-                  maxWidth: "750px",
-                }}
+                style={relatedCardStyle}
               >
                 <h3 style={{ marginTop: 0 }}>{opportunity.name}</h3>
 
@@ -658,9 +735,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 {opportunity.estimated_monthly_value !== null && (
                   <p>
                     Estimated Monthly Value: $
-                    {Number(
-                      opportunity.estimated_monthly_value
-                    ).toLocaleString()}
+                    {Number(opportunity.estimated_monthly_value).toLocaleString()}
                   </p>
                 )}
 
@@ -668,48 +743,28 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                   <p>Expected Close Date: {opportunity.expected_close_date}</p>
                 )}
 
-                {opportunity.next_step && (
-                  <p>Next Step: {opportunity.next_step}</p>
-                )}
+                {opportunity.next_step && <p>Next Step: {opportunity.next_step}</p>}
               </Link>
             );
           })}
 
-          <h2 id="related-notes" style={{ marginTop: "40px" }}>
+          <h2 id="related-notes" style={sectionTitleStyle}>
             Related Notes
           </h2>
 
-          {notes.length === 0 && <p>No notes linked to this company.</p>}
+          {notes.length === 0 && (
+            <p style={emptyTextStyle}>No notes linked to this company.</p>
+          )}
 
           {notes.map((note) => {
             const contact = singleRelation(note.contact);
             const opportunity = singleRelation(note.opportunity);
 
             return (
-              <Link
-                key={note.id}
-                href={`/notes/${note.id}`}
-                style={{
-                  display: "block",
-                  border: "1px solid #333",
-                  padding: "16px",
-                  marginBottom: "12px",
-                  borderRadius: "8px",
-                  backgroundColor: "#1a1a1a",
-                  color: "white",
-                  textDecoration: "none",
-                  maxWidth: "750px",
-                }}
-              >
+              <Link key={note.id} href={`/notes/${note.id}`} style={relatedCardStyle}>
                 <h3 style={{ marginTop: 0 }}>{note.title}</h3>
 
-                {note.body && (
-                  <p style={{ color: "#aaa" }}>
-                    {note.body.length > 160
-                      ? `${note.body.slice(0, 160)}...`
-                      : note.body}
-                  </p>
-                )}
+                {note.body && <p style={{ color: "#cbd5e1" }}>{shortText(note.body)}</p>}
 
                 {contact && (
                   <p>
@@ -729,27 +784,19 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             );
           })}
 
-          <h2 id="related-contacts" style={{ marginTop: "40px" }}>
+          <h2 id="related-contacts" style={sectionTitleStyle}>
             Related Contacts
           </h2>
 
-          {contacts.length === 0 && <p>No contacts linked to this company.</p>}
+          {contacts.length === 0 && (
+            <p style={emptyTextStyle}>No contacts linked to this company.</p>
+          )}
 
           {contacts.map((contact) => (
             <Link
               key={contact.id}
               href={`/contacts/${contact.id}`}
-              style={{
-                display: "block",
-                border: "1px solid #333",
-                padding: "16px",
-                marginBottom: "12px",
-                borderRadius: "8px",
-                backgroundColor: "#1a1a1a",
-                color: "white",
-                textDecoration: "none",
-                maxWidth: "750px",
-              }}
+              style={relatedCardStyle}
             >
               <h3 style={{ marginTop: 0 }}>
                 {contact.first_name} {contact.last_name || ""}
@@ -761,78 +808,57 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             </Link>
           ))}
 
-          <h2 id="related-tasks" style={{ marginTop: "40px" }}>
+          <h2 id="related-tasks" style={sectionTitleStyle}>
             Related Tasks
           </h2>
 
-          {tasks.length === 0 && <p>No tasks linked to this company.</p>}
+          {tasks.length === 0 && (
+            <p style={emptyTextStyle}>No tasks linked to this company.</p>
+          )}
 
           {tasks.map((task) => (
-            <Link
-              key={task.id}
-              href={`/tasks/${task.id}`}
-              style={{
-                display: "block",
-                border: "1px solid #333",
-                padding: "16px",
-                marginBottom: "12px",
-                borderRadius: "8px",
-                backgroundColor: "#1a1a1a",
-                color: "white",
-                textDecoration: "none",
-                maxWidth: "750px",
-              }}
-            >
+            <Link key={task.id} href={`/tasks/${task.id}`} style={relatedCardStyle}>
               <h3 style={{ marginTop: 0 }}>{task.title}</h3>
               <p>Status: {task.status}</p>
               <p>Priority: {task.priority}</p>
             </Link>
           ))}
 
-          <h2 id="related-activities" style={{ marginTop: "40px" }}>
+          <h2 id="related-activities" style={sectionTitleStyle}>
             Related Activities
           </h2>
 
           {activities.length === 0 && (
-            <p>No activities linked to this company.</p>
+            <p style={emptyTextStyle}>No activities linked to this company.</p>
           )}
 
           {activities.map((activity) => (
             <Link
               key={activity.id}
               href={`/activities/${activity.id}`}
-              style={{
-                display: "block",
-                border: "1px solid #333",
-                padding: "16px",
-                marginBottom: "12px",
-                borderRadius: "8px",
-                backgroundColor: "#1a1a1a",
-                color: "white",
-                textDecoration: "none",
-                maxWidth: "750px",
-              }}
+              style={relatedCardStyle}
             >
               <h3 style={{ marginTop: 0 }}>{activity.subject}</h3>
 
               <p>Type: {activity.activity_type}</p>
-
               <p>Date: {formatDateTime(activity.activity_date)}</p>
 
               {activity.outcome && <p>Outcome: {activity.outcome}</p>}
 
               {activity.follow_up_needed && (
-                <p style={{ fontWeight: "bold" }}>Follow Up Needed</p>
+                <p style={{ fontWeight: 900, color: "#ddd6fe" }}>
+                  Follow Up Needed
+                </p>
               )}
             </Link>
           ))}
 
-          <h2 id="related-pain-points" style={{ marginTop: "40px" }}>
+          <h2 id="related-pain-points" style={sectionTitleStyle}>
             Related Pain Points
           </h2>
 
           {painPointLinks.length === 0 && (
-            <p>No pain points linked to this company.</p>
+            <p style={emptyTextStyle}>No pain points linked to this company.</p>
           )}
 
           {painPointLinks.map((painPointLink) => {
@@ -842,21 +868,9 @@ export default async function CompanyDetailPage({ params }: PageProps) {
               <Link
                 key={painPointLink.id}
                 href={`/pain-points/${painPointLink.pain_point_id}`}
-                style={{
-                  display: "block",
-                  border: "1px solid #333",
-                  padding: "16px",
-                  marginBottom: "12px",
-                  borderRadius: "8px",
-                  backgroundColor: "#1a1a1a",
-                  color: "white",
-                  textDecoration: "none",
-                  maxWidth: "750px",
-                }}
+                style={relatedCardStyle}
               >
-                <h3 style={{ marginTop: 0 }}>
-                  {painPoint?.name || "Pain Point"}
-                </h3>
+                <h3 style={{ marginTop: 0 }}>{painPoint?.name || "Pain Point"}</h3>
 
                 {painPoint?.category && <p>Category: {painPoint.category}</p>}
 

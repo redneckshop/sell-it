@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { supabase } from "../../lib/supabase";
 import AttachmentsSection from "../../components/AttachmentsSection";
 import ArchiveRestoreButton from "../../components/ArchiveRestoreButton";
@@ -103,6 +104,148 @@ type PageProps = {
   params: Promise<{
     id: string;
   }>;
+};
+
+const pageStyle: CSSProperties = {
+  minHeight: "100vh",
+  color: "#f8fafc",
+  padding: "28px",
+  fontFamily: "Arial, sans-serif",
+};
+
+const actionRowStyle: CSSProperties = {
+  display: "flex",
+  gap: "12px",
+  marginBottom: "20px",
+  flexWrap: "wrap",
+};
+
+const secondaryButtonStyle: CSSProperties = {
+  color: "#f8fafc",
+  background: "rgba(15, 23, 42, 0.74)",
+  border: "1px solid rgba(148, 163, 184, 0.25)",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 800,
+};
+
+const dangerButtonStyle: CSSProperties = {
+  color: "#fecaca",
+  background: "rgba(127, 29, 29, 0.24)",
+  border: "1px solid rgba(248, 113, 113, 0.35)",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 800,
+};
+
+const headerStyle: CSSProperties = {
+  maxWidth: "1080px",
+  marginBottom: "24px",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "24px",
+  padding: "24px",
+  background:
+    "radial-gradient(circle at top left, rgba(124, 58, 237, 0.22), transparent 34%), linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.72))",
+  boxShadow: "0 24px 80px rgba(2, 6, 23, 0.28)",
+};
+
+const eyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  color: "#a78bfa",
+  fontSize: "13px",
+  fontWeight: 900,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+};
+
+const titleStyle: CSSProperties = {
+  margin: "0 0 10px",
+  fontSize: "34px",
+  lineHeight: 1.05,
+  letterSpacing: "-0.04em",
+};
+
+const mutedTextStyle: CSSProperties = {
+  color: "#cbd5e1",
+  margin: 0,
+  maxWidth: "900px",
+  lineHeight: 1.65,
+};
+
+const cardStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "20px",
+  padding: "20px",
+  background:
+    "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
+  maxWidth: "1080px",
+  marginBottom: "22px",
+  boxShadow: "0 20px 70px rgba(2, 6, 23, 0.24)",
+};
+
+const relatedCardStyle: CSSProperties = {
+  display: "block",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "18px",
+  padding: "16px",
+  marginBottom: "12px",
+  background: "rgba(15, 23, 42, 0.72)",
+  color: "#f8fafc",
+  textDecoration: "none",
+  maxWidth: "860px",
+};
+
+const sectionTitleStyle: CSSProperties = {
+  marginTop: "38px",
+  marginBottom: "14px",
+  color: "#f8fafc",
+};
+
+const labelStyle: CSSProperties = {
+  color: "#94a3b8",
+  fontSize: "13px",
+  fontWeight: 800,
+  textTransform: "uppercase",
+  letterSpacing: "0.05em",
+};
+
+const valueStyle: CSSProperties = {
+  margin: "4px 0 0",
+  color: "#f8fafc",
+};
+
+const gridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gap: "16px",
+};
+
+const archivedStyle: CSSProperties = {
+  border: "1px solid rgba(245, 158, 11, 0.36)",
+  background: "rgba(120, 53, 15, 0.22)",
+  color: "#fde68a",
+  padding: "14px",
+  borderRadius: "16px",
+  maxWidth: "1080px",
+  marginBottom: "18px",
+  fontWeight: 900,
+};
+
+const errorStyle: CSSProperties = {
+  border: "1px solid rgba(248, 113, 113, 0.36)",
+  background: "rgba(127, 29, 29, 0.22)",
+  color: "#fecaca",
+  padding: "14px",
+  borderRadius: "16px",
+  marginBottom: "18px",
+  maxWidth: "1080px",
+};
+
+const emptyTextStyle: CSSProperties = {
+  color: "#94a3b8",
+  marginTop: 0,
 };
 
 function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
@@ -321,7 +464,8 @@ export default async function ContactDetailPage({ params }: PageProps) {
             title: `Contact created: ${displayName}`,
             occurredAt: contact.created_at,
             category: "Contact",
-            description: contact.notes || "This contact record was created in Sell It.",
+            description:
+              contact.notes || "This contact record was created in Sell It.",
             meta: [
               contact.title ? `Title: ${contact.title}` : "No title",
               contact.email ? `Email: ${contact.email}` : "No email",
@@ -412,62 +556,14 @@ export default async function ContactDetailPage({ params }: PageProps) {
   ];
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#111",
-        color: "white",
-        padding: "40px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          gap: "12px",
-          marginBottom: "32px",
-          flexWrap: "wrap",
-        }}
-      >
-        <Link
-          href="/"
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Home
-        </Link>
-
-        <Link
-          href="/contacts"
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
+    <main style={pageStyle}>
+      <div style={actionRowStyle}>
+        <Link href="/contacts" style={secondaryButtonStyle}>
           Back to Contacts
         </Link>
+
         {contact && (
-          <Link
-            href={`/contacts/${contact.id}/edit`}
-            style={{
-              color: "black",
-              backgroundColor: "white",
-              padding: "10px 14px",
-              borderRadius: "6px",
-              textDecoration: "none",
-              fontWeight: "bold",
-            }}
-          >
+          <Link href={`/contacts/${contact.id}/edit`} style={secondaryButtonStyle}>
             Edit Contact
           </Link>
         )}
@@ -482,104 +578,98 @@ export default async function ContactDetailPage({ params }: PageProps) {
         )}
 
         {contact && (
-          <Link
-            href={`/contacts/${contact.id}/delete`}
-            style={{
-              color: "black",
-              backgroundColor: "#ffdddd",
-              padding: "10px 14px",
-              borderRadius: "6px",
-              textDecoration: "none",
-              fontWeight: "bold",
-            }}
-          >
+          <Link href={`/contacts/${contact.id}/delete`} style={dangerButtonStyle}>
             Delete Contact
           </Link>
         )}
       </div>
 
-      {error && <p style={{ color: "red" }}>Database error: {error.message}</p>}
+      {error && <div style={errorStyle}>Database error: {error.message}</div>}
 
       {contact && (
         <>
-          {contact.is_archived && (
-            <div
-              style={{
-                border: "1px solid #d6a400",
-                backgroundColor: "#211c0d",
-                color: "#f5d76e",
-                padding: "16px",
-                borderRadius: "8px",
-                maxWidth: "650px",
-                marginBottom: "24px",
-                fontWeight: "bold",
-              }}
-            >
-              ARCHIVED
-            </div>
-          )}
+          {contact.is_archived && <div style={archivedStyle}>ARCHIVED</div>}
 
-          <h1>{displayName}</h1>
+          <header style={headerStyle}>
+            <p style={eyebrowStyle}>Contact Detail</p>
 
-          <div
-            style={{
-              border: "1px solid #333",
-              padding: "20px",
-              borderRadius: "8px",
-              backgroundColor: "#1a1a1a",
-              maxWidth: "650px",
-              marginBottom: "28px",
-            }}
-          >
-            <p>
-              <strong>Title:</strong> {contact.title || "Not provided"}
+            <h1 style={titleStyle}>{displayName}</h1>
+
+            <p style={mutedTextStyle}>
+              Business-memory view for this contact, including company,
+              opportunities, tasks, activities, notes, attachments, pain points,
+              timeline, and relationship summary.
             </p>
+          </header>
 
-            <p>
-              <strong>Email:</strong> {contact.email || "Not provided"}
-            </p>
+          <section style={cardStyle}>
+            <div style={gridStyle}>
+              <div>
+                <div style={labelStyle}>Title</div>
+                <p style={valueStyle}>{contact.title || "Not provided"}</p>
+              </div>
 
-            <p>
-              <strong>Phone:</strong> {contact.phone || "Not provided"}
-            </p>
+              <div>
+                <div style={labelStyle}>Email</div>
+                <p style={valueStyle}>{contact.email || "Not provided"}</p>
+              </div>
 
-            <p>
-              <strong>Company:</strong>{" "}
-              {company ? (
-                <Link
-                  href={`/companies/${company.id}`}
-                  style={{ color: "white" }}
-                >
-                  {company.name}
-                </Link>
-              ) : (
-                "Not linked"
+              <div>
+                <div style={labelStyle}>Phone</div>
+                <p style={valueStyle}>{contact.phone || "Not provided"}</p>
+              </div>
+
+              <div>
+                <div style={labelStyle}>Company</div>
+                <p style={valueStyle}>
+                  {company ? (
+                    <Link href={`/companies/${company.id}`} style={{ color: "#c4b5fd", fontWeight: 800, textDecoration: "none" }}>
+                      {company.name}
+                    </Link>
+                  ) : (
+                    "Not linked"
+                  )}
+                </p>
+              </div>
+
+              <div>
+                <div style={labelStyle}>Created</div>
+                <p style={valueStyle}>{formatDateTime(contact.created_at)}</p>
+              </div>
+
+              {contact.is_archived && (
+                <>
+                  <div>
+                    <div style={labelStyle}>Archived</div>
+                    <p style={valueStyle}>
+                      {formatDateTime(contact.archived_at)}
+                    </p>
+                  </div>
+
+                  <div>
+                    <div style={labelStyle}>Archive Reason</div>
+                    <p style={valueStyle}>
+                      {contact.archive_reason || "Not provided"}
+                    </p>
+                  </div>
+                </>
               )}
-            </p>
+            </div>
 
-            <p>
-              <strong>Contact Notes:</strong>{" "}
-              {contact.notes || "Not provided"}
-            </p>
-
-            <p>
-              <strong>Created:</strong> {formatDateTime(contact.created_at)}
-            </p>
-
-            {contact.is_archived && (
-              <>
-                <p>
-                  <strong>Archived:</strong>{" "}
-                  {formatDateTime(contact.archived_at)}
-                </p>
-
-                <p>
-                  <strong>Archive Reason:</strong>{" "}
-                  {contact.archive_reason || "Not provided"}
-                </p>
-              </>
-            )}
-          </div>
+            <div style={{ marginTop: "22px" }}>
+              <div style={labelStyle}>Contact Notes</div>
+              <p
+                style={{
+                  ...valueStyle,
+                  color: "#cbd5e1",
+                  lineHeight: 1.65,
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {contact.notes || "Not provided"}
+              </p>
+            </div>
+          </section>
 
           <RelationshipSummaryPanel
             title={`${displayName} Relationship Summary`}
@@ -593,20 +683,21 @@ export default async function ContactDetailPage({ params }: PageProps) {
             events={timelineEvents}
           />
 
-          <div id="related-attachments">
+          <section id="related-attachments" style={cardStyle}>
+            <p style={eyebrowStyle}>Attachments</p>
             <AttachmentsSection
               workspaceId={contact.workspace_id}
               relationColumn="related_contact_id"
               relationId={contact.id}
             />
-          </div>
+          </section>
 
-          <h2 id="related-opportunities" style={{ marginTop: "40px" }}>
+          <h2 id="related-opportunities" style={sectionTitleStyle}>
             Related Opportunities
           </h2>
 
           {opportunities.length === 0 && (
-            <p>No opportunities linked to this contact.</p>
+            <p style={emptyTextStyle}>No opportunities linked to this contact.</p>
           )}
 
           {opportunities.map((opportunity) => {
@@ -616,17 +707,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
               <Link
                 key={opportunity.id}
                 href={`/opportunities/${opportunity.id}`}
-                style={{
-                  display: "block",
-                  border: "1px solid #333",
-                  padding: "16px",
-                  marginBottom: "12px",
-                  borderRadius: "8px",
-                  backgroundColor: "#1a1a1a",
-                  color: "white",
-                  textDecoration: "none",
-                  maxWidth: "750px",
-                }}
+                style={relatedCardStyle}
               >
                 <h3 style={{ marginTop: 0 }}>{opportunity.name}</h3>
 
@@ -638,9 +719,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
                 {opportunity.estimated_monthly_value !== null && (
                   <p>
                     Estimated Monthly Value: $
-                    {Number(
-                      opportunity.estimated_monthly_value
-                    ).toLocaleString()}
+                    {Number(opportunity.estimated_monthly_value).toLocaleString()}
                   </p>
                 )}
 
@@ -648,54 +727,32 @@ export default async function ContactDetailPage({ params }: PageProps) {
                   <p>Expected Close Date: {opportunity.expected_close_date}</p>
                 )}
 
-                {opportunity.next_step && (
-                  <p>Next Step: {opportunity.next_step}</p>
-                )}
+                {opportunity.next_step && <p>Next Step: {opportunity.next_step}</p>}
               </Link>
             );
           })}
 
-          <h2 id="related-notes" style={{ marginTop: "40px" }}>
+          <h2 id="related-notes" style={sectionTitleStyle}>
             Related Notes
           </h2>
 
-          {notes.length === 0 && <p>No notes linked to this contact.</p>}
+          {notes.length === 0 && (
+            <p style={emptyTextStyle}>No notes linked to this contact.</p>
+          )}
 
           {notes.map((note) => {
             const noteCompany = singleRelation(note.company);
             const noteOpportunity = singleRelation(note.opportunity);
 
             return (
-              <Link
-                key={note.id}
-                href={`/notes/${note.id}`}
-                style={{
-                  display: "block",
-                  border: "1px solid #333",
-                  padding: "16px",
-                  marginBottom: "12px",
-                  borderRadius: "8px",
-                  backgroundColor: "#1a1a1a",
-                  color: "white",
-                  textDecoration: "none",
-                  maxWidth: "750px",
-                }}
-              >
+              <Link key={note.id} href={`/notes/${note.id}`} style={relatedCardStyle}>
                 <h3 style={{ marginTop: 0 }}>{note.title}</h3>
 
-                {note.body && (
-                  <p style={{ color: "#aaa" }}>
-                    {note.body.length > 160
-                      ? `${note.body.slice(0, 160)}...`
-                      : note.body}
-                  </p>
-                )}
+                {note.body && <p style={{ color: "#cbd5e1" }}>{shortText(note.body)}</p>}
 
                 {noteCompany && <p>Company: {noteCompany.name}</p>}
 
-                {noteOpportunity && (
-                  <p>Opportunity: {noteOpportunity.name}</p>
-                )}
+                {noteOpportunity && <p>Opportunity: {noteOpportunity.name}</p>}
 
                 {note.source && <p>Source: {note.source}</p>}
                 {note.tags && <p>Tags: {note.tags}</p>}
@@ -707,78 +764,57 @@ export default async function ContactDetailPage({ params }: PageProps) {
             );
           })}
 
-          <h2 id="related-tasks" style={{ marginTop: "40px" }}>
+          <h2 id="related-tasks" style={sectionTitleStyle}>
             Related Tasks
           </h2>
 
-          {tasks.length === 0 && <p>No tasks linked to this contact.</p>}
+          {tasks.length === 0 && (
+            <p style={emptyTextStyle}>No tasks linked to this contact.</p>
+          )}
 
           {tasks.map((task) => (
-            <Link
-              key={task.id}
-              href={`/tasks/${task.id}`}
-              style={{
-                display: "block",
-                border: "1px solid #333",
-                padding: "16px",
-                marginBottom: "12px",
-                borderRadius: "8px",
-                backgroundColor: "#1a1a1a",
-                color: "white",
-                textDecoration: "none",
-                maxWidth: "750px",
-              }}
-            >
+            <Link key={task.id} href={`/tasks/${task.id}`} style={relatedCardStyle}>
               <h3 style={{ marginTop: 0 }}>{task.title}</h3>
               <p>Status: {task.status}</p>
               <p>Priority: {task.priority}</p>
             </Link>
           ))}
 
-          <h2 id="related-activities" style={{ marginTop: "40px" }}>
+          <h2 id="related-activities" style={sectionTitleStyle}>
             Related Activities
           </h2>
 
           {activities.length === 0 && (
-            <p>No activities linked to this contact.</p>
+            <p style={emptyTextStyle}>No activities linked to this contact.</p>
           )}
 
           {activities.map((activity) => (
             <Link
               key={activity.id}
               href={`/activities/${activity.id}`}
-              style={{
-                display: "block",
-                border: "1px solid #333",
-                padding: "16px",
-                marginBottom: "12px",
-                borderRadius: "8px",
-                backgroundColor: "#1a1a1a",
-                color: "white",
-                textDecoration: "none",
-                maxWidth: "750px",
-              }}
+              style={relatedCardStyle}
             >
               <h3 style={{ marginTop: 0 }}>{activity.subject}</h3>
 
               <p>Type: {activity.activity_type}</p>
-
               <p>Date: {formatDateTime(activity.activity_date)}</p>
 
               {activity.outcome && <p>Outcome: {activity.outcome}</p>}
 
               {activity.follow_up_needed && (
-                <p style={{ fontWeight: "bold" }}>Follow Up Needed</p>
+                <p style={{ fontWeight: 900, color: "#ddd6fe" }}>
+                  Follow Up Needed
+                </p>
               )}
             </Link>
           ))}
 
-          <h2 id="related-pain-points" style={{ marginTop: "40px" }}>
+          <h2 id="related-pain-points" style={sectionTitleStyle}>
             Related Pain Points
           </h2>
 
           {painPointLinks.length === 0 && (
-            <p>No pain points linked to this contact.</p>
+            <p style={emptyTextStyle}>No pain points linked to this contact.</p>
           )}
 
           {painPointLinks.map((painPointLink) => {
@@ -788,21 +824,9 @@ export default async function ContactDetailPage({ params }: PageProps) {
               <Link
                 key={painPointLink.id}
                 href={`/pain-points/${painPointLink.pain_point_id}`}
-                style={{
-                  display: "block",
-                  border: "1px solid #333",
-                  padding: "16px",
-                  marginBottom: "12px",
-                  borderRadius: "8px",
-                  backgroundColor: "#1a1a1a",
-                  color: "white",
-                  textDecoration: "none",
-                  maxWidth: "750px",
-                }}
+                style={relatedCardStyle}
               >
-                <h3 style={{ marginTop: 0 }}>
-                  {painPoint?.name || "Pain Point"}
-                </h3>
+                <h3 style={{ marginTop: 0 }}>{painPoint?.name || "Pain Point"}</h3>
 
                 {painPoint?.category && <p>Category: {painPoint.category}</p>}
 

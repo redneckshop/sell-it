@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { supabase } from "../../lib/supabase";
 import AttachmentsSection from "../../components/AttachmentsSection";
 import ArchiveRestoreButton from "../../components/ArchiveRestoreButton";
@@ -108,6 +109,164 @@ type PageProps = {
   params: Promise<{
     id: string;
   }>;
+};
+
+const pageStyle: CSSProperties = {
+  minHeight: "100vh",
+  color: "#f8fafc",
+  padding: "28px",
+  fontFamily: "Arial, sans-serif",
+};
+
+const actionRowStyle: CSSProperties = {
+  display: "flex",
+  gap: "12px",
+  marginBottom: "20px",
+  flexWrap: "wrap",
+};
+
+const secondaryButtonStyle: CSSProperties = {
+  color: "#f8fafc",
+  background: "rgba(15, 23, 42, 0.74)",
+  border: "1px solid rgba(148, 163, 184, 0.25)",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 800,
+};
+
+const dangerButtonStyle: CSSProperties = {
+  color: "#fecaca",
+  background: "rgba(127, 29, 29, 0.24)",
+  border: "1px solid rgba(248, 113, 113, 0.35)",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 800,
+};
+
+const headerStyle: CSSProperties = {
+  maxWidth: "1080px",
+  marginBottom: "24px",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "24px",
+  padding: "24px",
+  background:
+    "radial-gradient(circle at top left, rgba(124, 58, 237, 0.22), transparent 34%), linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.72))",
+  boxShadow: "0 24px 80px rgba(2, 6, 23, 0.28)",
+};
+
+const eyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  color: "#a78bfa",
+  fontSize: "13px",
+  fontWeight: 900,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+};
+
+const titleStyle: CSSProperties = {
+  margin: "0 0 10px",
+  fontSize: "34px",
+  lineHeight: 1.05,
+  letterSpacing: "-0.04em",
+};
+
+const mutedTextStyle: CSSProperties = {
+  color: "#cbd5e1",
+  margin: 0,
+  maxWidth: "900px",
+  lineHeight: 1.65,
+};
+
+const cardStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "20px",
+  padding: "20px",
+  background:
+    "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
+  maxWidth: "1080px",
+  marginBottom: "22px",
+  boxShadow: "0 20px 70px rgba(2, 6, 23, 0.24)",
+};
+
+const relatedCardStyle: CSSProperties = {
+  display: "block",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "18px",
+  padding: "16px",
+  marginBottom: "12px",
+  background: "rgba(15, 23, 42, 0.72)",
+  color: "#f8fafc",
+  textDecoration: "none",
+  maxWidth: "860px",
+};
+
+const plainRelatedCardStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "18px",
+  padding: "16px",
+  marginBottom: "12px",
+  background: "rgba(15, 23, 42, 0.72)",
+  color: "#f8fafc",
+  maxWidth: "860px",
+};
+
+const sectionTitleStyle: CSSProperties = {
+  marginTop: "38px",
+  marginBottom: "14px",
+  color: "#f8fafc",
+};
+
+const labelStyle: CSSProperties = {
+  color: "#94a3b8",
+  fontSize: "13px",
+  fontWeight: 800,
+  textTransform: "uppercase",
+  letterSpacing: "0.05em",
+};
+
+const valueStyle: CSSProperties = {
+  margin: "4px 0 0",
+  color: "#f8fafc",
+};
+
+const gridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gap: "16px",
+};
+
+const linkStyle: CSSProperties = {
+  color: "#c4b5fd",
+  textDecoration: "none",
+  fontWeight: 800,
+};
+
+const archivedStyle: CSSProperties = {
+  border: "1px solid rgba(245, 158, 11, 0.36)",
+  background: "rgba(120, 53, 15, 0.22)",
+  color: "#fde68a",
+  padding: "14px",
+  borderRadius: "16px",
+  maxWidth: "1080px",
+  marginBottom: "18px",
+  fontWeight: 900,
+};
+
+const errorStyle: CSSProperties = {
+  border: "1px solid rgba(248, 113, 113, 0.36)",
+  background: "rgba(127, 29, 29, 0.22)",
+  color: "#fecaca",
+  padding: "14px",
+  borderRadius: "16px",
+  marginBottom: "18px",
+  maxWidth: "1080px",
+};
+
+const emptyTextStyle: CSSProperties = {
+  color: "#94a3b8",
+  marginTop: 0,
 };
 
 function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
@@ -340,7 +499,8 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
             title: `Opportunity created: ${opportunity.name}`,
             occurredAt: opportunity.created_at,
             category: "Opportunity",
-            description: opportunity.notes || "This opportunity record was created in Sell It.",
+            description:
+              opportunity.notes || "This opportunity record was created in Sell It.",
             meta: compactStrings([
               company ? `Company: ${company.name}` : "No company",
               primaryContact
@@ -453,62 +613,16 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
   ];
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#111",
-        color: "white",
-        padding: "40px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          gap: "12px",
-          marginBottom: "32px",
-          flexWrap: "wrap",
-        }}
-      >
-        <Link
-          href="/"
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Home
-        </Link>
-
-        <Link
-          href="/opportunities"
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
+    <main style={pageStyle}>
+      <div style={actionRowStyle}>
+        <Link href="/opportunities" style={secondaryButtonStyle}>
           Back to Opportunities
         </Link>
 
         {opportunity && (
           <Link
             href={`/opportunities/${opportunity.id}/edit`}
-            style={{
-              color: "black",
-              backgroundColor: "white",
-              padding: "10px 14px",
-              borderRadius: "6px",
-              textDecoration: "none",
-              fontWeight: "bold",
-            }}
+            style={secondaryButtonStyle}
           >
             Edit Opportunity
           </Link>
@@ -526,14 +640,7 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
         {opportunity && (
           <Link
             href={`/opportunities/${opportunity.id}/delete`}
-            style={{
-              color: "black",
-              backgroundColor: "#ffdddd",
-              padding: "10px 14px",
-              borderRadius: "6px",
-              textDecoration: "none",
-              fontWeight: "bold",
-            }}
+            style={dangerButtonStyle}
           >
             Delete Opportunity
           </Link>
@@ -541,158 +648,176 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
       </div>
 
       {error && (
-        <p style={{ color: "red", marginTop: "32px" }}>
-          Database error: {error.message}
-        </p>
+        <div style={errorStyle}>Database error: {error.message}</div>
       )}
 
       {opportunity && (
-        <section style={{ marginTop: "32px" }}>
-          {opportunity.is_archived && (
-            <div
-              style={{
-                border: "1px solid #d6a400",
-                backgroundColor: "#211c0d",
-                color: "#f5d76e",
-                padding: "16px",
-                borderRadius: "8px",
-                maxWidth: "650px",
-                marginBottom: "24px",
-                fontWeight: "bold",
-              }}
-            >
-              ARCHIVED
+        <>
+          {opportunity.is_archived && <div style={archivedStyle}>ARCHIVED</div>}
+
+          <header style={headerStyle}>
+            <p style={eyebrowStyle}>Opportunity Detail</p>
+
+            <h1 style={titleStyle}>{opportunity.name}</h1>
+
+            <p style={mutedTextStyle}>
+              Business-memory view for this opportunity, including company,
+              primary contact, stage history, tasks, activities, notes,
+              attachments, pain points, timeline, and relationship summary.
+            </p>
+          </header>
+
+          <section style={cardStyle}>
+            <div style={gridStyle}>
+              <div>
+                <div style={labelStyle}>Company</div>
+                <p style={valueStyle}>
+                  {company ? (
+                    <Link href={`/companies/${company.id}`} style={linkStyle}>
+                      {company.name}
+                    </Link>
+                  ) : (
+                    "Not linked"
+                  )}
+                </p>
+              </div>
+
+              <div>
+                <div style={labelStyle}>Primary Contact</div>
+                <p style={valueStyle}>
+                  {primaryContact ? (
+                    <Link
+                      href={`/contacts/${primaryContact.id}`}
+                      style={linkStyle}
+                    >
+                      {primaryContact.first_name} {primaryContact.last_name || ""}
+                    </Link>
+                  ) : (
+                    "Not linked"
+                  )}
+                </p>
+              </div>
+
+              <div>
+                <div style={labelStyle}>Opportunity Type</div>
+                <p style={valueStyle}>{opportunity.opportunity_type}</p>
+              </div>
+
+              <div>
+                <div style={labelStyle}>Stage</div>
+                <p style={valueStyle}>{opportunity.stage}</p>
+              </div>
+
+              <div>
+                <div style={labelStyle}>Lead Temperature</div>
+                <p style={valueStyle}>{opportunity.lead_temperature}</p>
+              </div>
+
+              <div>
+                <div style={labelStyle}>Estimated Driver Count</div>
+                <p style={valueStyle}>
+                  {opportunity.estimated_driver_count !== null
+                    ? opportunity.estimated_driver_count
+                    : "Not provided"}
+                </p>
+              </div>
+
+              <div>
+                <div style={labelStyle}>Estimated Monthly Value</div>
+                <p style={valueStyle}>
+                  {opportunity.estimated_monthly_value !== null
+                    ? `$${Number(
+                        opportunity.estimated_monthly_value
+                      ).toLocaleString()}`
+                    : "Not provided"}
+                </p>
+              </div>
+
+              <div>
+                <div style={labelStyle}>Expected Close Date</div>
+                <p style={valueStyle}>
+                  {opportunity.expected_close_date || "Not provided"}
+                </p>
+              </div>
+
+              <div>
+                <div style={labelStyle}>Created</div>
+                <p style={valueStyle}>
+                  {formatDateTime(opportunity.created_at)}
+                </p>
+              </div>
+
+              <div>
+                <div style={labelStyle}>Last Updated</div>
+                <p style={valueStyle}>
+                  {formatDateTime(opportunity.updated_at)}
+                </p>
+              </div>
+
+              {opportunity.is_archived && (
+                <>
+                  <div>
+                    <div style={labelStyle}>Archived</div>
+                    <p style={valueStyle}>
+                      {formatDateTime(opportunity.archived_at)}
+                    </p>
+                  </div>
+
+                  <div>
+                    <div style={labelStyle}>Archive Reason</div>
+                    <p style={valueStyle}>
+                      {opportunity.archive_reason || "Not provided"}
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
-          )}
-
-          <h1>{opportunity.name}</h1>
-
-          <div
-            style={{
-              border: "1px solid #333",
-              padding: "20px",
-              borderRadius: "8px",
-              backgroundColor: "#1a1a1a",
-              maxWidth: "800px",
-              marginBottom: "28px",
-            }}
-          >
-            <p>
-              <strong>Company:</strong>{" "}
-              {company ? (
-                <Link
-                  href={`/companies/${company.id}`}
-                  style={{ color: "white" }}
-                >
-                  {company.name}
-                </Link>
-              ) : (
-                "Not linked"
-              )}
-            </p>
-
-            <p>
-              <strong>Primary Contact:</strong>{" "}
-              {primaryContact ? (
-                <Link
-                  href={`/contacts/${primaryContact.id}`}
-                  style={{ color: "white" }}
-                >
-                  {primaryContact.first_name} {primaryContact.last_name || ""}
-                </Link>
-              ) : (
-                "Not linked"
-              )}
-            </p>
-
-            <p>
-              <strong>Opportunity Type:</strong>{" "}
-              {opportunity.opportunity_type}
-            </p>
 
             {opportunity.opportunity_type === "Other" && (
-              <>
-                <p>
-                  <strong>Other Type Description:</strong>
-                </p>
-
-                <p style={{ whiteSpace: "pre-wrap" }}>
+              <div style={{ marginTop: "22px" }}>
+                <div style={labelStyle}>Other Type Description</div>
+                <p
+                  style={{
+                    ...valueStyle,
+                    color: "#cbd5e1",
+                    lineHeight: 1.65,
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
                   {opportunity.opportunity_type_other_description ||
                     "No other type description provided."}
                 </p>
-              </>
+              </div>
             )}
 
-            <p>
-              <strong>Stage:</strong> {opportunity.stage}
-            </p>
+            <div style={{ marginTop: "22px" }}>
+              <div style={labelStyle}>Next Step</div>
+              <p
+                style={{
+                  ...valueStyle,
+                  color: "#cbd5e1",
+                  lineHeight: 1.65,
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {opportunity.next_step || "No next step provided."}
+              </p>
+            </div>
 
-            <p>
-              <strong>Lead Temperature:</strong>{" "}
-              {opportunity.lead_temperature}
-            </p>
-
-            <p>
-              <strong>Estimated Driver Count:</strong>{" "}
-              {opportunity.estimated_driver_count !== null
-                ? opportunity.estimated_driver_count
-                : "Not provided"}
-            </p>
-
-            <p>
-              <strong>Estimated Monthly Value:</strong>{" "}
-              {opportunity.estimated_monthly_value !== null
-                ? `$${Number(
-                    opportunity.estimated_monthly_value
-                  ).toLocaleString()}`
-                : "Not provided"}
-            </p>
-
-            <p>
-              <strong>Expected Close Date:</strong>{" "}
-              {opportunity.expected_close_date || "Not provided"}
-            </p>
-
-            <p>
-              <strong>Next Step:</strong>
-            </p>
-
-            <p style={{ whiteSpace: "pre-wrap" }}>
-              {opportunity.next_step || "No next step provided."}
-            </p>
-
-            <p>
-              <strong>Notes:</strong>
-            </p>
-
-            <p style={{ whiteSpace: "pre-wrap" }}>
-              {opportunity.notes || "No notes provided."}
-            </p>
-
-            <p>
-              <strong>Created:</strong>{" "}
-              {formatDateTime(opportunity.created_at)}
-            </p>
-
-            <p>
-              <strong>Last Updated:</strong>{" "}
-              {formatDateTime(opportunity.updated_at)}
-            </p>
-
-            {opportunity.is_archived && (
-              <>
-                <p>
-                  <strong>Archived:</strong>{" "}
-                  {formatDateTime(opportunity.archived_at)}
-                </p>
-
-                <p>
-                  <strong>Archive Reason:</strong>{" "}
-                  {opportunity.archive_reason || "Not provided"}
-                </p>
-              </>
-            )}
-          </div>
+            <div style={{ marginTop: "22px" }}>
+              <div style={labelStyle}>Notes</div>
+              <p
+                style={{
+                  ...valueStyle,
+                  color: "#cbd5e1",
+                  lineHeight: 1.65,
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {opportunity.notes || "No notes provided."}
+              </p>
+            </div>
+          </section>
 
           <RelationshipSummaryPanel
             title={`${opportunity.name} Relationship Summary`}
@@ -706,35 +831,22 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
             events={timelineEvents}
           />
 
-          <h2 id="stage-history" style={{ marginTop: "40px" }}>
+          <h2 id="stage-history" style={sectionTitleStyle}>
             Stage History
           </h2>
 
           {stageHistory.length === 0 && (
-            <p>No stage changes recorded yet.</p>
+            <p style={emptyTextStyle}>No stage changes recorded yet.</p>
           )}
 
           {stageHistory.map((history) => (
-            <article
-              key={history.id}
-              style={{
-                display: "block",
-                border: "1px solid #333",
-                padding: "16px",
-                marginBottom: "12px",
-                borderRadius: "8px",
-                backgroundColor: "#1a1a1a",
-                color: "white",
-                maxWidth: "750px",
-              }}
-            >
+            <article key={history.id} style={plainRelatedCardStyle}>
               <h3 style={{ marginTop: 0 }}>
                 {history.old_stage || "None"} to {history.new_stage}
               </h3>
 
               <p>
-                <strong>Changed:</strong>{" "}
-                {formatDateTime(history.changed_at)}
+                <strong>Changed:</strong> {formatDateTime(history.changed_at)}
               </p>
 
               {history.changed_by && (
@@ -751,88 +863,66 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
             </article>
           ))}
 
-          <div id="related-attachments">
+          <section id="related-attachments" style={cardStyle}>
+            <p style={eyebrowStyle}>Attachments</p>
             <AttachmentsSection
               workspaceId={opportunity.workspace_id}
               relationColumn="related_opportunity_id"
               relationId={opportunity.id}
             />
-          </div>
+          </section>
 
-          <h2 id="related-tasks" style={{ marginTop: "40px" }}>
+          <h2 id="related-tasks" style={sectionTitleStyle}>
             Related Tasks
           </h2>
 
           {relatedTasks.length === 0 && (
-            <p>No tasks linked to this opportunity.</p>
+            <p style={emptyTextStyle}>No tasks linked to this opportunity.</p>
           )}
 
           {relatedTasks.map((task) => (
-            <Link
-              key={task.id}
-              href={`/tasks/${task.id}`}
-              style={{
-                display: "block",
-                border: "1px solid #333",
-                padding: "16px",
-                marginBottom: "12px",
-                borderRadius: "8px",
-                backgroundColor: "#1a1a1a",
-                color: "white",
-                textDecoration: "none",
-                maxWidth: "750px",
-              }}
-            >
+            <Link key={task.id} href={`/tasks/${task.id}`} style={relatedCardStyle}>
               <h3 style={{ marginTop: 0 }}>{task.title}</h3>
               <p>Status: {task.status}</p>
               <p>Priority: {task.priority}</p>
             </Link>
           ))}
 
-          <h2 id="related-activities" style={{ marginTop: "40px" }}>
+          <h2 id="related-activities" style={sectionTitleStyle}>
             Related Activities
           </h2>
 
           {relatedActivities.length === 0 && (
-            <p>No activities linked to this opportunity.</p>
+            <p style={emptyTextStyle}>No activities linked to this opportunity.</p>
           )}
 
           {relatedActivities.map((activity) => (
             <Link
               key={activity.id}
               href={`/activities/${activity.id}`}
-              style={{
-                display: "block",
-                border: "1px solid #333",
-                padding: "16px",
-                marginBottom: "12px",
-                borderRadius: "8px",
-                backgroundColor: "#1a1a1a",
-                color: "white",
-                textDecoration: "none",
-                maxWidth: "750px",
-              }}
+              style={relatedCardStyle}
             >
               <h3 style={{ marginTop: 0 }}>{activity.subject}</h3>
 
               <p>Type: {activity.activity_type}</p>
-
               <p>Date: {formatDateTime(activity.activity_date)}</p>
 
               {activity.outcome && <p>Outcome: {activity.outcome}</p>}
 
               {activity.follow_up_needed && (
-                <p style={{ fontWeight: "bold" }}>Follow Up Needed</p>
+                <p style={{ fontWeight: 900, color: "#ddd6fe" }}>
+                  Follow Up Needed
+                </p>
               )}
             </Link>
           ))}
 
-          <h2 id="related-notes" style={{ marginTop: "40px" }}>
+          <h2 id="related-notes" style={sectionTitleStyle}>
             Related Notes
           </h2>
 
           {relatedNotes.length === 0 && (
-            <p>No notes linked to this opportunity.</p>
+            <p style={emptyTextStyle}>No notes linked to this opportunity.</p>
           )}
 
           {relatedNotes.map((note) => {
@@ -840,30 +930,10 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
             const noteContact = singleRelation(note.contact);
 
             return (
-              <Link
-                key={note.id}
-                href={`/notes/${note.id}`}
-                style={{
-                  display: "block",
-                  border: "1px solid #333",
-                  padding: "16px",
-                  marginBottom: "12px",
-                  borderRadius: "8px",
-                  backgroundColor: "#1a1a1a",
-                  color: "white",
-                  textDecoration: "none",
-                  maxWidth: "750px",
-                }}
-              >
+              <Link key={note.id} href={`/notes/${note.id}`} style={relatedCardStyle}>
                 <h3 style={{ marginTop: 0 }}>{note.title}</h3>
 
-                {note.body && (
-                  <p style={{ color: "#aaa" }}>
-                    {note.body.length > 160
-                      ? `${note.body.slice(0, 160)}...`
-                      : note.body}
-                  </p>
-                )}
+                {note.body && <p style={{ color: "#cbd5e1" }}>{shortText(note.body)}</p>}
 
                 {noteCompany && <p>Company: {noteCompany.name}</p>}
 
@@ -884,12 +954,12 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
             );
           })}
 
-          <h2 id="related-pain-points" style={{ marginTop: "40px" }}>
+          <h2 id="related-pain-points" style={sectionTitleStyle}>
             Related Pain Points
           </h2>
 
           {painPointLinks.length === 0 && (
-            <p>
+            <p style={emptyTextStyle}>
               No pain points linked through this opportunity&apos;s activities.
             </p>
           )}
@@ -904,21 +974,9 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
               <Link
                 key={painPointLink.id}
                 href={`/pain-points/${painPointLink.pain_point_id}`}
-                style={{
-                  display: "block",
-                  border: "1px solid #333",
-                  padding: "16px",
-                  marginBottom: "12px",
-                  borderRadius: "8px",
-                  backgroundColor: "#1a1a1a",
-                  color: "white",
-                  textDecoration: "none",
-                  maxWidth: "750px",
-                }}
+                style={relatedCardStyle}
               >
-                <h3 style={{ marginTop: 0 }}>
-                  {painPoint?.name || "Pain Point"}
-                </h3>
+                <h3 style={{ marginTop: 0 }}>{painPoint?.name || "Pain Point"}</h3>
 
                 {painPoint?.category && <p>Category: {painPoint.category}</p>}
 
@@ -928,9 +986,8 @@ export default async function OpportunityDetailPage({ params }: PageProps) {
               </Link>
             );
           })}
-        </section>
+        </>
       )}
     </main>
   );
 }
-
