@@ -9,17 +9,6 @@ type AppShellProps = {
   children: ReactNode;
 };
 
-type NavItem = {
-  label: string;
-  href: string;
-};
-
-type TopNavItem = {
-  label: string;
-  href: string;
-  section: AppSection;
-};
-
 type AppSection =
   | "dashboard"
   | "sales"
@@ -28,55 +17,139 @@ type AppSection =
   | "management"
   | "assistant";
 
+type TopNavItem = {
+  label: string;
+  href: string;
+  section: AppSection;
+};
+
+type SidebarItem = {
+  label: string;
+  href?: string;
+  badge?: string;
+  description?: string;
+  disabled?: boolean;
+};
+
+type SidebarGroup = {
+  label: string;
+  items: SidebarItem[];
+};
+
+type QuickAddItem = {
+  label: string;
+  href: string;
+};
+
 const topNavItems: TopNavItem[] = [
   { label: "Dashboard", href: "/", section: "dashboard" },
   { label: "Sales", href: "/companies", section: "sales" },
   { label: "Intelligence", href: "/communities", section: "intelligence" },
   { label: "Capture", href: "/capture", section: "capture" },
-  { label: "Management", href: "/team", section: "management" },
+  { label: "Management", href: "/merge", section: "management" },
   { label: "Assistant", href: "/assistant", section: "assistant" },
 ];
 
-const contextNavItems: Record<AppSection, NavItem[]> = {
+const contextNavGroups: Record<AppSection, SidebarGroup[]> = {
   dashboard: [
-    { label: "Dashboard", href: "/" },
-    { label: "Companies", href: "/companies" },
-    { label: "Contacts", href: "/contacts" },
-    { label: "Opportunities", href: "/opportunities" },
-    { label: "Tasks", href: "/tasks" },
-    { label: "Planner", href: "/planner" },
-    { label: "Team", href: "/team" },
-    { label: "Activities", href: "/activities" },
-    { label: "Notes", href: "/notes" },
+    {
+      label: "Command",
+      items: [{ label: "Dashboard", href: "/" }],
+    },
   ],
   sales: [
-    { label: "Companies", href: "/companies" },
-    { label: "Contacts", href: "/contacts" },
-    { label: "Opportunities", href: "/opportunities" },
-    { label: "Tasks", href: "/tasks" },
-    { label: "Planner", href: "/planner" },
-    { label: "Activities", href: "/activities" },
-    { label: "Notes", href: "/notes" },
+    {
+      label: "Relationships",
+      items: [
+        { label: "Companies", href: "/companies" },
+        { label: "Contacts", href: "/contacts" },
+        { label: "Opportunities", href: "/opportunities" },
+      ],
+    },
+    {
+      label: "Work",
+      items: [
+        { label: "Activities", href: "/activities" },
+        { label: "Tasks", href: "/tasks" },
+        { label: "Planner", href: "/planner" },
+      ],
+    },
+    {
+      label: "People",
+      items: [{ label: "Team", href: "/team" }],
+    },
   ],
   intelligence: [
-    { label: "Communities", href: "/communities" },
-    { label: "Posts", href: "/posts" },
-    { label: "Pain Points", href: "/pain-points" },
-    { label: "Import Leads", href: "/import-leads" },
+    {
+      label: "Market Signals",
+      items: [
+        { label: "Communities", href: "/communities" },
+        { label: "Posts", href: "/posts" },
+      ],
+    },
+    {
+      label: "Business Intelligence",
+      items: [
+        { label: "Pain Points", href: "/pain-points" },
+        { label: "Email Intelligence", href: "/email-intelligence" },
+        { label: "Import Leads", href: "/import-leads" },
+      ],
+    },
   ],
   capture: [
-    { label: "Capture", href: "/capture" },
-    { label: "Email Intelligence", href: "/email-intelligence" },
-    { label: "Import", href: "/import" },
+    {
+      label: "Capture Tools",
+      items: [
+        { label: "AI Capture", href: "/capture" },
+        { label: "Import CSV", href: "/import" },
+        { label: "Email Capture", href: "/email-intelligence" },
+      ],
+    },
   ],
   management: [
-    { label: "Team", href: "/team" },
-    { label: "Merge Manager", href: "/merge" },
+    {
+      label: "Operations",
+      items: [
+        { label: "Merge Manager", href: "/merge" },
+        {
+          label: "Archive Tools",
+          href: "/merge",
+          badge: "Tools",
+          description: "Archive workflows live with the current management tools.",
+        },
+        { label: "Team", href: "/team" },
+      ],
+    },
+    {
+      label: "Future",
+      items: [
+        { label: "Permissions", badge: "Future", disabled: true },
+        { label: "Notifications", badge: "Future", disabled: true },
+        { label: "Automation", badge: "Future", disabled: true },
+      ],
+    },
   ],
-  assistant: [{ label: "Assistant", href: "/assistant" }],
+  assistant: [
+    {
+      label: "Operating System",
+      items: [
+        { label: "Assistant", href: "/assistant" },
+        { label: "Recommendations", href: "/assistant?view=recommendations" },
+        { label: "Assignments", href: "/assistant/actions/tasks/assign" },
+        { label: "Workload", href: "/assistant?view=workload" },
+      ],
+    },
+    {
+      label: "Future",
+      items: [
+        { label: "Memory", badge: "Future", disabled: true },
+        { label: "Insights", badge: "Future", disabled: true },
+      ],
+    },
+  ],
 };
 
-const quickAddItems: NavItem[] = [
+const quickAddItems: QuickAddItem[] = [
   { label: "Company", href: "/companies/new" },
   { label: "Contact", href: "/contacts/new" },
   { label: "Opportunity", href: "/opportunities/new" },
@@ -132,6 +205,18 @@ const logoStyle: CSSProperties = {
   boxShadow: "0 0 24px rgba(139, 92, 246, 0.28)",
 };
 
+const brandTitleStyle: CSSProperties = {
+  fontWeight: 900,
+  lineHeight: 1.05,
+  fontSize: "18px",
+};
+
+const brandSubtitleStyle: CSSProperties = {
+  color: "#a3a3a3",
+  fontSize: "11px",
+  marginTop: "2px",
+};
+
 const topNavStyle: CSSProperties = {
   display: "flex",
   alignItems: "center",
@@ -151,7 +236,7 @@ const topNavLinkBaseStyle: CSSProperties = {
   color: "#cfcfcf",
   textDecoration: "none",
   fontSize: "14px",
-  fontWeight: 700,
+  fontWeight: 800,
   whiteSpace: "nowrap",
   border: "1px solid transparent",
 };
@@ -174,7 +259,11 @@ const iconButtonStyle: CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   textDecoration: "none",
-  fontWeight: 800,
+  fontWeight: 900,
+};
+
+const quickAddWrapperStyle: CSSProperties = {
+  position: "relative",
 };
 
 const quickAddButtonStyle: CSSProperties = {
@@ -183,22 +272,49 @@ const quickAddButtonStyle: CSSProperties = {
   border: "1px solid #7c3aed",
   backgroundColor: "#7c3aed",
   color: "white",
-  padding: "0 14px",
-  fontWeight: 800,
+  padding: "0 16px",
+  fontWeight: 900,
   cursor: "pointer",
+  boxShadow: "0 12px 24px rgba(124, 58, 237, 0.24)",
 };
 
 const quickAddMenuStyle: CSSProperties = {
   position: "absolute",
   top: "44px",
   right: 0,
-  width: "210px",
+  width: "230px",
   border: "1px solid #333",
-  borderRadius: "14px",
+  borderRadius: "16px",
   backgroundColor: "#171717",
   boxShadow: "0 18px 45px rgba(0,0,0,0.45)",
   padding: "8px",
   zIndex: 100,
+};
+
+const quickAddMenuHeaderStyle: CSSProperties = {
+  padding: "8px 10px 10px",
+  borderBottom: "1px solid #2a2a2a",
+  marginBottom: "6px",
+};
+
+const quickAddMenuTitleStyle: CSSProperties = {
+  margin: 0,
+  color: "#a78bfa",
+  fontSize: "11px",
+  textTransform: "uppercase",
+  letterSpacing: "1.4px",
+  fontWeight: 900,
+};
+
+const quickAddLinkStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  color: "white",
+  textDecoration: "none",
+  padding: "10px 12px",
+  borderRadius: "10px",
+  fontWeight: 850,
 };
 
 const layoutStyle: CSSProperties = {
@@ -226,7 +342,7 @@ const sectionLabelStyle: CSSProperties = {
   textTransform: "uppercase",
   letterSpacing: "1.6px",
   fontSize: "11px",
-  fontWeight: 800,
+  fontWeight: 900,
   margin: "0 0 10px",
 };
 
@@ -237,6 +353,19 @@ const contextDescriptionStyle: CSSProperties = {
   margin: "0 0 16px",
 };
 
+const sidebarGroupStyle: CSSProperties = {
+  marginTop: "16px",
+};
+
+const sidebarGroupTitleStyle: CSSProperties = {
+  color: "#737373",
+  textTransform: "uppercase",
+  letterSpacing: "1.5px",
+  fontSize: "10px",
+  fontWeight: 900,
+  margin: "0 0 8px",
+};
+
 const navLinkBaseStyle: CSSProperties = {
   display: "flex",
   alignItems: "center",
@@ -245,9 +374,27 @@ const navLinkBaseStyle: CSSProperties = {
   padding: "10px 11px",
   borderRadius: "10px",
   textDecoration: "none",
-  fontWeight: 800,
+  fontWeight: 850,
   marginBottom: "6px",
   fontSize: "14px",
+};
+
+const navDisabledStyle: CSSProperties = {
+  ...navLinkBaseStyle,
+  color: "#666",
+  border: "1px solid #1f1f1f",
+  backgroundColor: "rgba(31,31,31,0.34)",
+  cursor: "not-allowed",
+};
+
+const navBadgeStyle: CSSProperties = {
+  borderRadius: "999px",
+  padding: "3px 7px",
+  backgroundColor: "rgba(124, 58, 237, 0.18)",
+  border: "1px solid rgba(167, 139, 250, 0.22)",
+  color: "#c4b5fd",
+  fontSize: "10px",
+  fontWeight: 900,
 };
 
 const sidebarFooterStyle: CSSProperties = {
@@ -261,50 +408,58 @@ const contentStyle: CSSProperties = {
   minWidth: 0,
 };
 
+function cleanHref(href: string) {
+  return href.split("?")[0].split("#")[0] || "/";
+}
+
 function isActivePath(pathname: string, href: string) {
-  if (href === "/") {
+  const cleanPath = cleanHref(href);
+
+  if (cleanPath === "/") {
     return pathname === "/";
   }
 
-  return pathname === href || pathname.startsWith(`${href}/`);
+  return pathname === cleanPath || pathname.startsWith(`${cleanPath}/`);
 }
 
 function getCurrentSection(pathname: string): AppSection {
-  if (
-    pathname.startsWith("/companies") ||
-    pathname.startsWith("/contacts") ||
-    pathname.startsWith("/opportunities") ||
-    pathname.startsWith("/tasks") ||
-    pathname.startsWith("/activities") ||
-    pathname.startsWith("/notes") ||
-    pathname.startsWith("/planner")
-  ) {
-    return "sales";
+  if (pathname === "/") {
+    return "dashboard";
+  }
+
+  if (pathname.startsWith("/assistant")) {
+    return "assistant";
+  }
+
+  if (pathname.startsWith("/merge")) {
+    return "management";
+  }
+
+  if (pathname.startsWith("/capture") || pathname.startsWith("/import")) {
+    return "capture";
   }
 
   if (
     pathname.startsWith("/communities") ||
     pathname.startsWith("/posts") ||
     pathname.startsWith("/pain-points") ||
+    pathname.startsWith("/email-intelligence") ||
     pathname.startsWith("/import-leads")
   ) {
     return "intelligence";
   }
 
   if (
-    pathname.startsWith("/capture") ||
-    pathname.startsWith("/email-intelligence") ||
-    pathname.startsWith("/import")
+    pathname.startsWith("/companies") ||
+    pathname.startsWith("/contacts") ||
+    pathname.startsWith("/opportunities") ||
+    pathname.startsWith("/activities") ||
+    pathname.startsWith("/tasks") ||
+    pathname.startsWith("/notes") ||
+    pathname.startsWith("/planner") ||
+    pathname.startsWith("/team")
   ) {
-    return "capture";
-  }
-
-  if (pathname.startsWith("/team") || pathname.startsWith("/merge")) {
-    return "management";
-  }
-
-  if (pathname.startsWith("/assistant")) {
-    return "assistant";
+    return "sales";
   }
 
   return "dashboard";
@@ -317,7 +472,7 @@ function getSectionTitle(section: AppSection) {
     case "intelligence":
       return "Intelligence";
     case "capture":
-      return "Capture & Import";
+      return "Capture";
     case "management":
       return "Management";
     case "assistant":
@@ -331,59 +486,95 @@ function getSectionTitle(section: AppSection) {
 function getSectionDescription(section: AppSection) {
   switch (section) {
     case "sales":
-      return "Companies, contacts, opportunities, tasks, activities, and notes.";
+      return "Relationships, opportunities, work, planner, and team workload.";
     case "intelligence":
-      return "Communities, posts, pain points, and lead imports.";
+      return "Communities, posts, pain points, email intelligence, and lead imports.";
     case "capture":
-      return "Capture notes, emails, files, screenshots, and imports.";
+      return "AI capture, CSV import, and email capture tools.";
     case "management":
-      return "Team tools and merge management.";
+      return "Operational tools for merge, archive, and team management.";
     case "assistant":
-      return "AI help for planning, follow-up, and sales decisions.";
+      return "AI help for recommendations, assignments, workload, and decisions.";
     case "dashboard":
     default:
-      return "Your command center and daily overview.";
+      return "Your executive command center.";
   }
+}
+
+function renderSidebarItem(
+  item: SidebarItem,
+  pathname: string,
+  closeQuickAdd?: () => void
+) {
+  if (item.disabled || !item.href) {
+    return (
+      <div key={item.label} style={navDisabledStyle} title={item.description}>
+        <span>{item.label}</span>
+        {item.badge && <span style={navBadgeStyle}>{item.badge}</span>}
+      </div>
+    );
+  }
+
+  const active = isActivePath(pathname, item.href);
+
+  return (
+    <Link
+      key={`${item.label}-${item.href}`}
+      href={item.href}
+      onClick={closeQuickAdd}
+      title={item.description}
+      style={{
+        ...navLinkBaseStyle,
+        color: active ? "#0b0b0b" : "white",
+        backgroundColor: active ? "#f5f5f5" : "transparent",
+        border: active ? "1px solid #f5f5f5" : "1px solid transparent",
+      }}
+    >
+      <span>{item.label}</span>
+      {item.badge ? (
+        <span style={navBadgeStyle}>{item.badge}</span>
+      ) : active ? (
+        <span>â€º</span>
+      ) : null}
+    </Link>
+  );
 }
 
 export default function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const [quickAddOpen, setQuickAddOpen] = useState(false);
-
-
   const currentSection = getCurrentSection(pathname);
-  const sidebarItems = contextNavItems[currentSection];
+  const sidebarGroups = contextNavGroups[currentSection];
 
   return (
     <div style={shellStyle}>
       <header style={topBarStyle}>
-        <Link href="/" style={brandStyle}>
+        <Link href="/" style={brandStyle} aria-label="Go to Dashboard">
           <span style={logoStyle}>S</span>
           <span>
-            <span style={{ display: "block", fontSize: "18px", fontWeight: 900 }}>
-              Sell It
-            </span>
-            <span style={{ display: "block", color: "#9ca3af", fontSize: "12px" }}>
-              Knotty Logistics
-            </span>
+            <span style={brandTitleStyle}>Sell It</span>
+            <span style={brandSubtitleStyle}>Knotty Logistics</span>
           </span>
         </Link>
 
-        <nav aria-label="Sell It top navigation" style={topNavStyle}>
+        <nav aria-label="Primary business areas" style={topNavStyle}>
           {topNavItems.map((item) => {
-            const active =
-              currentSection === item.section ||
-              (item.href === "/" && pathname === "/");
+            const active = currentSection === item.section;
 
             return (
               <Link
-                key={item.href}
+                key={item.section}
                 href={item.href}
                 style={{
                   ...topNavLinkBaseStyle,
-                  backgroundColor: active ? "#252038" : "transparent",
                   color: active ? "white" : "#cfcfcf",
+                  backgroundColor: active
+                    ? "rgba(124, 58, 237, 0.28)"
+                    : "transparent",
                   borderColor: active ? "#7c3aed" : "transparent",
+                  boxShadow: active
+                    ? "0 0 22px rgba(124, 58, 237, 0.22)"
+                    : "none",
                 }}
               >
                 {item.label}
@@ -393,102 +584,77 @@ export default function AppShell({ children }: AppShellProps) {
         </nav>
 
         <div style={topUtilityStyle}>
-          <Link href="/" style={iconButtonStyle} title="Search">
-            🔎
+          <Link href="/" style={iconButtonStyle} title="Search from Dashboard">
+            ðŸ”Ž
           </Link>
-
-          <span style={iconButtonStyle} title="Notifications">
-            🔔
+          <span style={iconButtonStyle} title="Notifications are future work">
+            ðŸ””
           </span>
 
-          <div style={{ position: "relative" }}>
+          <div style={quickAddWrapperStyle}>
             <button
               type="button"
               onClick={() => setQuickAddOpen((value) => !value)}
               style={quickAddButtonStyle}
+              aria-expanded={quickAddOpen}
+              aria-haspopup="menu"
             >
-              + New ▾
+              + New â–¾
             </button>
 
             {quickAddOpen && (
-              <div style={quickAddMenuStyle}>
+              <div style={quickAddMenuStyle} role="menu">
+                <div style={quickAddMenuHeaderStyle}>
+                  <p style={quickAddMenuTitleStyle}>Create New Record</p>
+                </div>
+
                 {quickAddItems.map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
                     onClick={() => setQuickAddOpen(false)}
-                    style={{
-                      display: "block",
-                      color: "white",
-                      textDecoration: "none",
-                      padding: "10px 12px",
-                      borderRadius: "10px",
-                      fontWeight: 800,
-                    }}
+                    style={quickAddLinkStyle}
+                    role="menuitem"
                   >
-                    + {item.label}
+                    <span>{item.label}</span>
+                    <span>+</span>
                   </Link>
                 ))}
               </div>
             )}
           </div>
 
-          <span
-            style={{
-              ...iconButtonStyle,
-              backgroundColor: "#242424",
-              color: "white",
-            }}
-            title="Charles Charlebois"
-          >
+          <span style={iconButtonStyle} title="Charles Charlebois">
             CC
           </span>
         </div>
       </header>
 
       <div style={layoutStyle}>
-        <aside style={sidebarStyle}>
+        <aside style={sidebarStyle} aria-label="Context navigation">
           <p style={sectionLabelStyle}>{getSectionTitle(currentSection)}</p>
+          <p style={contextDescriptionStyle}>{getSectionDescription(currentSection)}</p>
 
-          <p style={contextDescriptionStyle}>
-            {getSectionDescription(currentSection)}
-          </p>
-
-          <nav aria-label="Sell It context navigation">
-            {sidebarItems.map((item) => {
-              const active = isActivePath(pathname, item.href);
-
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  style={{
-                    ...navLinkBaseStyle,
-                    backgroundColor: active ? "#f5f5f5" : "transparent",
-                    color: active ? "black" : "#e5e5e5",
-                    border: active
-                      ? "1px solid #f5f5f5"
-                      : "1px solid transparent",
-                  }}
-                >
-                  <span>{item.label}</span>
-                  {active && <span>›</span>}
-                </Link>
-              );
-            })}
-          </nav>
+          {sidebarGroups.map((group) => (
+            <div key={group.label} style={sidebarGroupStyle}>
+              <p style={sidebarGroupTitleStyle}>{group.label}</p>
+              {group.items.map((item) => renderSidebarItem(item, pathname))}
+            </div>
+          ))}
 
           <div style={sidebarFooterStyle}>
-            <PageAssistant />
+            <p style={sectionLabelStyle}>Area</p>
+            <p style={contextDescriptionStyle}>
+              Top navigation chooses the business area. This sidebar now shows the
+              tools that belong to that area.
+            </p>
           </div>
         </aside>
 
-        <div style={contentStyle}>{children}</div>
+        <main style={contentStyle}>{children}</main>
       </div>
+
+      <PageAssistant />
     </div>
   );
 }
-
-
-
-
