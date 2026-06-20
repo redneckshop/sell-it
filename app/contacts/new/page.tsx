@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { supabase } from "../../lib/supabase";
 
 const WORKSPACE_ID = "ba491d9b-3b36-426d-b98a-f05b0bf271ed";
@@ -20,87 +20,58 @@ const pageStyle: CSSProperties = {
   fontFamily: "Arial, sans-serif",
 };
 
-const actionRowStyle: CSSProperties = {
-  display: "flex",
-  gap: "12px",
-  marginBottom: "20px",
-  flexWrap: "wrap",
-};
-
-const secondaryButtonStyle: CSSProperties = {
-  color: "#f8fafc",
-  background: "rgba(15, 23, 42, 0.74)",
-  border: "1px solid rgba(148, 163, 184, 0.25)",
-  padding: "12px 16px",
-  borderRadius: "999px",
-  textDecoration: "none",
-  fontWeight: 800,
-};
-
-const primaryButtonStyle: CSSProperties = {
-  color: "white",
-  background:
-    "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
-  border: "1px solid rgba(167, 139, 250, 0.45)",
-  padding: "12px 16px",
-  borderRadius: "999px",
-  textDecoration: "none",
-  fontWeight: 900,
-  cursor: "pointer",
-  boxShadow: "0 16px 36px rgba(79, 70, 229, 0.28)",
-};
-
-const disabledButtonStyle: CSSProperties = {
-  ...primaryButtonStyle,
-  opacity: 0.55,
-  cursor: "not-allowed",
+const shellStyle: CSSProperties = {
+  maxWidth: "1180px",
+  margin: "0 auto",
 };
 
 const headerStyle: CSSProperties = {
-  maxWidth: "980px",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: "18px",
+  flexWrap: "wrap",
   marginBottom: "24px",
-  border: "1px solid rgba(148, 163, 184, 0.16)",
-  borderRadius: "24px",
-  padding: "24px",
-  background:
-    "radial-gradient(circle at top left, rgba(124, 58, 237, 0.22), transparent 34%), linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.72))",
-  boxShadow: "0 24px 80px rgba(2, 6, 23, 0.28)",
 };
 
 const eyebrowStyle: CSSProperties = {
   margin: "0 0 8px",
-  color: "#a78bfa",
+  color: "#c4b5fd",
   fontSize: "13px",
   fontWeight: 900,
-  letterSpacing: "0.12em",
+  letterSpacing: "0.08em",
   textTransform: "uppercase",
 };
 
 const titleStyle: CSSProperties = {
-  margin: "0 0 10px",
+  margin: 0,
   fontSize: "34px",
-  lineHeight: 1.05,
+  lineHeight: 1.1,
   letterSpacing: "-0.04em",
 };
 
-const mutedTextStyle: CSSProperties = {
+const subtitleStyle: CSSProperties = {
+  margin: "10px 0 0",
   color: "#cbd5e1",
-  margin: 0,
-  maxWidth: "860px",
-  lineHeight: 1.65,
+  fontSize: "15px",
+  lineHeight: 1.55,
+  maxWidth: "820px",
 };
 
-const formStyle: CSSProperties = {
+const actionRowStyle: CSSProperties = {
   display: "flex",
-  flexDirection: "column",
-  gap: "18px",
-  maxWidth: "860px",
-  border: "1px solid rgba(148, 163, 184, 0.16)",
-  borderRadius: "20px",
-  padding: "20px",
+  gap: "10px",
+  flexWrap: "wrap",
+  alignItems: "center",
+};
+
+const cardStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.18)",
+  padding: "22px",
+  borderRadius: "22px",
   background:
-    "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
-  boxShadow: "0 20px 70px rgba(2, 6, 23, 0.24)",
+    "linear-gradient(135deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.94))",
+  boxShadow: "0 18px 50px rgba(0, 0, 0, 0.22)",
 };
 
 const inputStyle: CSSProperties = {
@@ -108,26 +79,87 @@ const inputStyle: CSSProperties = {
   width: "100%",
   padding: "12px 14px",
   marginTop: "8px",
-  backgroundColor: "#0f172a",
+  backgroundColor: "rgba(15, 23, 42, 0.9)",
   color: "#f8fafc",
   border: "1px solid rgba(148, 163, 184, 0.28)",
-  borderRadius: "12px",
-  fontSize: "16px",
+  borderRadius: "14px",
+  fontSize: "15px",
   boxSizing: "border-box",
   outline: "none",
 };
 
 const labelStyle: CSSProperties = {
-  color: "#cbd5e1",
+  display: "block",
+  color: "#e2e8f0",
+  fontSize: "14px",
   fontWeight: 800,
+};
+
+const primaryButtonStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: "46px",
+  color: "white",
+  background: "linear-gradient(135deg, #7c3aed, #a855f7)",
+  padding: "12px 18px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 900,
+  border: "1px solid rgba(255, 255, 255, 0.14)",
+  boxShadow: "0 18px 36px rgba(124, 58, 237, 0.24)",
+  cursor: "pointer",
+  fontSize: "15px",
+};
+
+const secondaryButtonStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: "46px",
+  color: "#e2e8f0",
+  backgroundColor: "rgba(15, 23, 42, 0.82)",
+  padding: "12px 18px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 900,
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+  cursor: "pointer",
+  fontSize: "15px",
+};
+
+const disabledStyle: CSSProperties = {
+  opacity: 0.6,
+  cursor: "not-allowed",
+};
+
+const formGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+  gap: "18px",
+};
+
+const formSectionStyle: CSSProperties = {
+  display: "grid",
+  gap: "18px",
 };
 
 const errorStyle: CSSProperties = {
   border: "1px solid rgba(248, 113, 113, 0.36)",
-  background: "rgba(127, 29, 29, 0.22)",
+  backgroundColor: "rgba(127, 29, 29, 0.24)",
   color: "#fecaca",
   padding: "14px",
   borderRadius: "16px",
+  fontWeight: 800,
+};
+
+const helpCardStyle: CSSProperties = {
+  border: "1px solid rgba(196, 181, 253, 0.22)",
+  borderRadius: "18px",
+  padding: "16px",
+  backgroundColor: "rgba(124, 58, 237, 0.1)",
+  color: "#cbd5e1",
+  lineHeight: 1.55,
 };
 
 export default function NewContactPage() {
@@ -196,123 +228,144 @@ export default function NewContactPage() {
 
   return (
     <main style={pageStyle}>
-      <div style={actionRowStyle}>
-        <Link href="/contacts" style={secondaryButtonStyle}>
-          Back to Contacts
-        </Link>
-      </div>
+      <section style={shellStyle}>
+        <div style={headerStyle}>
+          <div>
+            <p style={eyebrowStyle}>Sales / Contacts</p>
+            <h1 style={titleStyle}>Add Contact</h1>
+            <p style={subtitleStyle}>
+              Create a new person connected to a company, opportunity, sales
+              follow-up, or business-memory record.
+            </p>
+          </div>
 
-      <header style={headerStyle}>
-        <p style={eyebrowStyle}>Contact Management</p>
-
-        <h1 style={titleStyle}>Add Contact</h1>
-
-        <p style={mutedTextStyle}>
-          Create a new person connected to a company, opportunity, sales
-          follow-up, or business-memory record.
-        </p>
-      </header>
-
-      <form onSubmit={handleSubmit} style={formStyle}>
-        <label style={labelStyle}>
-          First Name
-          <input
-            value={firstName}
-            onChange={(event) => setFirstName(event.target.value)}
-            required
-            placeholder="First name"
-            style={inputStyle}
-          />
-        </label>
-
-        <label style={labelStyle}>
-          Last Name
-          <input
-            value={lastName}
-            onChange={(event) => setLastName(event.target.value)}
-            placeholder="Last name"
-            style={inputStyle}
-          />
-        </label>
-
-        <label style={labelStyle}>
-          Title
-          <input
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            placeholder="Owner, dispatcher, truck boss, estimator, etc."
-            style={inputStyle}
-          />
-        </label>
-
-        <label style={labelStyle}>
-          Company
-          <select
-            value={companyId}
-            onChange={(event) => setCompanyId(event.target.value)}
-            style={inputStyle}
-          >
-            <option value="">No company selected</option>
-            {companies.map((company) => (
-              <option key={company.id} value={company.id}>
-                {company.name}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label style={labelStyle}>
-          Email
-          <input
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="Contact email"
-            style={inputStyle}
-          />
-        </label>
-
-        <label style={labelStyle}>
-          Phone
-          <input
-            value={phone}
-            onChange={(event) => setPhone(event.target.value)}
-            placeholder="Contact phone"
-            style={inputStyle}
-          />
-        </label>
-
-        <label style={labelStyle}>
-          Contact Notes
-          <textarea
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-            placeholder="Example: Mike is the owner but said I need to talk to Frank. Frank is the truck boss and is available Thursdays."
-            rows={5}
-            style={{
-              ...inputStyle,
-              resize: "vertical",
-              minHeight: "130px",
-            }}
-          />
-        </label>
-
-        {errorMessage && <div style={errorStyle}>Error: {errorMessage}</div>}
-
-        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-          <button
-            type="submit"
-            disabled={saving}
-            style={saving ? disabledButtonStyle : primaryButtonStyle}
-          >
-            {saving ? "Saving..." : "Save Contact"}
-          </button>
-
-          <Link href="/contacts" style={secondaryButtonStyle}>
-            Cancel
-          </Link>
+          <div style={actionRowStyle}>
+            <Link href="/contacts" style={secondaryButtonStyle}>
+              Back to Contacts
+            </Link>
+          </div>
         </div>
-      </form>
+
+        <form onSubmit={handleSubmit} style={cardStyle}>
+          <div style={formSectionStyle}>
+            <div style={helpCardStyle}>
+              <strong>Contact profile</strong>
+              <br />
+              Add the person first. Company, title, phone, email, and notes are
+              optional, but they make the assistant more useful later.
+            </div>
+
+            <div style={formGridStyle}>
+              <label style={labelStyle}>
+                First Name
+                <input
+                  value={firstName}
+                  onChange={(event) => setFirstName(event.target.value)}
+                  required
+                  placeholder="First name"
+                  style={inputStyle}
+                />
+              </label>
+
+              <label style={labelStyle}>
+                Last Name
+                <input
+                  value={lastName}
+                  onChange={(event) => setLastName(event.target.value)}
+                  placeholder="Last name"
+                  style={inputStyle}
+                />
+              </label>
+            </div>
+
+            <div style={formGridStyle}>
+              <label style={labelStyle}>
+                Title
+                <input
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  placeholder="Owner, dispatcher, truck boss, estimator, etc."
+                  style={inputStyle}
+                />
+              </label>
+
+              <label style={labelStyle}>
+                Company
+                <select
+                  value={companyId}
+                  onChange={(event) => setCompanyId(event.target.value)}
+                  style={inputStyle}
+                >
+                  <option value="">No company selected</option>
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div style={formGridStyle}>
+              <label style={labelStyle}>
+                Email
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="Contact email"
+                  style={inputStyle}
+                />
+              </label>
+
+              <label style={labelStyle}>
+                Phone
+                <input
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  placeholder="Contact phone"
+                  style={inputStyle}
+                />
+              </label>
+            </div>
+
+            <label style={labelStyle}>
+              Contact Notes
+              <textarea
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
+                placeholder="Example: Mike is the owner but said I need to talk to Frank. Frank is the truck boss and is available Thursdays."
+                rows={5}
+                style={{
+                  ...inputStyle,
+                  resize: "vertical",
+                  minHeight: "140px",
+                  lineHeight: 1.5,
+                }}
+              />
+            </label>
+
+            {errorMessage && <div style={errorStyle}>Error: {errorMessage}</div>}
+
+            <div style={actionRowStyle}>
+              <button
+                type="submit"
+                disabled={saving}
+                style={{
+                  ...primaryButtonStyle,
+                  ...(saving ? disabledStyle : {}),
+                }}
+              >
+                {saving ? "Saving..." : "Save Contact"}
+              </button>
+
+              <Link href="/contacts" style={secondaryButtonStyle}>
+                Cancel
+              </Link>
+            </div>
+          </div>
+        </form>
+      </section>
     </main>
   );
 }
