@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { supabase } from "../lib/supabase";
 
 type CompanyResult = {
@@ -15,6 +15,52 @@ type ContactResult = {
   first_name: string;
   last_name: string | null;
   email: string | null;
+};
+
+const sectionStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.18)",
+  borderRadius: "22px",
+  padding: "22px",
+  background:
+    "linear-gradient(135deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.94))",
+  marginBottom: "32px",
+  boxShadow: "0 18px 50px rgba(0, 0, 0, 0.22)",
+};
+
+const mutedTextStyle: CSSProperties = {
+  color: "#cbd5e1",
+  lineHeight: 1.5,
+};
+
+const inputStyle: CSSProperties = {
+  width: "100%",
+  padding: "14px 16px",
+  borderRadius: "14px",
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+  fontSize: "16px",
+  backgroundColor: "rgba(15, 23, 42, 0.9)",
+  color: "#f8fafc",
+  boxSizing: "border-box",
+  outline: "none",
+};
+
+const resultCardStyle: CSSProperties = {
+  display: "block",
+  color: "#f8fafc",
+  textDecoration: "none",
+  border: "1px solid rgba(148, 163, 184, 0.18)",
+  borderRadius: "14px",
+  padding: "12px 14px",
+  marginBottom: "10px",
+  backgroundColor: "rgba(15, 23, 42, 0.72)",
+};
+
+const errorStyle: CSSProperties = {
+  color: "#fecaca",
+  border: "1px solid rgba(248, 113, 113, 0.36)",
+  backgroundColor: "rgba(127, 29, 29, 0.24)",
+  padding: "12px 14px",
+  borderRadius: "14px",
 };
 
 export default function HomeSearch() {
@@ -95,18 +141,10 @@ export default function HomeSearch() {
   const hasResults = companies.length > 0 || contacts.length > 0;
 
   return (
-    <section
-      style={{
-        border: "1px solid #333",
-        borderRadius: "12px",
-        padding: "24px",
-        backgroundColor: "#1a1a1a",
-        marginBottom: "32px",
-      }}
-    >
+    <section style={sectionStyle}>
       <h2 style={{ marginTop: 0 }}>Search</h2>
 
-      <p style={{ color: "#aaa" }}>
+      <p style={mutedTextStyle}>
         Search companies and contacts first. Try typing a name like John Test.
       </p>
 
@@ -114,24 +152,15 @@ export default function HomeSearch() {
         value={searchText}
         onChange={(event) => setSearchText(event.target.value)}
         placeholder="Find a company or contact..."
-        style={{
-          width: "100%",
-          padding: "14px",
-          borderRadius: "8px",
-          border: "1px solid #555",
-          fontSize: "18px",
-          backgroundColor: "white",
-          color: "black",
-          boxSizing: "border-box",
-        }}
+        style={inputStyle}
       />
 
-      {searching && <p style={{ color: "#aaa" }}>Searching...</p>}
+      {searching && <p style={mutedTextStyle}>Searching...</p>}
 
-      {errorMessage && <p style={{ color: "red" }}>Error: {errorMessage}</p>}
+      {errorMessage && <p style={errorStyle}>Error: {errorMessage}</p>}
 
       {searchText.trim().length >= 2 && !searching && !hasResults && (
-        <p style={{ color: "#aaa" }}>No companies or contacts found.</p>
+        <p style={mutedTextStyle}>No companies or contacts found.</p>
       )}
 
       {companies.length > 0 && (
@@ -142,21 +171,12 @@ export default function HomeSearch() {
             <Link
               key={company.id}
               href={`/companies/${company.id}`}
-              style={{
-                display: "block",
-                color: "white",
-                textDecoration: "none",
-                border: "1px solid #333",
-                borderRadius: "8px",
-                padding: "12px",
-                marginBottom: "10px",
-                backgroundColor: "#111",
-              }}
+              style={resultCardStyle}
             >
               <strong>{company.name}</strong>
 
               {company.lead_temperature && (
-                <span style={{ color: "#aaa" }}>
+                <span style={{ color: "#94a3b8" }}>
                   {" "}
                   — {company.lead_temperature} Lead
                 </span>
@@ -174,23 +194,14 @@ export default function HomeSearch() {
             <Link
               key={contact.id}
               href={`/contacts/${contact.id}`}
-              style={{
-                display: "block",
-                color: "white",
-                textDecoration: "none",
-                border: "1px solid #333",
-                borderRadius: "8px",
-                padding: "12px",
-                marginBottom: "10px",
-                backgroundColor: "#111",
-              }}
+              style={resultCardStyle}
             >
               <strong>
                 {contact.first_name} {contact.last_name || ""}
               </strong>
 
               {contact.email && (
-                <span style={{ color: "#aaa" }}> — {contact.email}</span>
+                <span style={{ color: "#94a3b8" }}> — {contact.email}</span>
               )}
             </Link>
           ))}
