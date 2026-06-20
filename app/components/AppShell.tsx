@@ -571,7 +571,7 @@ function renderSidebarItem(item: SidebarItem, pathname: string) {
       {item.badge ? (
         <span style={navBadgeStyle}>{item.badge}</span>
       ) : active ? (
-        <span aria-hidden="true">></span>
+        <span aria-hidden="true">&gt;</span>
       ) : null}
     </Link>
   );
@@ -701,4 +701,5 @@ export default function AppShell({ children }: AppShellProps) {
     </div>
   );
 }
+
 
