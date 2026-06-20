@@ -35,18 +35,194 @@ type Post = {
   updated_at: string | null;
 };
 
+const pageStyle: CSSProperties = {
+  minHeight: "100vh",
+  color: "#f8fafc",
+  padding: "28px",
+  fontFamily: "Arial, sans-serif",
+};
+
+const shellStyle: CSSProperties = {
+  maxWidth: "1180px",
+  margin: "0 auto",
+};
+
+const headerStyle: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: "18px",
+  flexWrap: "wrap",
+  marginBottom: "24px",
+};
+
+const eyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  color: "#c4b5fd",
+  fontSize: "13px",
+  fontWeight: 800,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+};
+
+const titleStyle: CSSProperties = {
+  margin: 0,
+  fontSize: "34px",
+  lineHeight: 1.1,
+  letterSpacing: "-0.04em",
+};
+
+const subtitleStyle: CSSProperties = {
+  margin: "10px 0 0",
+  color: "#cbd5e1",
+  fontSize: "15px",
+  lineHeight: 1.55,
+  maxWidth: "780px",
+};
+
+const actionRowStyle: CSSProperties = {
+  display: "flex",
+  gap: "10px",
+  flexWrap: "wrap",
+  alignItems: "center",
+};
+
+const secondaryLinkStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: "42px",
+  padding: "10px 15px",
+  borderRadius: "999px",
+  color: "#e2e8f0",
+  backgroundColor: "rgba(15, 23, 42, 0.82)",
+  textDecoration: "none",
+  fontWeight: 800,
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+};
+
+const cardStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.18)",
+  padding: "22px",
+  borderRadius: "22px",
+  background:
+    "linear-gradient(135deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.94))",
+  boxShadow: "0 18px 50px rgba(0, 0, 0, 0.22)",
+};
+
+const formStyle: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "18px",
+};
+
+const formGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+  gap: "16px",
+};
+
+const labelStyle: CSSProperties = {
+  display: "block",
+  color: "#e2e8f0",
+  fontSize: "14px",
+  fontWeight: 800,
+};
+
+const helpTextStyle: CSSProperties = {
+  margin: "6px 0 0",
+  color: "#94a3b8",
+  fontSize: "13px",
+  lineHeight: 1.45,
+};
+
 const inputStyle: CSSProperties = {
   display: "block",
   width: "100%",
   padding: "12px",
-  marginTop: "6px",
-  backgroundColor: "white",
-  color: "black",
-  border: "1px solid #555",
-  borderRadius: "6px",
-  fontSize: "16px",
+  marginTop: "8px",
+  backgroundColor: "rgba(15, 23, 42, 0.9)",
+  color: "#f8fafc",
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+  borderRadius: "14px",
+  fontSize: "15px",
   boxSizing: "border-box",
+  outline: "none",
 };
+
+const textareaStyle: CSSProperties = {
+  ...inputStyle,
+  minHeight: "130px",
+  resize: "vertical",
+  lineHeight: 1.55,
+};
+
+const primaryButtonStyle: CSSProperties = {
+  minHeight: "46px",
+  color: "white",
+  background: "linear-gradient(135deg, #7c3aed, #a855f7)",
+  padding: "12px 18px",
+  borderRadius: "999px",
+  fontWeight: 900,
+  border: "1px solid rgba(255, 255, 255, 0.14)",
+  cursor: "pointer",
+  boxShadow: "0 18px 36px rgba(124, 58, 237, 0.24)",
+};
+
+const disabledButtonStyle: CSSProperties = {
+  opacity: 0.65,
+  cursor: "not-allowed",
+};
+
+const errorMessageStyle: CSSProperties = {
+  border: "1px solid rgba(248, 113, 113, 0.32)",
+  backgroundColor: "rgba(127, 29, 29, 0.24)",
+  color: "#fecaca",
+  padding: "12px 14px",
+  borderRadius: "16px",
+  margin: "0 0 18px",
+};
+
+const sectionTitleStyle: CSSProperties = {
+  margin: "4px 0 0",
+  fontSize: "20px",
+};
+
+const sectionNoteStyle: CSSProperties = {
+  margin: "6px 0 0",
+  color: "#94a3b8",
+  fontSize: "14px",
+  lineHeight: 1.5,
+};
+
+const checkboxCardStyle: CSSProperties = {
+  display: "flex",
+  gap: "10px",
+  alignItems: "center",
+  border: "1px solid rgba(148, 163, 184, 0.18)",
+  borderRadius: "16px",
+  padding: "14px",
+  backgroundColor: "rgba(15, 23, 42, 0.58)",
+  color: "#f8fafc",
+  fontWeight: 800,
+};
+
+const metaCardStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "18px",
+  padding: "16px",
+  backgroundColor: "rgba(15, 23, 42, 0.58)",
+};
+
+function formatDateTime(value: string | null) {
+  if (!value) return "Not available";
+
+  try {
+    return new Date(value).toLocaleString();
+  } catch {
+    return value;
+  }
+}
 
 export default function EditPostPage() {
   const router = useRouter();
@@ -184,295 +360,324 @@ export default function EditPostPage() {
   }
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#111",
-        color: "white",
-        padding: "40px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          gap: "12px",
-          marginBottom: "32px",
-          flexWrap: "wrap",
-        }}
-      >
-        <Link
-          href="/"
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Home
-        </Link>
+    <main style={pageStyle}>
+      <section style={shellStyle}>
+        <div style={headerStyle}>
+          <div>
+            <p style={eyebrowStyle}>Market Intelligence / Edit Post</p>
+            <h1 style={titleStyle}>Edit Post</h1>
+            <p style={subtitleStyle}>
+              Update the post source, content, engagement numbers, follow-up
+              flag, and market intelligence notes.
+            </p>
+          </div>
 
-        <Link
-          href={`/posts/${postId}`}
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Back to Post
-        </Link>
-      </div>
+          <div style={actionRowStyle}>
+            <Link href={`/posts/${postId}`} style={secondaryLinkStyle}>
+              Back to Post
+            </Link>
+          </div>
+        </div>
 
-      <h1>Edit Post</h1>
+        {errorMessage && <p style={errorMessageStyle}>Error: {errorMessage}</p>}
 
-      {loading && <p>Loading post...</p>}
+        {loading && (
+          <div style={cardStyle}>
+            <p style={eyebrowStyle}>Loading</p>
+            <h2 style={{ margin: 0 }}>Loading post...</h2>
+            <p style={subtitleStyle}>
+              Pulling the existing post and community list before opening the
+              edit form.
+            </p>
+          </div>
+        )}
 
-      {errorMessage && (
-        <p style={{ color: "red", marginTop: "24px" }}>
-          Error: {errorMessage}
-        </p>
-      )}
-
-      {!loading && (
-        <form
-          onSubmit={handleSubmit}
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "18px",
-            maxWidth: "800px",
-            marginTop: "32px",
-          }}
-        >
-          <label>
-            Title
-            <input
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              required
-              style={inputStyle}
-            />
-          </label>
-
-          <label>
-            Community
-            <select
-              value={communityId}
-              onChange={(event) => setCommunityId(event.target.value)}
-              style={inputStyle}
-            >
-              <option value="">No community selected</option>
-              {communities.map((community) => (
-                <option key={community.id} value={community.id}>
-                  {community.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            Platform
-            <select
-              value={platform}
-              onChange={(event) => setPlatform(event.target.value)}
-              style={inputStyle}
-            >
-              <option value="Facebook">Facebook</option>
-              <option value="LinkedIn">LinkedIn</option>
-              <option value="Reddit">Reddit</option>
-              <option value="Forum">Forum</option>
-              <option value="YouTube">YouTube</option>
-              <option value="TikTok">TikTok</option>
-              <option value="Website">Website</option>
-              <option value="Other">Other</option>
-            </select>
-          </label>
-
-          <label>
-            Post Type
-            <select
-              value={postType}
-              onChange={(event) => setPostType(event.target.value)}
-              style={inputStyle}
-            >
-              <option value="Question">Question</option>
-              <option value="Problem Research">Problem Research</option>
-              <option value="Product Mention">Product Mention</option>
-              <option value="Lead Magnet">Lead Magnet</option>
-              <option value="Announcement">Announcement</option>
-              <option value="Comment Reply">Comment Reply</option>
-              <option value="Other">Other</option>
-            </select>
-          </label>
-
-          <label>
-            Post URL
-            <input
-              value={postUrl}
-              onChange={(event) => setPostUrl(event.target.value)}
-              placeholder="https://facebook.com/..."
-              style={inputStyle}
-            />
-          </label>
-
-          <label>
-            Post Date
-            <input
-              type="date"
-              value={postDate}
-              onChange={(event) => setPostDate(event.target.value)}
-              style={inputStyle}
-            />
-          </label>
-
-          <label>
-            Original Post Text
-            <textarea
-              value={originalPostText}
-              onChange={(event) => setOriginalPostText(event.target.value)}
-              rows={6}
-              style={inputStyle}
-            />
-          </label>
-
-          <label>
-            Screenshot URL
-            <input
-              value={screenshotUrl}
-              onChange={(event) => setScreenshotUrl(event.target.value)}
-              placeholder="Optional screenshot URL"
-              style={inputStyle}
-            />
-          </label>
-
-          <label>
-            Comment Count
-            <input
-              type="number"
-              value={commentCount}
-              onChange={(event) => setCommentCount(event.target.value)}
-              style={inputStyle}
-            />
-          </label>
-
-          <label>
-            Reaction Count
-            <input
-              type="number"
-              value={reactionCount}
-              onChange={(event) => setReactionCount(event.target.value)}
-              style={inputStyle}
-            />
-          </label>
-
-          <label>
-            Share Count
-            <input
-              type="number"
-              value={shareCount}
-              onChange={(event) => setShareCount(event.target.value)}
-              style={inputStyle}
-            />
-          </label>
-
-          <label>
-            Last Checked Date
-            <input
-              type="date"
-              value={lastCheckedDate}
-              onChange={(event) => setLastCheckedDate(event.target.value)}
-              style={inputStyle}
-            />
-          </label>
-
-          <label>
-            AI Summary
-            <textarea
-              value={aiSummary}
-              onChange={(event) => setAiSummary(event.target.value)}
-              rows={4}
-              style={inputStyle}
-            />
-          </label>
-
-          <label>
-            Pain Points Found
-            <textarea
-              value={painPointsFound}
-              onChange={(event) => setPainPointsFound(event.target.value)}
-              rows={4}
-              style={inputStyle}
-            />
-          </label>
-
-          <label>
-            Leads Found
-            <textarea
-              value={leadsFound}
-              onChange={(event) => setLeadsFound(event.target.value)}
-              rows={4}
-              style={inputStyle}
-            />
-          </label>
-
-          <label>
-            Tags
-            <input
-              value={tags}
-              onChange={(event) => setTags(event.target.value)}
-              style={inputStyle}
-            />
-          </label>
-
-          <label
+        {!loading && (
+          <div
             style={{
-              display: "flex",
-              gap: "10px",
-              alignItems: "center",
-              color: "white",
+              display: "grid",
+              gridTemplateColumns: "minmax(0, 1fr)",
+              gap: "18px",
             }}
           >
-            <input
-              type="checkbox"
-              checked={followUpNeeded}
-              onChange={(event) => setFollowUpNeeded(event.target.checked)}
-            />
-            Follow-up needed
-          </label>
+            <form onSubmit={handleSubmit} style={{ ...cardStyle, ...formStyle }}>
+              <div>
+                <p style={eyebrowStyle}>Post Identity</p>
+                <h2 style={sectionTitleStyle}>Where this post came from</h2>
+                <p style={sectionNoteStyle}>
+                  Keep the source details clean so this post stays useful as
+                  market evidence.
+                </p>
+              </div>
 
-          <p style={{ color: "#aaa" }}>
-            Last Updated:{" "}
-            {lastUpdated
-              ? new Date(lastUpdated).toLocaleString()
-              : "Not available"}
-          </p>
+              <label style={labelStyle}>
+                Title
+                <input
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  required
+                  style={inputStyle}
+                />
+              </label>
 
-          <button
-            type="submit"
-            disabled={saving}
-            style={{
-              padding: "12px",
-              cursor: "pointer",
-              fontWeight: "bold",
-              borderRadius: "6px",
-              border: "none",
-              backgroundColor: "white",
-              color: "black",
-              fontSize: "16px",
-            }}
-          >
-            {saving ? "Saving..." : "Save Post"}
-          </button>
-        </form>
-      )}
+              <div style={formGridStyle}>
+                <label style={labelStyle}>
+                  Community
+                  <select
+                    value={communityId}
+                    onChange={(event) => setCommunityId(event.target.value)}
+                    style={inputStyle}
+                  >
+                    <option value="">No community selected</option>
+                    {communities.map((community) => (
+                      <option key={community.id} value={community.id}>
+                        {community.name}
+                        {community.platform ? ` — ${community.platform}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label style={labelStyle}>
+                  Platform
+                  <select
+                    value={platform}
+                    onChange={(event) => setPlatform(event.target.value)}
+                    style={inputStyle}
+                  >
+                    <option value="Facebook">Facebook</option>
+                    <option value="LinkedIn">LinkedIn</option>
+                    <option value="Reddit">Reddit</option>
+                    <option value="Forum">Forum</option>
+                    <option value="YouTube">YouTube</option>
+                    <option value="TikTok">TikTok</option>
+                    <option value="Website">Website</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </label>
+
+                <label style={labelStyle}>
+                  Post Type
+                  <select
+                    value={postType}
+                    onChange={(event) => setPostType(event.target.value)}
+                    style={inputStyle}
+                  >
+                    <option value="Question">Question</option>
+                    <option value="Problem Research">Problem Research</option>
+                    <option value="Product Mention">Product Mention</option>
+                    <option value="Lead Magnet">Lead Magnet</option>
+                    <option value="Announcement">Announcement</option>
+                    <option value="Comment Reply">Comment Reply</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </label>
+              </div>
+
+              <div style={formGridStyle}>
+                <label style={labelStyle}>
+                  Post URL
+                  <input
+                    value={postUrl}
+                    onChange={(event) => setPostUrl(event.target.value)}
+                    placeholder="https://facebook.com/..."
+                    style={inputStyle}
+                  />
+                </label>
+
+                <label style={labelStyle}>
+                  Screenshot URL
+                  <input
+                    value={screenshotUrl}
+                    onChange={(event) => setScreenshotUrl(event.target.value)}
+                    placeholder="Optional screenshot URL"
+                    style={inputStyle}
+                  />
+                </label>
+              </div>
+
+              <div style={formGridStyle}>
+                <label style={labelStyle}>
+                  Post Date
+                  <input
+                    type="date"
+                    value={postDate}
+                    onChange={(event) => setPostDate(event.target.value)}
+                    style={inputStyle}
+                  />
+                </label>
+
+                <label style={labelStyle}>
+                  Last Checked Date
+                  <input
+                    type="date"
+                    value={lastCheckedDate}
+                    onChange={(event) => setLastCheckedDate(event.target.value)}
+                    style={inputStyle}
+                  />
+                </label>
+              </div>
+
+              <div>
+                <p style={eyebrowStyle}>Post Content</p>
+                <h2 style={sectionTitleStyle}>What the post said</h2>
+                <p style={sectionNoteStyle}>
+                  Preserve the original wording so future AI review can use the
+                  same source material.
+                </p>
+              </div>
+
+              <label style={labelStyle}>
+                Original Post Text
+                <textarea
+                  value={originalPostText}
+                  onChange={(event) => setOriginalPostText(event.target.value)}
+                  rows={6}
+                  style={textareaStyle}
+                />
+                <span style={helpTextStyle}>
+                  If this is blank, Sell It will use the title as fallback
+                  content.
+                </span>
+              </label>
+
+              <div>
+                <p style={eyebrowStyle}>Engagement</p>
+                <h2 style={sectionTitleStyle}>Counts and follow-up</h2>
+                <p style={sectionNoteStyle}>
+                  Update these when you re-check the post or notice new
+                  comments.
+                </p>
+              </div>
+
+              <div style={formGridStyle}>
+                <label style={labelStyle}>
+                  Comment Count
+                  <input
+                    type="number"
+                    min="0"
+                    value={commentCount}
+                    onChange={(event) => setCommentCount(event.target.value)}
+                    style={inputStyle}
+                  />
+                </label>
+
+                <label style={labelStyle}>
+                  Reaction Count
+                  <input
+                    type="number"
+                    min="0"
+                    value={reactionCount}
+                    onChange={(event) => setReactionCount(event.target.value)}
+                    style={inputStyle}
+                  />
+                </label>
+
+                <label style={labelStyle}>
+                  Share Count
+                  <input
+                    type="number"
+                    min="0"
+                    value={shareCount}
+                    onChange={(event) => setShareCount(event.target.value)}
+                    style={inputStyle}
+                  />
+                </label>
+              </div>
+
+              <label style={checkboxCardStyle}>
+                <input
+                  type="checkbox"
+                  checked={followUpNeeded}
+                  onChange={(event) => setFollowUpNeeded(event.target.checked)}
+                  style={{
+                    width: "18px",
+                    height: "18px",
+                    accentColor: "#a855f7",
+                  }}
+                />
+                Follow-up needed
+              </label>
+
+              <div>
+                <p style={eyebrowStyle}>Market Intelligence</p>
+                <h2 style={sectionTitleStyle}>AI and manual notes</h2>
+                <p style={sectionNoteStyle}>
+                  These fields help Sell It understand what pain points and
+                  leads came from the post.
+                </p>
+              </div>
+
+              <label style={labelStyle}>
+                AI Summary
+                <textarea
+                  value={aiSummary}
+                  onChange={(event) => setAiSummary(event.target.value)}
+                  rows={4}
+                  style={textareaStyle}
+                />
+              </label>
+
+              <div style={formGridStyle}>
+                <label style={labelStyle}>
+                  Pain Points Found
+                  <textarea
+                    value={painPointsFound}
+                    onChange={(event) => setPainPointsFound(event.target.value)}
+                    rows={4}
+                    style={textareaStyle}
+                  />
+                </label>
+
+                <label style={labelStyle}>
+                  Leads Found
+                  <textarea
+                    value={leadsFound}
+                    onChange={(event) => setLeadsFound(event.target.value)}
+                    rows={4}
+                    style={textareaStyle}
+                  />
+                </label>
+              </div>
+
+              <label style={labelStyle}>
+                Tags
+                <input
+                  value={tags}
+                  onChange={(event) => setTags(event.target.value)}
+                  style={inputStyle}
+                />
+              </label>
+
+              <div style={metaCardStyle}>
+                <h2 style={{ margin: "0 0 8px", fontSize: "18px" }}>
+                  Last Updated
+                </h2>
+                <p style={{ margin: 0, color: "#cbd5e1", lineHeight: 1.6 }}>
+                  {formatDateTime(lastUpdated)}
+                </p>
+              </div>
+
+              <div style={actionRowStyle}>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  style={{
+                    ...primaryButtonStyle,
+                    ...(saving ? disabledButtonStyle : {}),
+                  }}
+                >
+                  {saving ? "Saving..." : "Save Post"}
+                </button>
+
+                <Link href={`/posts/${postId}`} style={secondaryLinkStyle}>
+                  Cancel
+                </Link>
+              </div>
+            </form>
+          </div>
+        )}
+      </section>
     </main>
   );
 }
-

@@ -39,44 +39,177 @@ type SelectedMap = Record<string, boolean>;
 
 const pageStyle: CSSProperties = {
   minHeight: "100vh",
-  backgroundColor: "#111",
-  color: "white",
-  padding: "40px",
+  color: "#f8fafc",
+  padding: "28px",
   fontFamily: "Arial, sans-serif",
 };
 
+const shellStyle: CSSProperties = {
+  maxWidth: "1080px",
+  margin: "0 auto",
+};
+
+const headerStyle: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: "18px",
+  flexWrap: "wrap",
+  marginBottom: "24px",
+};
+
+const eyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  color: "#fda4af",
+  fontSize: "13px",
+  fontWeight: 900,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+};
+
+const titleStyle: CSSProperties = {
+  margin: 0,
+  fontSize: "34px",
+  lineHeight: 1.1,
+  letterSpacing: "-0.04em",
+};
+
+const subtitleStyle: CSSProperties = {
+  margin: "10px 0 0",
+  color: "#cbd5e1",
+  fontSize: "15px",
+  lineHeight: 1.55,
+  maxWidth: "820px",
+};
+
+const actionRowStyle: CSSProperties = {
+  display: "flex",
+  gap: "10px",
+  flexWrap: "wrap",
+  alignItems: "center",
+};
+
+const secondaryLinkStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: "42px",
+  padding: "10px 15px",
+  borderRadius: "999px",
+  color: "#e2e8f0",
+  backgroundColor: "rgba(15, 23, 42, 0.82)",
+  textDecoration: "none",
+  fontWeight: 800,
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+};
+
 const cardStyle: CSSProperties = {
-  border: "1px solid #333",
-  padding: "18px",
-  borderRadius: "10px",
-  backgroundColor: "#1a1a1a",
+  border: "1px solid rgba(148, 163, 184, 0.18)",
+  padding: "20px",
+  borderRadius: "20px",
+  background:
+    "linear-gradient(135deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.94))",
+  boxShadow: "0 18px 50px rgba(0, 0, 0, 0.22)",
   marginBottom: "16px",
-  maxWidth: "950px",
+};
+
+const warningCardStyle: CSSProperties = {
+  ...cardStyle,
+  borderColor: "rgba(251, 113, 133, 0.42)",
+  background:
+    "linear-gradient(135deg, rgba(127, 29, 29, 0.42), rgba(15, 23, 42, 0.94))",
+};
+
+const successCardStyle: CSSProperties = {
+  ...cardStyle,
+  borderColor: "rgba(74, 222, 128, 0.35)",
+  background:
+    "linear-gradient(135deg, rgba(20, 83, 45, 0.35), rgba(15, 23, 42, 0.94))",
 };
 
 const buttonStyle: CSSProperties = {
-  color: "black",
-  backgroundColor: "white",
-  padding: "10px 14px",
-  borderRadius: "6px",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: "42px",
+  color: "#e2e8f0",
+  backgroundColor: "rgba(15, 23, 42, 0.82)",
+  padding: "10px 15px",
+  borderRadius: "999px",
   textDecoration: "none",
-  fontWeight: "bold",
-  border: "none",
+  fontWeight: 800,
+  border: "1px solid rgba(148, 163, 184, 0.28)",
   cursor: "pointer",
 };
 
 const dangerButtonStyle: CSSProperties = {
   ...buttonStyle,
-  backgroundColor: "#ffdddd",
+  color: "#fff1f2",
+  background: "linear-gradient(135deg, #be123c, #fb7185)",
+  border: "1px solid rgba(251, 113, 133, 0.55)",
+  boxShadow: "0 18px 36px rgba(190, 18, 60, 0.22)",
+};
+
+const disabledButtonStyle: CSSProperties = {
+  opacity: 0.6,
+  cursor: "not-allowed",
 };
 
 const checkboxRowStyle: CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "28px 1fr",
+  gridTemplateColumns: "34px 1fr",
   gap: "10px",
   alignItems: "flex-start",
-  padding: "12px",
-  borderTop: "1px solid #333",
+  padding: "13px",
+  borderTop: "1px solid rgba(148, 163, 184, 0.14)",
+};
+
+const labelStyle: CSSProperties = {
+  color: "#cbd5e1",
+  fontSize: "13px",
+  fontWeight: 800,
+};
+
+const mutedTextStyle: CSSProperties = {
+  color: "#94a3b8",
+};
+
+const errorMessageStyle: CSSProperties = {
+  border: "1px solid rgba(248, 113, 113, 0.32)",
+  backgroundColor: "rgba(127, 29, 29, 0.24)",
+  color: "#fecaca",
+  padding: "12px 14px",
+  borderRadius: "16px",
+  marginBottom: "18px",
+  fontWeight: 800,
+};
+
+const countPillStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minWidth: "34px",
+  minHeight: "28px",
+  borderRadius: "999px",
+  padding: "4px 10px",
+  color: "#fecdd3",
+  backgroundColor: "rgba(127, 29, 29, 0.34)",
+  border: "1px solid rgba(251, 113, 133, 0.38)",
+  fontWeight: 900,
+};
+
+const detailGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+  gap: "12px",
+  marginTop: "16px",
+};
+
+const detailTileStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "16px",
+  padding: "14px",
+  backgroundColor: "rgba(15, 23, 42, 0.58)",
 };
 
 function recordKey(type: DeleteType, id: string) {
@@ -144,7 +277,9 @@ export default function DeleteCommunityPage() {
 
       const postResult = await supabase
         .from("posts")
-        .select("id, title, platform, post_type, post_date, follow_up_needed, community_id, created_at")
+        .select(
+          "id, title, platform, post_type, post_date, follow_up_needed, community_id, created_at"
+        )
         .eq("community_id", communityId)
         .order("created_at", { ascending: false });
 
@@ -265,7 +400,11 @@ export default function DeleteCommunityPage() {
           })
           .map((attachment) => attachment.id);
 
-        await detachIds("attachments", "related_post_id", attachmentsToDetachFromDeletedPosts);
+        await detachIds(
+          "attachments",
+          "related_post_id",
+          attachmentsToDetachFromDeletedPosts
+        );
         await deleteIds("posts", selectedPostIds);
       }
 
@@ -283,7 +422,8 @@ export default function DeleteCommunityPage() {
       );
       setConfirming(false);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown delete error";
+      const message =
+        error instanceof Error ? error.message : "Unknown delete error";
       setErrorMessage(message);
     } finally {
       setDeleting(false);
@@ -302,12 +442,18 @@ export default function DeleteCommunityPage() {
           type="checkbox"
           checked={isChecked(type, id)}
           onChange={() => toggleSelected(type, id)}
-          style={{ width: "18px", height: "18px", marginTop: "2px" }}
+          style={{
+            width: "18px",
+            height: "18px",
+            marginTop: "2px",
+            accentColor: "#fb7185",
+          }}
         />
+
         <span>
           <strong>{title}</strong>
           <br />
-          <span style={{ color: "#aaa" }}>{details}</span>
+          <span style={mutedTextStyle}>{details}</span>
         </span>
       </label>
     );
@@ -320,201 +466,264 @@ export default function DeleteCommunityPage() {
 
   return (
     <main style={pageStyle}>
-      <div style={{ display: "flex", gap: "12px", marginBottom: "32px", flexWrap: "wrap" }}>
-        <Link href="/communities" style={buttonStyle}>
-          Back to Communities
-        </Link>
-
-        {community && (
-          <Link href={`/communities/${community.id}`} style={buttonStyle}>
-            Back to Community
-          </Link>
-        )}
-      </div>
-
-      <h1>Delete Community Review</h1>
-
-      <p style={{ color: "#aaa", maxWidth: "850px", lineHeight: 1.5 }}>
-        Review everything connected to this community before deleting. Only checked records
-        are deleted. Unchecked related records are preserved. If the community itself is
-        deleted, unchecked posts are safely unlinked from the deleted community when possible.
-        If selected posts are deleted, unchecked post attachments are safely unlinked.
-      </p>
-
-      {loading && <p>Loading delete review...</p>}
-
-      {errorMessage && (
-        <p style={{ color: "red", fontWeight: "bold" }}>Error: {errorMessage}</p>
-      )}
-
-      {successMessage && (
-        <div style={{ ...cardStyle, borderColor: "#2f8f2f" }}>
-          <h2 style={{ marginTop: 0 }}>Delete Complete</h2>
-          <p style={{ color: "#90ee90" }}>{successMessage}</p>
-          <Link href="/communities" style={buttonStyle}>
-            Return to Communities
-          </Link>
-        </div>
-      )}
-
-      {!loading && community && !successMessage && (
-        <>
-          <div style={cardStyle}>
-            <h2 style={{ marginTop: 0 }}>Selected Community</h2>
-
-            {renderCheckbox(
-              "community",
-              community.id,
-              community.name,
-              `Platform: ${community.platform || "None"} | Status: ${
-                community.status || "None"
-              } | Industry: ${community.industry || "None"}`
-            )}
-          </div>
-
-          <div
-            style={{
-              ...cardStyle,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "12px",
-              flexWrap: "wrap",
-            }}
-          >
-            <div>
-              <strong>Total selected:</strong> {selectedCount}
-              <br />
-              <span style={{ color: "#aaa" }}>
-                Default selection is community only. Related records start unchecked.
-              </span>
-            </div>
-
-            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-              <button type="button" onClick={selectAll} style={buttonStyle}>
-                Select All
-              </button>
-
-              <button type="button" onClick={unselectAll} style={buttonStyle}>
-                Unselect All
-              </button>
-            </div>
-          </div>
-
-          <div style={cardStyle}>
-            <h2 style={{ marginTop: 0 }}>Related Posts ({posts.length})</h2>
-
-            {posts.length === 0 && <p style={{ color: "#aaa" }}>No related posts.</p>}
-
-            {posts.map((post) =>
-              renderCheckbox(
-                "post",
-                post.id,
-                post.title,
-                `Platform: ${post.platform || "None"} | Type: ${
-                  post.post_type || "None"
-                } | Date: ${formatDate(post.post_date || post.created_at)}`
-              )
-            )}
-          </div>
-
-          <div style={cardStyle}>
-            <h2 style={{ marginTop: 0 }}>Attachments Connected To Related Posts ({attachments.length})</h2>
-
-            {attachments.length === 0 && (
-              <p style={{ color: "#aaa" }}>No attachments connected to related posts.</p>
-            )}
-
-            {attachments.map((attachment) =>
-              renderCheckbox(
-                "attachment",
-                attachment.id,
-                attachment.file_name,
-                `Post: ${postTitleForAttachment(attachment)} | Type: ${
-                  attachment.file_type || "None"
-                } | Created: ${formatDate(attachment.created_at)}`
-              )
-            )}
-          </div>
-
-          <div
-            style={{
-              ...cardStyle,
-              borderColor: "#8f2f2f",
-              backgroundColor: "#201111",
-            }}
-          >
-            <h2 style={{ marginTop: 0 }}>Final Delete Action</h2>
-
-            <p>
-              Selected records: <strong>{selectedCount}</strong>
+      <section style={shellStyle}>
+        <div style={headerStyle}>
+          <div>
+            <p style={eyebrowStyle}>Danger Zone / Community</p>
+            <h1 style={titleStyle}>Delete Community Review</h1>
+            <p style={subtitleStyle}>
+              Review everything connected to this community before deleting.
+              Only checked records are deleted. Unchecked posts are preserved
+              and unlinked if the community is deleted. Unchecked attachments
+              are preserved when possible.
             </p>
-
-            <p style={{ color: "#ffb3b3" }}>
-              This action cannot be undone from inside Sell It yet.
-            </p>
-
-            <button
-              type="button"
-              onClick={() => setConfirming(true)}
-              disabled={selectedCount === 0 || deleting}
-              style={dangerButtonStyle}
-            >
-              Review Final Confirmation
-            </button>
           </div>
 
-          {confirming && (
-            <div
-              style={{
-                position: "fixed",
-                inset: 0,
-                backgroundColor: "rgba(0,0,0,0.78)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "24px",
-              }}
-            >
-              <div
-                style={{
-                  ...cardStyle,
-                  maxWidth: "560px",
-                  borderColor: "#ff9999",
-                  backgroundColor: "#1a1a1a",
-                }}
+          <div style={actionRowStyle}>
+            <Link href="/communities" style={secondaryLinkStyle}>
+              Back to Communities
+            </Link>
+
+            {community && (
+              <Link
+                href={`/communities/${community.id}`}
+                style={secondaryLinkStyle}
               >
-                <h2 style={{ marginTop: 0 }}>Confirm Delete</h2>
+                Back to Community
+              </Link>
+            )}
+          </div>
+        </div>
 
-                <p>
-                  You are about to delete or unlink <strong>{selectedCount}</strong>{" "}
-                  selected item(s) for community <strong>{community.name}</strong>.
-                </p>
+        {loading && (
+          <div style={cardStyle}>
+            <p style={eyebrowStyle}>Loading</p>
+            <h2 style={{ margin: 0 }}>Loading delete review...</h2>
+            <p style={subtitleStyle}>
+              Pulling the community, related posts, and related attachments
+              before any delete action is available.
+            </p>
+          </div>
+        )}
 
-                <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                  <button
-                    type="button"
-                    onClick={handleDeleteSelected}
-                    disabled={deleting}
-                    style={dangerButtonStyle}
-                  >
-                    {deleting ? "Deleting..." : "Yes, Delete Selected Records"}
-                  </button>
+        {errorMessage && <p style={errorMessageStyle}>Error: {errorMessage}</p>}
 
-                  <button
-                    type="button"
-                    onClick={() => setConfirming(false)}
-                    disabled={deleting}
-                    style={buttonStyle}
-                  >
-                    Cancel
-                  </button>
+        {successMessage && (
+          <div style={successCardStyle}>
+            <h2 style={{ marginTop: 0 }}>Delete Complete</h2>
+            <p style={{ color: "#bbf7d0", lineHeight: 1.55 }}>
+              {successMessage}
+            </p>
+            <Link href="/communities" style={secondaryLinkStyle}>
+              Return to Communities
+            </Link>
+          </div>
+        )}
+
+        {!loading && community && !successMessage && (
+          <>
+            <div style={warningCardStyle}>
+              <h2 style={{ marginTop: 0 }}>Selected Community</h2>
+
+              {renderCheckbox(
+                "community",
+                community.id,
+                community.name,
+                `Platform: ${community.platform || "None"} | Status: ${
+                  community.status || "None"
+                } | Industry: ${community.industry || "None"}`
+              )}
+
+              <div style={detailGridStyle}>
+                <div style={detailTileStyle}>
+                  <div style={labelStyle}>Location Focus</div>
+                  <div>{community.location_focus || "Not provided"}</div>
+                </div>
+
+                <div style={detailTileStyle}>
+                  <div style={labelStyle}>Created</div>
+                  <div>{formatDate(community.created_at)}</div>
+                </div>
+
+                <div style={detailTileStyle}>
+                  <div style={labelStyle}>Related Posts</div>
+                  <div>{posts.length}</div>
+                </div>
+
+                <div style={detailTileStyle}>
+                  <div style={labelStyle}>Related Attachments</div>
+                  <div>{attachments.length}</div>
                 </div>
               </div>
             </div>
-          )}
-        </>
-      )}
+
+            <div
+              style={{
+                ...cardStyle,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "12px",
+                flexWrap: "wrap",
+              }}
+            >
+              <div>
+                <div style={labelStyle}>Selected Records</div>
+                <div style={{ marginTop: "6px" }}>
+                  <span style={countPillStyle}>{selectedCount}</span>
+                </div>
+                <p style={{ ...mutedTextStyle, margin: "10px 0 0" }}>
+                  Default selection is community only. Related posts and
+                  attachments start unchecked.
+                </p>
+              </div>
+
+              <div style={actionRowStyle}>
+                <button type="button" onClick={selectAll} style={buttonStyle}>
+                  Select All
+                </button>
+
+                <button type="button" onClick={unselectAll} style={buttonStyle}>
+                  Unselect All
+                </button>
+              </div>
+            </div>
+
+            <div style={cardStyle}>
+              <h2 style={{ marginTop: 0 }}>Related Posts ({posts.length})</h2>
+
+              {posts.length === 0 && (
+                <p style={mutedTextStyle}>No related posts.</p>
+              )}
+
+              {posts.map((post) =>
+                renderCheckbox(
+                  "post",
+                  post.id,
+                  post.title,
+                  `Platform: ${post.platform || "None"} | Type: ${
+                    post.post_type || "None"
+                  } | Date: ${formatDate(post.post_date || post.created_at)}${
+                    post.follow_up_needed ? " | Follow-up needed" : ""
+                  }`
+                )
+              )}
+            </div>
+
+            <div style={cardStyle}>
+              <h2 style={{ marginTop: 0 }}>
+                Attachments Connected To Related Posts ({attachments.length})
+              </h2>
+
+              {attachments.length === 0 && (
+                <p style={mutedTextStyle}>
+                  No attachments connected to related posts.
+                </p>
+              )}
+
+              {attachments.map((attachment) =>
+                renderCheckbox(
+                  "attachment",
+                  attachment.id,
+                  attachment.file_name,
+                  `Post: ${postTitleForAttachment(attachment)} | Type: ${
+                    attachment.file_type || "None"
+                  } | Created: ${formatDate(attachment.created_at)}`
+                )
+              )}
+            </div>
+
+            <div style={warningCardStyle}>
+              <h2 style={{ marginTop: 0 }}>Final Delete Action</h2>
+
+              <p>
+                Selected records: <strong>{selectedCount}</strong>
+              </p>
+
+              <p style={{ color: "#fecdd3", lineHeight: 1.55 }}>
+                This action cannot be undone from inside Sell It yet. Use the
+                final review step to prevent accidental clicks.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => setConfirming(true)}
+                disabled={selectedCount === 0 || deleting}
+                style={{
+                  ...dangerButtonStyle,
+                  ...(selectedCount === 0 || deleting ? disabledButtonStyle : {}),
+                }}
+              >
+                Review Final Confirmation
+              </button>
+            </div>
+
+            {confirming && (
+              <div
+                style={{
+                  position: "fixed",
+                  inset: 0,
+                  zIndex: 50,
+                  backgroundColor: "rgba(2, 6, 23, 0.82)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "24px",
+                }}
+              >
+                <div
+                  style={{
+                    ...warningCardStyle,
+                    maxWidth: "600px",
+                    width: "100%",
+                    marginBottom: 0,
+                  }}
+                >
+                  <p style={eyebrowStyle}>Final Confirmation</p>
+                  <h2 style={{ marginTop: 0 }}>Confirm Delete</h2>
+
+                  <p style={{ lineHeight: 1.6 }}>
+                    You are about to delete or unlink{" "}
+                    <strong>{selectedCount}</strong> selected item(s) for
+                    community <strong>{community.name}</strong>.
+                  </p>
+
+                  <p style={{ color: "#fecdd3", lineHeight: 1.6 }}>
+                    Unchecked posts and attachments will be preserved when
+                    possible.
+                  </p>
+
+                  <div style={actionRowStyle}>
+                    <button
+                      type="button"
+                      onClick={handleDeleteSelected}
+                      disabled={deleting}
+                      style={{
+                        ...dangerButtonStyle,
+                        ...(deleting ? disabledButtonStyle : {}),
+                      }}
+                    >
+                      {deleting ? "Deleting..." : "Delete Selected Records"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setConfirming(false)}
+                      disabled={deleting}
+                      style={{
+                        ...buttonStyle,
+                        ...(deleting ? disabledButtonStyle : {}),
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </section>
     </main>
   );
 }
