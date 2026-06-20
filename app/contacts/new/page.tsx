@@ -13,16 +13,121 @@ type Company = {
   name: string;
 };
 
+const pageStyle: CSSProperties = {
+  minHeight: "100vh",
+  color: "#f8fafc",
+  padding: "28px",
+  fontFamily: "Arial, sans-serif",
+};
+
+const actionRowStyle: CSSProperties = {
+  display: "flex",
+  gap: "12px",
+  marginBottom: "20px",
+  flexWrap: "wrap",
+};
+
+const secondaryButtonStyle: CSSProperties = {
+  color: "#f8fafc",
+  background: "rgba(15, 23, 42, 0.74)",
+  border: "1px solid rgba(148, 163, 184, 0.25)",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 800,
+};
+
+const primaryButtonStyle: CSSProperties = {
+  color: "white",
+  background:
+    "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
+  border: "1px solid rgba(167, 139, 250, 0.45)",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 900,
+  cursor: "pointer",
+  boxShadow: "0 16px 36px rgba(79, 70, 229, 0.28)",
+};
+
+const disabledButtonStyle: CSSProperties = {
+  ...primaryButtonStyle,
+  opacity: 0.55,
+  cursor: "not-allowed",
+};
+
+const headerStyle: CSSProperties = {
+  maxWidth: "980px",
+  marginBottom: "24px",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "24px",
+  padding: "24px",
+  background:
+    "radial-gradient(circle at top left, rgba(124, 58, 237, 0.22), transparent 34%), linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.72))",
+  boxShadow: "0 24px 80px rgba(2, 6, 23, 0.28)",
+};
+
+const eyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  color: "#a78bfa",
+  fontSize: "13px",
+  fontWeight: 900,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+};
+
+const titleStyle: CSSProperties = {
+  margin: "0 0 10px",
+  fontSize: "34px",
+  lineHeight: 1.05,
+  letterSpacing: "-0.04em",
+};
+
+const mutedTextStyle: CSSProperties = {
+  color: "#cbd5e1",
+  margin: 0,
+  maxWidth: "860px",
+  lineHeight: 1.65,
+};
+
+const formStyle: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "18px",
+  maxWidth: "860px",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "20px",
+  padding: "20px",
+  background:
+    "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
+  boxShadow: "0 20px 70px rgba(2, 6, 23, 0.24)",
+};
+
 const inputStyle: CSSProperties = {
   display: "block",
   width: "100%",
-  padding: "12px",
-  marginTop: "6px",
-  backgroundColor: "white",
-  color: "black",
-  border: "1px solid #555",
-  borderRadius: "6px",
+  padding: "12px 14px",
+  marginTop: "8px",
+  backgroundColor: "#0f172a",
+  color: "#f8fafc",
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+  borderRadius: "12px",
   fontSize: "16px",
+  boxSizing: "border-box",
+  outline: "none",
+};
+
+const labelStyle: CSSProperties = {
+  color: "#cbd5e1",
+  fontWeight: 800,
+};
+
+const errorStyle: CSSProperties = {
+  border: "1px solid rgba(248, 113, 113, 0.36)",
+  background: "rgba(127, 29, 29, 0.22)",
+  color: "#fecaca",
+  padding: "14px",
+  borderRadius: "16px",
 };
 
 export default function NewContactPage() {
@@ -90,66 +195,47 @@ export default function NewContactPage() {
   }
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#111",
-        color: "white",
-        padding: "40px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <Link
-        href="/contacts"
-        style={{
-          color: "black",
-          backgroundColor: "white",
-          padding: "10px 14px",
-          borderRadius: "6px",
-          textDecoration: "none",
-          fontWeight: "bold",
-          display: "inline-block",
-          marginBottom: "32px",
-        }}
-      >
-        Back to Contacts
-      </Link>
+    <main style={pageStyle}>
+      <div style={actionRowStyle}>
+        <Link href="/contacts" style={secondaryButtonStyle}>
+          Back to Contacts
+        </Link>
+      </div>
 
-      <h1>Add Contact</h1>
+      <header style={headerStyle}>
+        <p style={eyebrowStyle}>Contact Management</p>
 
-      <p style={{ color: "#aaa", marginBottom: "32px" }}>
-        Create a new person connected to a company or sales follow-up.
-      </p>
+        <h1 style={titleStyle}>Add Contact</h1>
 
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "18px",
-          maxWidth: "600px",
-        }}
-      >
-        <label>
+        <p style={mutedTextStyle}>
+          Create a new person connected to a company, opportunity, sales
+          follow-up, or business-memory record.
+        </p>
+      </header>
+
+      <form onSubmit={handleSubmit} style={formStyle}>
+        <label style={labelStyle}>
           First Name
           <input
             value={firstName}
             onChange={(event) => setFirstName(event.target.value)}
             required
+            placeholder="First name"
             style={inputStyle}
           />
         </label>
 
-        <label>
+        <label style={labelStyle}>
           Last Name
           <input
             value={lastName}
             onChange={(event) => setLastName(event.target.value)}
+            placeholder="Last name"
             style={inputStyle}
           />
         </label>
 
-        <label>
+        <label style={labelStyle}>
           Title
           <input
             value={title}
@@ -159,7 +245,7 @@ export default function NewContactPage() {
           />
         </label>
 
-        <label>
+        <label style={labelStyle}>
           Company
           <select
             value={companyId}
@@ -175,56 +261,57 @@ export default function NewContactPage() {
           </select>
         </label>
 
-        <label>
+        <label style={labelStyle}>
           Email
           <input
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
+            placeholder="Contact email"
             style={inputStyle}
           />
         </label>
 
-        <label>
+        <label style={labelStyle}>
           Phone
           <input
             value={phone}
             onChange={(event) => setPhone(event.target.value)}
+            placeholder="Contact phone"
             style={inputStyle}
           />
         </label>
 
-        <label>
+        <label style={labelStyle}>
           Contact Notes
           <textarea
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
             placeholder="Example: Mike is the owner but said I need to talk to Frank. Frank is the truck boss and is available Thursdays."
             rows={5}
-            style={inputStyle}
+            style={{
+              ...inputStyle,
+              resize: "vertical",
+              minHeight: "130px",
+            }}
           />
         </label>
 
-        {errorMessage && (
-          <p style={{ color: "red" }}>Error: {errorMessage}</p>
-        )}
+        {errorMessage && <div style={errorStyle}>Error: {errorMessage}</div>}
 
-        <button
-          type="submit"
-          disabled={saving}
-          style={{
-            padding: "12px",
-            cursor: "pointer",
-            fontWeight: "bold",
-            borderRadius: "6px",
-            border: "none",
-            backgroundColor: "white",
-            color: "black",
-            fontSize: "16px",
-          }}
-        >
-          {saving ? "Saving..." : "Save Contact"}
-        </button>
+        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+          <button
+            type="submit"
+            disabled={saving}
+            style={saving ? disabledButtonStyle : primaryButtonStyle}
+          >
+            {saving ? "Saving..." : "Save Contact"}
+          </button>
+
+          <Link href="/contacts" style={secondaryButtonStyle}>
+            Cancel
+          </Link>
+        </div>
       </form>
     </main>
   );

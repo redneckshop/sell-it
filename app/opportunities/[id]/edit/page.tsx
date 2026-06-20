@@ -37,17 +37,129 @@ type Opportunity = {
   updated_at: string | null;
 };
 
+const pageStyle: CSSProperties = {
+  minHeight: "100vh",
+  color: "#f8fafc",
+  padding: "28px",
+  fontFamily: "Arial, sans-serif",
+};
+
+const actionRowStyle: CSSProperties = {
+  display: "flex",
+  gap: "12px",
+  marginBottom: "20px",
+  flexWrap: "wrap",
+};
+
+const secondaryButtonStyle: CSSProperties = {
+  color: "#f8fafc",
+  background: "rgba(15, 23, 42, 0.74)",
+  border: "1px solid rgba(148, 163, 184, 0.25)",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 800,
+};
+
+const primaryButtonStyle: CSSProperties = {
+  color: "white",
+  background:
+    "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
+  border: "1px solid rgba(167, 139, 250, 0.45)",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 900,
+  cursor: "pointer",
+  boxShadow: "0 16px 36px rgba(79, 70, 229, 0.28)",
+};
+
+const disabledButtonStyle: CSSProperties = {
+  ...primaryButtonStyle,
+  opacity: 0.55,
+  cursor: "not-allowed",
+};
+
+const headerStyle: CSSProperties = {
+  maxWidth: "980px",
+  marginBottom: "24px",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "24px",
+  padding: "24px",
+  background:
+    "radial-gradient(circle at top left, rgba(124, 58, 237, 0.22), transparent 34%), linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.72))",
+  boxShadow: "0 24px 80px rgba(2, 6, 23, 0.28)",
+};
+
+const eyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  color: "#a78bfa",
+  fontSize: "13px",
+  fontWeight: 900,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+};
+
+const titleStyle: CSSProperties = {
+  margin: "0 0 10px",
+  fontSize: "34px",
+  lineHeight: 1.05,
+  letterSpacing: "-0.04em",
+};
+
+const mutedTextStyle: CSSProperties = {
+  color: "#cbd5e1",
+  margin: 0,
+  maxWidth: "860px",
+  lineHeight: 1.65,
+};
+
+const formStyle: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "18px",
+  maxWidth: "860px",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "20px",
+  padding: "20px",
+  background:
+    "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
+  boxShadow: "0 20px 70px rgba(2, 6, 23, 0.24)",
+};
+
+const twoColumnGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+  gap: "18px",
+};
+
 const inputStyle: CSSProperties = {
   display: "block",
   width: "100%",
-  padding: "12px",
-  marginTop: "6px",
-  backgroundColor: "white",
-  color: "black",
-  border: "1px solid #555",
-  borderRadius: "6px",
+  padding: "12px 14px",
+  marginTop: "8px",
+  backgroundColor: "#0f172a",
+  color: "#f8fafc",
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+  borderRadius: "12px",
   fontSize: "16px",
   boxSizing: "border-box",
+  outline: "none",
+};
+
+const labelStyle: CSSProperties = {
+  color: "#cbd5e1",
+  fontWeight: 800,
+};
+
+const errorStyle: CSSProperties = {
+  border: "1px solid rgba(248, 113, 113, 0.36)",
+  background: "rgba(127, 29, 29, 0.22)",
+  color: "#fecaca",
+  padding: "14px",
+  borderRadius: "16px",
+  marginBottom: "18px",
+  maxWidth: "860px",
 };
 
 function stagesAreDifferent(oldStage: string, newStage: string) {
@@ -239,79 +351,45 @@ export default function EditOpportunityPage() {
 
   const filteredContacts = companyId
     ? contacts.filter(
-        (contact) => contact.company_id === companyId || contact.company_id === null
+        (contact) =>
+          contact.company_id === companyId || contact.company_id === null
       )
     : contacts;
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#111",
-        color: "white",
-        padding: "40px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          gap: "12px",
-          marginBottom: "32px",
-          flexWrap: "wrap",
-        }}
-      >
-        <Link
-          href="/"
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Home
+    <main style={pageStyle}>
+      <div style={actionRowStyle}>
+        <Link href={`/opportunities/${opportunityId}`} style={secondaryButtonStyle}>
+          Back to Opportunity
         </Link>
 
-        <Link
-          href={`/opportunities/${opportunityId}`}
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Back to Opportunity
+        <Link href="/opportunities" style={secondaryButtonStyle}>
+          Back to Opportunities
         </Link>
       </div>
 
-      <h1>Edit Opportunity</h1>
+      <header style={headerStyle}>
+        <p style={eyebrowStyle}>Opportunity Management</p>
 
-      {loading && <p>Loading opportunity...</p>}
+        <h1 style={titleStyle}>Edit Opportunity</h1>
 
-      {errorMessage && (
-        <p style={{ color: "red", marginTop: "24px" }}>
-          Error: {errorMessage}
+        <p style={mutedTextStyle}>
+          Update this pipeline opportunity. Stage changes are still recorded in
+          opportunity history when the stage changes.
         </p>
+      </header>
+
+      {loading && (
+        <div style={formStyle}>
+          <p style={{ margin: 0, color: "#cbd5e1" }}>Loading opportunity...</p>
+        </div>
       )}
 
+      {errorMessage && <div style={errorStyle}>Error: {errorMessage}</div>}
+
       {!loading && (
-        <form
-          onSubmit={handleSubmit}
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "18px",
-            maxWidth: "750px",
-            marginTop: "32px",
-          }}
-        >
-          <label>
+        <form onSubmit={handleSubmit} style={formStyle}>
+          <label style={labelStyle}>
             Opportunity Name
             <input
               value={name}
@@ -321,62 +399,96 @@ export default function EditOpportunityPage() {
             />
           </label>
 
-          <label>
-            Company
-            <select
-              value={companyId}
-              onChange={(event) => {
-                setCompanyId(event.target.value);
-                setPrimaryContactId("");
-              }}
-              style={inputStyle}
-            >
-              <option value="">No company selected</option>
+          <div style={twoColumnGridStyle}>
+            <label style={labelStyle}>
+              Company
+              <select
+                value={companyId}
+                onChange={(event) => {
+                  setCompanyId(event.target.value);
+                  setPrimaryContactId("");
+                }}
+                style={inputStyle}
+              >
+                <option value="">No company selected</option>
 
-              {companies.map((company) => (
-                <option key={company.id} value={company.id}>
-                  {company.name}
-                </option>
-              ))}
-            </select>
-          </label>
+                {companies.map((company) => (
+                  <option key={company.id} value={company.id}>
+                    {company.name}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-          <label>
-            Primary Contact
-            <select
-              value={primaryContactId}
-              onChange={(event) => setPrimaryContactId(event.target.value)}
-              style={inputStyle}
-            >
-              <option value="">No primary contact selected</option>
+            <label style={labelStyle}>
+              Primary Contact
+              <select
+                value={primaryContactId}
+                onChange={(event) => setPrimaryContactId(event.target.value)}
+                style={inputStyle}
+              >
+                <option value="">No primary contact selected</option>
 
-              {filteredContacts.map((contact) => (
-                <option key={contact.id} value={contact.id}>
-                  {contact.first_name} {contact.last_name || ""}
-                </option>
-              ))}
-            </select>
-          </label>
+                {filteredContacts.map((contact) => (
+                  <option key={contact.id} value={contact.id}>
+                    {contact.first_name} {contact.last_name || ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
 
-          <label>
-            Opportunity Type
-            <select
-              value={opportunityType}
-              onChange={(event) => setOpportunityType(event.target.value)}
-              style={inputStyle}
-            >
-              <option value="Alpha Tester">Alpha Tester</option>
-              <option value="Beta Tester">Beta Tester</option>
-              <option value="Paid Customer">Paid Customer</option>
-              <option value="Broker Adoption">Broker Adoption</option>
-              <option value="Contractor Adoption">Contractor Adoption</option>
-              <option value="Partnership">Partnership</option>
-              <option value="Other">Other</option>
-            </select>
-          </label>
+          <div style={twoColumnGridStyle}>
+            <label style={labelStyle}>
+              Opportunity Type
+              <select
+                value={opportunityType}
+                onChange={(event) => {
+                  setOpportunityType(event.target.value);
+
+                  if (event.target.value !== "Other") {
+                    setOpportunityTypeOtherDescription("");
+                  }
+                }}
+                style={inputStyle}
+              >
+                <option value="Alpha Tester">Alpha Tester</option>
+                <option value="Beta Tester">Beta Tester</option>
+                <option value="Paid Customer">Paid Customer</option>
+                <option value="Broker Adoption">Broker Adoption</option>
+                <option value="Contractor Adoption">Contractor Adoption</option>
+                <option value="Partnership">Partnership</option>
+                <option value="Other">Other</option>
+              </select>
+            </label>
+
+            <label style={labelStyle}>
+              Stage
+              <select
+                value={stage}
+                onChange={(event) => setStage(event.target.value)}
+                style={inputStyle}
+              >
+                <option value="New Lead">New Lead</option>
+                <option value="Contact Attempted">Contact Attempted</option>
+                <option value="Contact Made">Contact Made</option>
+                <option value="Discovery">Discovery</option>
+                <option value="Meeting Scheduled">Meeting Scheduled</option>
+                <option value="Demo Scheduled">Demo Scheduled</option>
+                <option value="Alpha Candidate">Alpha Candidate</option>
+                <option value="Alpha Accepted">Alpha Accepted</option>
+                <option value="Active Alpha">Active Alpha</option>
+                <option value="Beta Candidate">Beta Candidate</option>
+                <option value="Active Beta">Active Beta</option>
+                <option value="Customer">Customer</option>
+                <option value="Lost">Lost</option>
+                <option value="Paused">Paused</option>
+              </select>
+            </label>
+          </div>
 
           {opportunityType === "Other" && (
-            <label>
+            <label style={labelStyle}>
               Other Type Description
               <textarea
                 value={opportunityTypeOtherDescription}
@@ -385,127 +497,122 @@ export default function EditOpportunityPage() {
                 }
                 rows={4}
                 placeholder="Describe the opportunity type..."
-                style={inputStyle}
+                style={{
+                  ...inputStyle,
+                  resize: "vertical",
+                  minHeight: "110px",
+                }}
               />
             </label>
           )}
 
-          <label>
-            Stage
-            <select
-              value={stage}
-              onChange={(event) => setStage(event.target.value)}
-              style={inputStyle}
-            >
-              <option value="New Lead">New Lead</option>
-              <option value="Contact Attempted">Contact Attempted</option>
-              <option value="Contact Made">Contact Made</option>
-              <option value="Discovery">Discovery</option>
-              <option value="Meeting Scheduled">Meeting Scheduled</option>
-              <option value="Demo Scheduled">Demo Scheduled</option>
-              <option value="Alpha Candidate">Alpha Candidate</option>
-              <option value="Alpha Accepted">Alpha Accepted</option>
-              <option value="Active Alpha">Active Alpha</option>
-              <option value="Beta Candidate">Beta Candidate</option>
-              <option value="Active Beta">Active Beta</option>
-              <option value="Customer">Customer</option>
-              <option value="Lost">Lost</option>
-              <option value="Paused">Paused</option>
-            </select>
-          </label>
+          <div style={twoColumnGridStyle}>
+            <label style={labelStyle}>
+              Lead Temperature
+              <select
+                value={leadTemperature}
+                onChange={(event) => setLeadTemperature(event.target.value)}
+                style={inputStyle}
+              >
+                <option value="Cold">Cold</option>
+                <option value="Warm">Warm</option>
+                <option value="Hot">Hot</option>
+                <option value="Active">Active</option>
+                <option value="Dead">Dead</option>
+              </select>
+            </label>
 
-          <label>
-            Lead Temperature
-            <select
-              value={leadTemperature}
-              onChange={(event) => setLeadTemperature(event.target.value)}
-              style={inputStyle}
-            >
-              <option value="Cold">Cold</option>
-              <option value="Warm">Warm</option>
-              <option value="Hot">Hot</option>
-              <option value="Active">Active</option>
-              <option value="Dead">Dead</option>
-            </select>
-          </label>
+            <label style={labelStyle}>
+              Estimated Driver Count
+              <input
+                type="number"
+                min="0"
+                value={estimatedDriverCount}
+                onChange={(event) => setEstimatedDriverCount(event.target.value)}
+                placeholder="Example: 25"
+                style={inputStyle}
+              />
+            </label>
+          </div>
 
-          <label>
-            Estimated Driver Count
-            <input
-              type="number"
-              value={estimatedDriverCount}
-              onChange={(event) => setEstimatedDriverCount(event.target.value)}
-              placeholder="Example: 25"
-              style={inputStyle}
-            />
-          </label>
+          <div style={twoColumnGridStyle}>
+            <label style={labelStyle}>
+              Estimated Monthly Value
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={estimatedMonthlyValue}
+                onChange={(event) => setEstimatedMonthlyValue(event.target.value)}
+                placeholder="Example: 7500"
+                style={inputStyle}
+              />
+            </label>
 
-          <label>
-            Estimated Monthly Value
-            <input
-              type="number"
-              value={estimatedMonthlyValue}
-              onChange={(event) => setEstimatedMonthlyValue(event.target.value)}
-              placeholder="Example: 7500"
-              style={inputStyle}
-            />
-          </label>
+            <label style={labelStyle}>
+              Expected Close Date
+              <input
+                type="date"
+                value={expectedCloseDate}
+                onChange={(event) => setExpectedCloseDate(event.target.value)}
+                style={inputStyle}
+              />
+            </label>
+          </div>
 
-          <label>
-            Expected Close Date
-            <input
-              type="date"
-              value={expectedCloseDate}
-              onChange={(event) => setExpectedCloseDate(event.target.value)}
-              style={inputStyle}
-            />
-          </label>
-
-          <label>
+          <label style={labelStyle}>
             Next Step
             <textarea
               value={nextStep}
               onChange={(event) => setNextStep(event.target.value)}
               rows={4}
               placeholder="What should happen next?"
-              style={inputStyle}
+              style={{
+                ...inputStyle,
+                resize: "vertical",
+                minHeight: "110px",
+              }}
             />
           </label>
 
-          <label>
+          <label style={labelStyle}>
             Notes
             <textarea
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
               rows={6}
               placeholder="Internal notes..."
-              style={inputStyle}
+              style={{
+                ...inputStyle,
+                resize: "vertical",
+                minHeight: "150px",
+              }}
             />
           </label>
 
-          <p style={{ color: "#aaa" }}>
+          <p style={{ color: "#94a3b8", margin: 0 }}>
             Last Updated:{" "}
             {lastUpdated
               ? new Date(lastUpdated).toLocaleString()
               : "Not available"}
           </p>
 
-          <button
-            type="submit"
-            disabled={saving}
-            style={{
-              padding: "12px",
-              cursor: "pointer",
-              fontWeight: "bold",
-              borderRadius: "6px",
-              border: "none",
-              backgroundColor: "white",
-              color: "black",
-              fontSize: "16px",
-            }}
-          >
-            {saving ? "Saving..." : "Save Opportunity"}
-          </button>
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <button
+              type="submit"
+              disabled={saving}
+              style={saving ? disabledButtonStyle : primaryButtonStyle}
+            >
+              {saving ? "Saving..." : "Save Opportunity"}
+            </button>
+
+            <Link
+              href={`/opportunities/${opportunityId}`}
+              style={secondaryButtonStyle}
+            >
+              Cancel
+            </Link>
+          </div>
         </form>
       )}
     </main>

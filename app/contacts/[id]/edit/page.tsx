@@ -24,17 +24,123 @@ type Contact = {
   updated_at: string | null;
 };
 
+const pageStyle: CSSProperties = {
+  minHeight: "100vh",
+  color: "#f8fafc",
+  padding: "28px",
+  fontFamily: "Arial, sans-serif",
+};
+
+const actionRowStyle: CSSProperties = {
+  display: "flex",
+  gap: "12px",
+  marginBottom: "20px",
+  flexWrap: "wrap",
+};
+
+const secondaryButtonStyle: CSSProperties = {
+  color: "#f8fafc",
+  background: "rgba(15, 23, 42, 0.74)",
+  border: "1px solid rgba(148, 163, 184, 0.25)",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 800,
+};
+
+const primaryButtonStyle: CSSProperties = {
+  color: "white",
+  background:
+    "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
+  border: "1px solid rgba(167, 139, 250, 0.45)",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 900,
+  cursor: "pointer",
+  boxShadow: "0 16px 36px rgba(79, 70, 229, 0.28)",
+};
+
+const disabledButtonStyle: CSSProperties = {
+  ...primaryButtonStyle,
+  opacity: 0.55,
+  cursor: "not-allowed",
+};
+
+const headerStyle: CSSProperties = {
+  maxWidth: "980px",
+  marginBottom: "24px",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "24px",
+  padding: "24px",
+  background:
+    "radial-gradient(circle at top left, rgba(124, 58, 237, 0.22), transparent 34%), linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.72))",
+  boxShadow: "0 24px 80px rgba(2, 6, 23, 0.28)",
+};
+
+const eyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  color: "#a78bfa",
+  fontSize: "13px",
+  fontWeight: 900,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+};
+
+const titleStyle: CSSProperties = {
+  margin: "0 0 10px",
+  fontSize: "34px",
+  lineHeight: 1.05,
+  letterSpacing: "-0.04em",
+};
+
+const mutedTextStyle: CSSProperties = {
+  color: "#cbd5e1",
+  margin: 0,
+  maxWidth: "860px",
+  lineHeight: 1.65,
+};
+
+const formStyle: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "18px",
+  maxWidth: "860px",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "20px",
+  padding: "20px",
+  background:
+    "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
+  boxShadow: "0 20px 70px rgba(2, 6, 23, 0.24)",
+};
+
 const inputStyle: CSSProperties = {
   display: "block",
   width: "100%",
-  padding: "12px",
-  marginTop: "6px",
-  backgroundColor: "white",
-  color: "black",
-  border: "1px solid #555",
-  borderRadius: "6px",
+  padding: "12px 14px",
+  marginTop: "8px",
+  backgroundColor: "#0f172a",
+  color: "#f8fafc",
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+  borderRadius: "12px",
   fontSize: "16px",
   boxSizing: "border-box",
+  outline: "none",
+};
+
+const labelStyle: CSSProperties = {
+  color: "#cbd5e1",
+  fontWeight: 800,
+};
+
+const errorStyle: CSSProperties = {
+  border: "1px solid rgba(248, 113, 113, 0.36)",
+  background: "rgba(127, 29, 29, 0.22)",
+  color: "#fecaca",
+  padding: "14px",
+  borderRadius: "16px",
+  marginBottom: "18px",
+  maxWidth: "860px",
 };
 
 export default function EditContactPage() {
@@ -140,74 +246,39 @@ export default function EditContactPage() {
   }
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#111",
-        color: "white",
-        padding: "40px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          gap: "12px",
-          marginBottom: "32px",
-          flexWrap: "wrap",
-        }}
-      >
-        <Link
-          href="/"
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Home
+    <main style={pageStyle}>
+      <div style={actionRowStyle}>
+        <Link href={`/contacts/${contactId}`} style={secondaryButtonStyle}>
+          Back to Contact
         </Link>
 
-        <Link
-          href={`/contacts/${contactId}`}
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Back to Contact
+        <Link href="/contacts" style={secondaryButtonStyle}>
+          Back to Contacts
         </Link>
       </div>
 
-      <h1>Edit Contact</h1>
+      <header style={headerStyle}>
+        <p style={eyebrowStyle}>Contact Management</p>
 
-      {loading && <p>Loading contact...</p>}
+        <h1 style={titleStyle}>Edit Contact</h1>
 
-      {errorMessage && (
-        <p style={{ color: "red", marginTop: "24px" }}>
-          Error: {errorMessage}
+        <p style={mutedTextStyle}>
+          Update this contact&apos;s company link, title, email, phone, and
+          business-memory notes.
         </p>
+      </header>
+
+      {loading && (
+        <div style={formStyle}>
+          <p style={{ margin: 0, color: "#cbd5e1" }}>Loading contact...</p>
+        </div>
       )}
 
+      {errorMessage && <div style={errorStyle}>Error: {errorMessage}</div>}
+
       {!loading && (
-        <form
-          onSubmit={handleSubmit}
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "18px",
-            maxWidth: "700px",
-            marginTop: "32px",
-          }}
-        >
-          <label>
+        <form onSubmit={handleSubmit} style={formStyle}>
+          <label style={labelStyle}>
             First Name
             <input
               value={firstName}
@@ -217,7 +288,7 @@ export default function EditContactPage() {
             />
           </label>
 
-          <label>
+          <label style={labelStyle}>
             Last Name
             <input
               value={lastName}
@@ -226,7 +297,7 @@ export default function EditContactPage() {
             />
           </label>
 
-          <label>
+          <label style={labelStyle}>
             Company
             <select
               value={companyId}
@@ -242,7 +313,7 @@ export default function EditContactPage() {
             </select>
           </label>
 
-          <label>
+          <label style={labelStyle}>
             Email
             <input
               type="email"
@@ -252,7 +323,7 @@ export default function EditContactPage() {
             />
           </label>
 
-          <label>
+          <label style={labelStyle}>
             Phone
             <input
               value={phone}
@@ -261,7 +332,7 @@ export default function EditContactPage() {
             />
           </label>
 
-          <label>
+          <label style={labelStyle}>
             Title
             <input
               value={title}
@@ -271,43 +342,43 @@ export default function EditContactPage() {
             />
           </label>
 
-          <label>
+          <label style={labelStyle}>
             Contact Notes
             <textarea
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
               rows={6}
               placeholder="Important details, history, follow-up notes, decision makers, etc."
-              style={inputStyle}
+              style={{
+                ...inputStyle,
+                resize: "vertical",
+                minHeight: "150px",
+              }}
             />
           </label>
 
-          <p style={{ color: "#aaa" }}>
+          <p style={{ color: "#94a3b8", margin: 0 }}>
             Last Updated:{" "}
             {lastUpdated
               ? new Date(lastUpdated).toLocaleString()
               : "Not available"}
           </p>
 
-          <button
-            type="submit"
-            disabled={saving}
-            style={{
-              padding: "12px",
-              cursor: "pointer",
-              fontWeight: "bold",
-              borderRadius: "6px",
-              border: "none",
-              backgroundColor: "white",
-              color: "black",
-              fontSize: "16px",
-            }}
-          >
-            {saving ? "Saving..." : "Save Contact"}
-          </button>
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <button
+              type="submit"
+              disabled={saving}
+              style={saving ? disabledButtonStyle : primaryButtonStyle}
+            >
+              {saving ? "Saving..." : "Save Contact"}
+            </button>
+
+            <Link href={`/contacts/${contactId}`} style={secondaryButtonStyle}>
+              Cancel
+            </Link>
+          </div>
         </form>
       )}
     </main>
   );
 }
-
