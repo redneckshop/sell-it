@@ -1,4 +1,5 @@
 ﻿import Link from "next/link";
+import type { CSSProperties } from "react";
 import { supabase } from "../../lib/supabase";
 import AttachmentsSection from "../../components/AttachmentsSection";
 
@@ -38,6 +39,149 @@ type PageProps = {
   params: Promise<{
     id: string;
   }>;
+};
+
+const pageStyle: CSSProperties = {
+  minHeight: "100vh",
+  color: "#f8fafc",
+  padding: "28px",
+  fontFamily: "Arial, sans-serif",
+};
+
+const actionRowStyle: CSSProperties = {
+  display: "flex",
+  gap: "12px",
+  marginBottom: "20px",
+  flexWrap: "wrap",
+};
+
+const secondaryButtonStyle: CSSProperties = {
+  color: "#f8fafc",
+  background: "rgba(15, 23, 42, 0.74)",
+  border: "1px solid rgba(148, 163, 184, 0.25)",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 800,
+};
+
+const primaryButtonStyle: CSSProperties = {
+  color: "white",
+  background: "linear-gradient(135deg, #7c3aed, #a855f7)",
+  border: "1px solid rgba(168, 85, 247, 0.55)",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 900,
+  boxShadow: "0 16px 40px rgba(124, 58, 237, 0.28)",
+};
+
+const dangerButtonStyle: CSSProperties = {
+  color: "#fecaca",
+  background: "rgba(127, 29, 29, 0.24)",
+  border: "1px solid rgba(248, 113, 113, 0.35)",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 900,
+};
+
+const headerStyle: CSSProperties = {
+  maxWidth: "1080px",
+  marginBottom: "24px",
+  border: "1px solid rgba(124, 58, 237, 0.22)",
+  borderRadius: "24px",
+  padding: "24px",
+  background:
+    "radial-gradient(circle at top left, rgba(124, 58, 237, 0.24), transparent 34%), linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.72))",
+  boxShadow: "0 24px 80px rgba(2, 6, 23, 0.28)",
+};
+
+const eyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  color: "#c4b5fd",
+  fontSize: "13px",
+  fontWeight: 900,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+};
+
+const titleStyle: CSSProperties = {
+  margin: "0 0 10px",
+  fontSize: "34px",
+  lineHeight: 1.05,
+  letterSpacing: "-0.04em",
+};
+
+const mutedTextStyle: CSSProperties = {
+  color: "#cbd5e1",
+  margin: 0,
+  maxWidth: "900px",
+  lineHeight: 1.65,
+};
+
+const cardStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "20px",
+  padding: "20px",
+  background:
+    "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
+  marginBottom: "16px",
+  maxWidth: "1080px",
+  boxShadow: "0 20px 70px rgba(2, 6, 23, 0.22)",
+};
+
+const gridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+  gap: "14px",
+  marginBottom: "18px",
+};
+
+const metaCardStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.14)",
+  borderRadius: "16px",
+  padding: "14px",
+  background: "rgba(15, 23, 42, 0.55)",
+};
+
+const metaLabelStyle: CSSProperties = {
+  margin: "0 0 6px",
+  color: "#94a3b8",
+  fontSize: "12px",
+  fontWeight: 900,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+};
+
+const metaValueStyle: CSSProperties = {
+  margin: 0,
+  color: "#f8fafc",
+  fontWeight: 800,
+};
+
+const linkStyle: CSSProperties = {
+  color: "#c4b5fd",
+  fontWeight: 900,
+  textDecoration: "none",
+};
+
+const bodyStyle: CSSProperties = {
+  whiteSpace: "pre-wrap",
+  color: "#e2e8f0",
+  lineHeight: 1.7,
+  marginTop: "8px",
+};
+
+const errorStyle: CSSProperties = {
+  border: "1px solid rgba(248, 113, 113, 0.36)",
+  background: "rgba(127, 29, 29, 0.22)",
+  color: "#fecaca",
+  padding: "14px",
+  borderRadius: "16px",
+  marginTop: "18px",
+  maxWidth: "1080px",
+  fontWeight: 800,
 };
 
 function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
@@ -98,192 +242,133 @@ export default async function NoteDetailPage({ params }: PageProps) {
   const opportunity = singleRelation(note?.opportunity);
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#111",
-        color: "white",
-        padding: "40px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          gap: "12px",
-          marginBottom: "32px",
-          flexWrap: "wrap",
-        }}
-      >
-        <Link
-          href="/"
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Home
-        </Link>
-
-        <Link
-          href="/notes"
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
+    <main style={pageStyle}>
+      <div style={actionRowStyle}>
+        <Link href="/notes" style={secondaryButtonStyle}>
           Back to Notes
         </Link>
 
         {note && (
-          <Link
-            href={`/notes/${note.id}/edit`}
-            style={{
-              color: "black",
-              backgroundColor: "white",
-              padding: "10px 14px",
-              borderRadius: "6px",
-              textDecoration: "none",
-              fontWeight: "bold",
-            }}
-          >
+          <Link href={`/notes/${note.id}/edit`} style={primaryButtonStyle}>
             Edit Note
           </Link>
         )}
 
         {note && (
-          <Link
-            href={`/notes/${note.id}/delete`}
-            style={{
-              color: "black",
-              backgroundColor: "#ffdddd",
-              padding: "10px 14px",
-              borderRadius: "6px",
-              textDecoration: "none",
-              fontWeight: "bold",
-            }}
-          >
+          <Link href={`/notes/${note.id}/delete`} style={dangerButtonStyle}>
             Delete Note
           </Link>
         )}
       </div>
 
-      {error && (
-        <p style={{ color: "red", marginTop: "32px" }}>
-          Database error: {error.message}
-        </p>
-      )}
+      {error && <div style={errorStyle}>Database error: {error.message}</div>}
 
       {note && (
-        <section style={{ marginTop: "32px" }}>
-          <h1>{note.title}</h1>
+        <>
+          <header style={headerStyle}>
+            <p style={eyebrowStyle}>Sales Memory</p>
 
-          <div
-            style={{
-              border: "1px solid #333",
-              padding: "20px",
-              borderRadius: "8px",
-              backgroundColor: "#1a1a1a",
-              maxWidth: "850px",
-              marginBottom: "40px",
-            }}
-          >
-            <p>
-              <strong>Related Company:</strong>{" "}
-              {company ? (
-                <Link
-                  href={`/companies/${company.id}`}
-                  style={{ color: "white" }}
-                >
-                  {company.name}
-                </Link>
-              ) : (
-                "Not linked"
-              )}
-            </p>
+            <h1 style={titleStyle}>{note.title}</h1>
 
-            <p>
-              <strong>Related Contact:</strong>{" "}
-              {contact ? (
-                <Link
-                  href={`/contacts/${contact.id}`}
-                  style={{ color: "white" }}
-                >
-                  {contact.first_name} {contact.last_name || ""}
-                </Link>
-              ) : (
-                "Not linked"
-              )}
+            <p style={mutedTextStyle}>
+              Review the note body, source details, tags, related records, and
+              attachments connected to this note.
             </p>
+          </header>
 
-            <p>
-              <strong>Related Opportunity:</strong>{" "}
-              {opportunity ? (
-                <Link
-                  href={`/opportunities/${opportunity.id}`}
-                  style={{ color: "white" }}
-                >
-                  {opportunity.name}
-                </Link>
-              ) : (
-                "Not linked"
-              )}
-            </p>
+          <section style={cardStyle}>
+            <div style={gridStyle}>
+              <div style={metaCardStyle}>
+                <p style={metaLabelStyle}>Related Company</p>
+                <p style={metaValueStyle}>
+                  {company ? (
+                    <Link href={`/companies/${company.id}`} style={linkStyle}>
+                      {company.name}
+                    </Link>
+                  ) : (
+                    "Not linked"
+                  )}
+                </p>
+              </div>
 
-            <p>
-              <strong>Source:</strong> {note.source || "Not provided"}
-            </p>
+              <div style={metaCardStyle}>
+                <p style={metaLabelStyle}>Related Contact</p>
+                <p style={metaValueStyle}>
+                  {contact ? (
+                    <Link href={`/contacts/${contact.id}`} style={linkStyle}>
+                      {contact.first_name} {contact.last_name || ""}
+                    </Link>
+                  ) : (
+                    "Not linked"
+                  )}
+                </p>
+              </div>
 
-            <p>
-              <strong>Source URL:</strong>{" "}
-              {note.source_url ? (
-                <a
-                  href={note.source_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ color: "white" }}
-                >
-                  {note.source_url}
-                </a>
-              ) : (
-                "Not provided"
-              )}
-            </p>
+              <div style={metaCardStyle}>
+                <p style={metaLabelStyle}>Related Opportunity</p>
+                <p style={metaValueStyle}>
+                  {opportunity ? (
+                    <Link
+                      href={`/opportunities/${opportunity.id}`}
+                      style={linkStyle}
+                    >
+                      {opportunity.name}
+                    </Link>
+                  ) : (
+                    "Not linked"
+                  )}
+                </p>
+              </div>
 
-            <p>
-              <strong>Tags:</strong> {note.tags || "Not provided"}
-            </p>
+              <div style={metaCardStyle}>
+                <p style={metaLabelStyle}>Created</p>
+                <p style={metaValueStyle}>{formatDateTime(note.created_at)}</p>
+              </div>
+            </div>
 
-            <p>
-              <strong>Body:</strong>
-            </p>
+            <div style={gridStyle}>
+              <div style={metaCardStyle}>
+                <p style={metaLabelStyle}>Source</p>
+                <p style={metaValueStyle}>{note.source || "Not provided"}</p>
+              </div>
 
-            <p style={{ whiteSpace: "pre-wrap", color: "#ddd" }}>
-              {note.body || "No body provided."}
-            </p>
+              <div style={metaCardStyle}>
+                <p style={metaLabelStyle}>Source URL</p>
+                <p style={metaValueStyle}>
+                  {note.source_url ? (
+                    <a
+                      href={note.source_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={linkStyle}
+                    >
+                      Open Source
+                    </a>
+                  ) : (
+                    "Not provided"
+                  )}
+                </p>
+              </div>
 
-            <p>
-              <strong>Created:</strong> {formatDateTime(note.created_at)}
-            </p>
-          </div>
+              <div style={metaCardStyle}>
+                <p style={metaLabelStyle}>Tags</p>
+                <p style={metaValueStyle}>{note.tags || "Not provided"}</p>
+              </div>
+            </div>
+
+            <section style={{ marginTop: "18px" }}>
+              <h2 style={{ marginBottom: 0 }}>Body</h2>
+              <p style={bodyStyle}>{note.body || "No body provided."}</p>
+            </section>
+          </section>
 
           <AttachmentsSection
             workspaceId={note.workspace_id}
             relationColumn="related_note_id"
             relationId={note.id}
           />
-        </section>
+        </>
       )}
     </main>
   );
 }
-
-

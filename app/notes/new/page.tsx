@@ -27,17 +27,134 @@ type Opportunity = {
   primary_contact_id: string | null;
 };
 
+const pageStyle: CSSProperties = {
+  minHeight: "100vh",
+  color: "#f8fafc",
+  padding: "28px",
+  fontFamily: "Arial, sans-serif",
+};
+
+const actionRowStyle: CSSProperties = {
+  display: "flex",
+  gap: "12px",
+  marginBottom: "20px",
+  flexWrap: "wrap",
+};
+
+const secondaryButtonStyle: CSSProperties = {
+  color: "#f8fafc",
+  background: "rgba(15, 23, 42, 0.74)",
+  border: "1px solid rgba(148, 163, 184, 0.25)",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 800,
+  cursor: "pointer",
+};
+
+const primaryButtonStyle: CSSProperties = {
+  color: "white",
+  background: "linear-gradient(135deg, #7c3aed, #a855f7)",
+  border: "1px solid rgba(168, 85, 247, 0.55)",
+  padding: "13px 18px",
+  borderRadius: "999px",
+  fontWeight: 900,
+  cursor: "pointer",
+  boxShadow: "0 16px 40px rgba(124, 58, 237, 0.28)",
+};
+
+const disabledButtonStyle: CSSProperties = {
+  ...primaryButtonStyle,
+  opacity: 0.55,
+  cursor: "not-allowed",
+};
+
+const headerStyle: CSSProperties = {
+  maxWidth: "1080px",
+  marginBottom: "24px",
+  border: "1px solid rgba(124, 58, 237, 0.22)",
+  borderRadius: "24px",
+  padding: "24px",
+  background:
+    "radial-gradient(circle at top left, rgba(124, 58, 237, 0.24), transparent 34%), linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.72))",
+  boxShadow: "0 24px 80px rgba(2, 6, 23, 0.28)",
+};
+
+const eyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  color: "#c4b5fd",
+  fontSize: "13px",
+  fontWeight: 900,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+};
+
+const titleStyle: CSSProperties = {
+  margin: "0 0 10px",
+  fontSize: "34px",
+  lineHeight: 1.05,
+  letterSpacing: "-0.04em",
+};
+
+const mutedTextStyle: CSSProperties = {
+  color: "#cbd5e1",
+  margin: 0,
+  maxWidth: "900px",
+  lineHeight: 1.65,
+};
+
+const cardStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "20px",
+  padding: "20px",
+  background:
+    "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
+  marginBottom: "16px",
+  maxWidth: "1080px",
+  boxShadow: "0 20px 70px rgba(2, 6, 23, 0.22)",
+};
+
+const formStyle: CSSProperties = {
+  ...cardStyle,
+  display: "flex",
+  flexDirection: "column",
+  gap: "18px",
+};
+
+const twoColumnGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+  gap: "18px",
+};
+
+const labelStyle: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "8px",
+  color: "#cbd5e1",
+  fontWeight: 800,
+};
+
 const inputStyle: CSSProperties = {
   display: "block",
   width: "100%",
-  padding: "12px",
-  marginTop: "6px",
-  backgroundColor: "white",
-  color: "black",
-  border: "1px solid #555",
-  borderRadius: "6px",
-  fontSize: "16px",
+  padding: "13px 14px",
+  backgroundColor: "#0f172a",
+  color: "#f8fafc",
+  border: "1px solid rgba(148, 163, 184, 0.24)",
+  borderRadius: "12px",
+  fontSize: "15px",
   boxSizing: "border-box",
+  outline: "none",
+};
+
+const errorStyle: CSSProperties = {
+  border: "1px solid rgba(248, 113, 113, 0.36)",
+  background: "rgba(127, 29, 29, 0.22)",
+  color: "#fecaca",
+  padding: "14px",
+  borderRadius: "16px",
+  fontWeight: 800,
 };
 
 export default function NewNotePage() {
@@ -147,68 +264,26 @@ export default function NewNotePage() {
     : opportunities;
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#111",
-        color: "white",
-        padding: "40px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          gap: "12px",
-          marginBottom: "32px",
-          flexWrap: "wrap",
-        }}
-      >
-        <Link
-          href="/"
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Home
-        </Link>
-
-        <Link
-          href="/notes"
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
+    <main style={pageStyle}>
+      <div style={actionRowStyle}>
+        <Link href="/notes" style={secondaryButtonStyle}>
           Back to Notes
         </Link>
       </div>
 
-      <h1>Add Note</h1>
+      <header style={headerStyle}>
+        <p style={eyebrowStyle}>Sales Memory</p>
 
-      <p style={{ color: "#aaa", marginBottom: "32px" }}>
-        Add a note connected to a company, contact, or opportunity.
-      </p>
+        <h1 style={titleStyle}>Add Note</h1>
 
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "18px",
-          maxWidth: "700px",
-        }}
-      >
-        <label>
+        <p style={mutedTextStyle}>
+          Add a note connected to a company, contact, or opportunity. Use source,
+          source URL, and tags to make the note easier to find later.
+        </p>
+      </header>
+
+      <form onSubmit={handleSubmit} style={formStyle}>
+        <label style={labelStyle}>
           Title
           <input
             value={title}
@@ -219,7 +294,7 @@ export default function NewNotePage() {
           />
         </label>
 
-        <label>
+        <label style={labelStyle}>
           Body
           <textarea
             value={body}
@@ -230,45 +305,47 @@ export default function NewNotePage() {
           />
         </label>
 
-        <label>
-          Related Company
-          <select
-            value={companyId}
-            onChange={(event) => {
-              setCompanyId(event.target.value);
-              setContactId("");
-              setOpportunityId("");
-            }}
-            style={inputStyle}
-          >
-            <option value="">No company selected</option>
+        <div style={twoColumnGridStyle}>
+          <label style={labelStyle}>
+            Related Company
+            <select
+              value={companyId}
+              onChange={(event) => {
+                setCompanyId(event.target.value);
+                setContactId("");
+                setOpportunityId("");
+              }}
+              style={inputStyle}
+            >
+              <option value="">No company selected</option>
 
-            {companies.map((company) => (
-              <option key={company.id} value={company.id}>
-                {company.name}
-              </option>
-            ))}
-          </select>
-        </label>
+              {companies.map((company) => (
+                <option key={company.id} value={company.id}>
+                  {company.name}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label>
-          Related Contact
-          <select
-            value={contactId}
-            onChange={(event) => setContactId(event.target.value)}
-            style={inputStyle}
-          >
-            <option value="">No contact selected</option>
+          <label style={labelStyle}>
+            Related Contact
+            <select
+              value={contactId}
+              onChange={(event) => setContactId(event.target.value)}
+              style={inputStyle}
+            >
+              <option value="">No contact selected</option>
 
-            {filteredContacts.map((contact) => (
-              <option key={contact.id} value={contact.id}>
-                {contact.first_name} {contact.last_name || ""}
-              </option>
-            ))}
-          </select>
-        </label>
+              {filteredContacts.map((contact) => (
+                <option key={contact.id} value={contact.id}>
+                  {contact.first_name} {contact.last_name || ""}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
 
-        <label>
+        <label style={labelStyle}>
           Related Opportunity
           <select
             value={opportunityId}
@@ -285,27 +362,29 @@ export default function NewNotePage() {
           </select>
         </label>
 
-        <label>
-          Source
-          <input
-            value={source}
-            onChange={(event) => setSource(event.target.value)}
-            placeholder="Example: Phone call, Facebook, website, email"
-            style={inputStyle}
-          />
-        </label>
+        <div style={twoColumnGridStyle}>
+          <label style={labelStyle}>
+            Source
+            <input
+              value={source}
+              onChange={(event) => setSource(event.target.value)}
+              placeholder="Example: Phone call, Facebook, website, email"
+              style={inputStyle}
+            />
+          </label>
 
-        <label>
-          Source URL
-          <input
-            value={sourceUrl}
-            onChange={(event) => setSourceUrl(event.target.value)}
-            placeholder="Example: https://example.com"
-            style={inputStyle}
-          />
-        </label>
+          <label style={labelStyle}>
+            Source URL
+            <input
+              value={sourceUrl}
+              onChange={(event) => setSourceUrl(event.target.value)}
+              placeholder="Example: https://example.com"
+              style={inputStyle}
+            />
+          </label>
+        </div>
 
-        <label>
+        <label style={labelStyle}>
           Tags
           <input
             value={tags}
@@ -315,26 +394,21 @@ export default function NewNotePage() {
           />
         </label>
 
-        {errorMessage && (
-          <p style={{ color: "red" }}>Error: {errorMessage}</p>
-        )}
+        {errorMessage && <div style={errorStyle}>Error: {errorMessage}</div>}
 
-        <button
-          type="submit"
-          disabled={saving}
-          style={{
-            padding: "12px",
-            cursor: "pointer",
-            fontWeight: "bold",
-            borderRadius: "6px",
-            border: "none",
-            backgroundColor: "white",
-            color: "black",
-            fontSize: "16px",
-          }}
-        >
-          {saving ? "Saving..." : "Save Note"}
-        </button>
+        <div style={actionRowStyle}>
+          <button
+            type="submit"
+            disabled={saving}
+            style={saving ? disabledButtonStyle : primaryButtonStyle}
+          >
+            {saving ? "Saving..." : "Save Note"}
+          </button>
+
+          <Link href="/notes" style={secondaryButtonStyle}>
+            Cancel
+          </Link>
+        </div>
       </form>
     </main>
   );

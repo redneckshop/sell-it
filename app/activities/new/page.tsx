@@ -32,17 +32,149 @@ type Opportunity = {
   company_id: string | null;
 };
 
+const pageStyle: CSSProperties = {
+  minHeight: "100vh",
+  color: "#f8fafc",
+  padding: "28px",
+  fontFamily: "Arial, sans-serif",
+};
+
+const actionRowStyle: CSSProperties = {
+  display: "flex",
+  gap: "12px",
+  marginBottom: "20px",
+  flexWrap: "wrap",
+};
+
+const secondaryButtonStyle: CSSProperties = {
+  color: "#f8fafc",
+  background: "rgba(15, 23, 42, 0.74)",
+  border: "1px solid rgba(148, 163, 184, 0.25)",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 800,
+  cursor: "pointer",
+};
+
+const primaryButtonStyle: CSSProperties = {
+  color: "white",
+  background: "linear-gradient(135deg, #7c3aed, #a855f7)",
+  border: "1px solid rgba(168, 85, 247, 0.55)",
+  padding: "13px 18px",
+  borderRadius: "999px",
+  fontWeight: 900,
+  cursor: "pointer",
+  boxShadow: "0 16px 40px rgba(124, 58, 237, 0.28)",
+};
+
+const disabledButtonStyle: CSSProperties = {
+  ...primaryButtonStyle,
+  opacity: 0.55,
+  cursor: "not-allowed",
+};
+
+const headerStyle: CSSProperties = {
+  maxWidth: "1080px",
+  marginBottom: "24px",
+  border: "1px solid rgba(124, 58, 237, 0.22)",
+  borderRadius: "24px",
+  padding: "24px",
+  background:
+    "radial-gradient(circle at top left, rgba(124, 58, 237, 0.24), transparent 34%), linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.72))",
+  boxShadow: "0 24px 80px rgba(2, 6, 23, 0.28)",
+};
+
+const eyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  color: "#c4b5fd",
+  fontSize: "13px",
+  fontWeight: 900,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+};
+
+const titleStyle: CSSProperties = {
+  margin: "0 0 10px",
+  fontSize: "34px",
+  lineHeight: 1.05,
+  letterSpacing: "-0.04em",
+};
+
+const mutedTextStyle: CSSProperties = {
+  color: "#cbd5e1",
+  margin: 0,
+  maxWidth: "900px",
+  lineHeight: 1.65,
+};
+
+const cardStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "20px",
+  padding: "20px",
+  background:
+    "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
+  marginBottom: "16px",
+  maxWidth: "1080px",
+  boxShadow: "0 20px 70px rgba(2, 6, 23, 0.22)",
+};
+
+const noticeCardStyle: CSSProperties = {
+  ...cardStyle,
+  borderColor: "rgba(245, 158, 11, 0.36)",
+  background:
+    "linear-gradient(180deg, rgba(120, 53, 15, 0.35), rgba(15, 23, 42, 0.72))",
+};
+
+const formStyle: CSSProperties = {
+  ...cardStyle,
+  display: "flex",
+  flexDirection: "column",
+  gap: "18px",
+};
+
+const twoColumnGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+  gap: "18px",
+};
+
+const labelStyle: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "8px",
+  color: "#cbd5e1",
+  fontWeight: 800,
+};
+
 const inputStyle: CSSProperties = {
   display: "block",
   width: "100%",
-  padding: "12px",
-  marginTop: "6px",
-  backgroundColor: "white",
-  color: "black",
-  border: "1px solid #555",
-  borderRadius: "6px",
-  fontSize: "16px",
+  padding: "13px 14px",
+  backgroundColor: "#0f172a",
+  color: "#f8fafc",
+  border: "1px solid rgba(148, 163, 184, 0.24)",
+  borderRadius: "12px",
+  fontSize: "15px",
   boxSizing: "border-box",
+  outline: "none",
+};
+
+const checkboxLabelStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
+  color: "#cbd5e1",
+  fontWeight: 800,
+};
+
+const errorStyle: CSSProperties = {
+  border: "1px solid rgba(248, 113, 113, 0.36)",
+  background: "rgba(127, 29, 29, 0.22)",
+  color: "#fecaca",
+  padding: "14px",
+  borderRadius: "16px",
+  fontWeight: 800,
 };
 
 function getCurrentDateTimeLocal() {
@@ -209,92 +341,42 @@ export default function NewActivityPage() {
     : "";
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#111",
-        color: "white",
-        padding: "40px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          gap: "12px",
-          marginBottom: "32px",
-          flexWrap: "wrap",
-        }}
-      >
-        <Link
-          href="/"
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
-          Home
-        </Link>
-
-        <Link
-          href="/activities"
-          style={{
-            color: "black",
-            backgroundColor: "white",
-            padding: "10px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontWeight: "bold",
-          }}
-        >
+    <main style={pageStyle}>
+      <div style={actionRowStyle}>
+        <Link href="/activities" style={secondaryButtonStyle}>
           Back to Activities
         </Link>
       </div>
 
-      <h1>Add Activity</h1>
+      <header style={headerStyle}>
+        <p style={eyebrowStyle}>Activity Management</p>
 
-      <p style={{ color: "#aaa", marginBottom: "32px" }}>
-        Record a call, message, meeting, note, transcript, or follow-up activity.
-      </p>
+        <h1 style={titleStyle}>Add Activity</h1>
+
+        <p style={mutedTextStyle}>
+          Record a call, message, meeting, note, transcript, or follow-up
+          activity. Link it to the right company, contact, task, or opportunity
+          so the sales memory stays connected.
+        </p>
+      </header>
 
       {prefilledFromAssistant && (
-        <div
-          style={{
-            border: "1px solid #f5d76e",
-            backgroundColor: "#211c0d",
-            color: "#ffcc66",
-            padding: "14px",
-            borderRadius: "8px",
-            marginBottom: "18px",
-            maxWidth: "900px",
-          }}
-        >
-          This activity was prefilled from an Assistant recommendation. Review it before saving.
-        </div>
+        <section style={noticeCardStyle}>
+          <strong>Assistant Prefill</strong>
+          <p style={{ color: "#fde68a", lineHeight: 1.6, marginBottom: 0 }}>
+            This activity was prefilled from an Assistant recommendation. Review
+            it before saving.
+          </p>
+        </section>
       )}
 
       {prefilledFromAssistant && selectedContact && (
-        <div
-          style={{
-            border: "1px solid #333",
-            backgroundColor: "#181818",
-            color: "white",
-            padding: "14px",
-            borderRadius: "8px",
-            marginBottom: "18px",
-            maxWidth: "900px",
-          }}
-        >
-          <h2 style={{ marginTop: 0, marginBottom: "10px" }}>
-            Communication Details
-          </h2>
+        <section style={cardStyle}>
+          <h2 style={{ marginTop: 0 }}>Communication Details</h2>
 
           <p style={{ marginTop: 0 }}>
-            <strong>Contact:</strong> {selectedContactName || "Selected contact"}
+            <strong>Contact:</strong>{" "}
+            {selectedContactName || "Selected contact"}
           </p>
 
           <p>
@@ -302,12 +384,12 @@ export default function NewActivityPage() {
             {selectedContact.phone ? (
               <a
                 href={`tel:${selectedContact.phone}`}
-                style={{ color: "#8ab4ff", fontWeight: "bold" }}
+                style={{ color: "#93c5fd", fontWeight: 900 }}
               >
                 {selectedContact.phone}
               </a>
             ) : (
-              <span style={{ color: "#ffcc66" }}>No phone number saved.</span>
+              <span style={{ color: "#fde68a" }}>No phone number saved.</span>
             )}
           </p>
 
@@ -316,31 +398,24 @@ export default function NewActivityPage() {
             {selectedContact.email ? (
               <a
                 href={`mailto:${selectedContact.email}`}
-                style={{ color: "#8ab4ff", fontWeight: "bold" }}
+                style={{ color: "#93c5fd", fontWeight: 900 }}
               >
                 {selectedContact.email}
               </a>
             ) : (
-              <span style={{ color: "#ffcc66" }}>No email address saved.</span>
+              <span style={{ color: "#fde68a" }}>No email address saved.</span>
             )}
           </p>
 
-          <p style={{ color: "#aaa", marginBottom: 0 }}>
-            Current version prepares the call, text, or email draft only. It does not send, call, or text automatically yet.
+          <p style={{ color: "#94a3b8", marginBottom: 0, lineHeight: 1.6 }}>
+            Current version prepares the call, text, or email draft only. It does
+            not send, call, or text automatically yet.
           </p>
-        </div>
+        </section>
       )}
 
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "18px",
-          maxWidth: "700px",
-        }}
-      >
-        <label>
+      <form onSubmit={handleSubmit} style={formStyle}>
+        <label style={labelStyle}>
           Subject
           <input
             value={subject}
@@ -351,146 +426,149 @@ export default function NewActivityPage() {
           />
         </label>
 
-        <label>
-          Activity Type
-          <select
-            value={activityType}
-            onChange={(event) => setActivityType(event.target.value)}
-            style={inputStyle}
-          >
-            <option value="Call">Call</option>
-            <option value="Voicemail">Voicemail</option>
-            <option value="Text Message">Text Message</option>
-            <option value="Email">Email</option>
-            <option value="Meeting">Meeting</option>
-            <option value="Lunch">Lunch</option>
-            <option value="Website Research">Website Research</option>
-            <option value="Facebook Comment">Facebook Comment</option>
-            <option value="Facebook Message">Facebook Message</option>
-            <option value="Note">Note</option>
-            <option value="Other">Other</option>
-          </select>
-        </label>
+        <div style={twoColumnGridStyle}>
+          <label style={labelStyle}>
+            Activity Type
+            <select
+              value={activityType}
+              onChange={(event) => setActivityType(event.target.value)}
+              style={inputStyle}
+            >
+              <option value="Call">Call</option>
+              <option value="Voicemail">Voicemail</option>
+              <option value="Text Message">Text Message</option>
+              <option value="Email">Email</option>
+              <option value="Meeting">Meeting</option>
+              <option value="Lunch">Lunch</option>
+              <option value="Website Research">Website Research</option>
+              <option value="Facebook Comment">Facebook Comment</option>
+              <option value="Facebook Message">Facebook Message</option>
+              <option value="Note">Note</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
 
-        <label>
-          Activity Date
-          <input
-            type="datetime-local"
-            value={activityDate}
-            onChange={(event) => setActivityDate(event.target.value)}
-            required
-            style={inputStyle}
-          />
-        </label>
+          <label style={labelStyle}>
+            Activity Date
+            <input
+              type="datetime-local"
+              value={activityDate}
+              onChange={(event) => setActivityDate(event.target.value)}
+              required
+              style={inputStyle}
+            />
+          </label>
+        </div>
 
-        <label>
-          Related Company
-          <select
-            value={companyId}
-            onChange={(event) => {
-              setCompanyId(event.target.value);
-              setOpportunityId("");
-            }}
-            style={inputStyle}
-          >
-            <option value="">No company selected</option>
+        <div style={twoColumnGridStyle}>
+          <label style={labelStyle}>
+            Related Company
+            <select
+              value={companyId}
+              onChange={(event) => {
+                setCompanyId(event.target.value);
+                setOpportunityId("");
+              }}
+              style={inputStyle}
+            >
+              <option value="">No company selected</option>
 
-            {companies.map((company) => (
-              <option key={company.id} value={company.id}>
-                {company.name}
-              </option>
-            ))}
-          </select>
-        </label>
+              {companies.map((company) => (
+                <option key={company.id} value={company.id}>
+                  {company.name}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label>
-          Related Contact
-          <select
-            value={contactId}
-            onChange={(event) => setContactId(event.target.value)}
-            style={inputStyle}
-          >
-            <option value="">No contact selected</option>
+          <label style={labelStyle}>
+            Related Contact
+            <select
+              value={contactId}
+              onChange={(event) => setContactId(event.target.value)}
+              style={inputStyle}
+            >
+              <option value="">No contact selected</option>
 
-            {contacts.map((contact) => (
-              <option key={contact.id} value={contact.id}>
-                {contact.first_name} {contact.last_name || ""}
-              </option>
-            ))}
-          </select>
-        </label>
+              {contacts.map((contact) => (
+                <option key={contact.id} value={contact.id}>
+                  {contact.first_name} {contact.last_name || ""}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
 
-        <label>
-          Related Opportunity
-          <select
-            value={opportunityId}
-            onChange={(event) => setOpportunityId(event.target.value)}
-            style={inputStyle}
-          >
-            <option value="">No opportunity selected</option>
+        <div style={twoColumnGridStyle}>
+          <label style={labelStyle}>
+            Related Opportunity
+            <select
+              value={opportunityId}
+              onChange={(event) => setOpportunityId(event.target.value)}
+              style={inputStyle}
+            >
+              <option value="">No opportunity selected</option>
 
-            {filteredOpportunities.map((opportunity) => (
-              <option key={opportunity.id} value={opportunity.id}>
-                {opportunity.name}
-              </option>
-            ))}
-          </select>
-        </label>
+              {filteredOpportunities.map((opportunity) => (
+                <option key={opportunity.id} value={opportunity.id}>
+                  {opportunity.name}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label>
-          Related Task
-          <select
-            value={taskId}
-            onChange={(event) => setTaskId(event.target.value)}
-            style={inputStyle}
-          >
-            <option value="">No task selected</option>
+          <label style={labelStyle}>
+            Related Task
+            <select
+              value={taskId}
+              onChange={(event) => setTaskId(event.target.value)}
+              style={inputStyle}
+            >
+              <option value="">No task selected</option>
 
-            {tasks.map((task) => (
-              <option key={task.id} value={task.id}>
-                {task.title}
-              </option>
-            ))}
-          </select>
-        </label>
+              {tasks.map((task) => (
+                <option key={task.id} value={task.id}>
+                  {task.title}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
 
-        <label>
-          Outcome
-          <select
-            value={outcome}
-            onChange={(event) => setOutcome(event.target.value)}
-            style={inputStyle}
-          >
-            <option value="">No outcome selected</option>
-            <option value="No Answer">No Answer</option>
-            <option value="Left Voicemail">Left Voicemail</option>
-            <option value="Spoke">Spoke</option>
-            <option value="Texted">Texted</option>
-            <option value="Interested">Interested</option>
-            <option value="Not Interested">Not Interested</option>
-            <option value="Meeting Booked">Meeting Booked</option>
-            <option value="Follow-Up Needed">Follow-Up Needed</option>
-            <option value="Converted">Converted</option>
-            <option value="Bad Fit">Bad Fit</option>
-          </select>
-        </label>
+        <div style={twoColumnGridStyle}>
+          <label style={labelStyle}>
+            Outcome
+            <select
+              value={outcome}
+              onChange={(event) => setOutcome(event.target.value)}
+              style={inputStyle}
+            >
+              <option value="">No outcome selected</option>
+              <option value="No Answer">No Answer</option>
+              <option value="Left Voicemail">Left Voicemail</option>
+              <option value="Spoke">Spoke</option>
+              <option value="Texted">Texted</option>
+              <option value="Interested">Interested</option>
+              <option value="Not Interested">Not Interested</option>
+              <option value="Meeting Booked">Meeting Booked</option>
+              <option value="Follow-Up Needed">Follow-Up Needed</option>
+              <option value="Converted">Converted</option>
+              <option value="Bad Fit">Bad Fit</option>
+            </select>
+          </label>
 
-        <label
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={followUpNeeded}
-            onChange={(event) => setFollowUpNeeded(event.target.checked)}
-          />
-          Follow Up Needed
-        </label>
+          <label style={checkboxLabelStyle}>
+            <input
+              type="checkbox"
+              checked={followUpNeeded}
+              onChange={(event) => setFollowUpNeeded(event.target.checked)}
+              style={{ width: "18px", height: "18px" }}
+            />
+            Follow Up Needed
+          </label>
+        </div>
 
-        <label>
+        <label style={labelStyle}>
           Summary
           <textarea
             value={summary}
@@ -501,7 +579,7 @@ export default function NewActivityPage() {
           />
         </label>
 
-        <label>
+        <label style={labelStyle}>
           Raw Notes
           <textarea
             value={rawNotes}
@@ -512,26 +590,21 @@ export default function NewActivityPage() {
           />
         </label>
 
-        {errorMessage && (
-          <p style={{ color: "red" }}>Error: {errorMessage}</p>
-        )}
+        {errorMessage && <div style={errorStyle}>Error: {errorMessage}</div>}
 
-        <button
-          type="submit"
-          disabled={saving}
-          style={{
-            padding: "12px",
-            cursor: "pointer",
-            fontWeight: "bold",
-            borderRadius: "6px",
-            border: "none",
-            backgroundColor: "white",
-            color: "black",
-            fontSize: "16px",
-          }}
-        >
-          {saving ? "Saving..." : "Save Activity"}
-        </button>
+        <div style={actionRowStyle}>
+          <button
+            type="submit"
+            disabled={saving}
+            style={saving ? disabledButtonStyle : primaryButtonStyle}
+          >
+            {saving ? "Saving..." : "Save Activity"}
+          </button>
+
+          <Link href="/activities" style={secondaryButtonStyle}>
+            Cancel
+          </Link>
+        </div>
       </form>
     </main>
   );
