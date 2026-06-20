@@ -38,35 +38,89 @@ type SelectedMap = Record<string, boolean>;
 
 const pageStyle: CSSProperties = {
   minHeight: "100vh",
-  backgroundColor: "#111",
-  color: "white",
-  padding: "40px",
+  color: "#f8fafc",
+  padding: "28px",
   fontFamily: "Arial, sans-serif",
 };
 
-const cardStyle: CSSProperties = {
-  border: "1px solid #333",
-  padding: "18px",
-  borderRadius: "10px",
-  backgroundColor: "#1a1a1a",
-  marginBottom: "16px",
-  maxWidth: "950px",
+const actionRowStyle: CSSProperties = {
+  display: "flex",
+  gap: "12px",
+  marginBottom: "20px",
+  flexWrap: "wrap",
 };
 
-const buttonStyle: CSSProperties = {
-  color: "black",
-  backgroundColor: "white",
-  padding: "10px 14px",
-  borderRadius: "6px",
+const headerStyle: CSSProperties = {
+  maxWidth: "980px",
+  marginBottom: "24px",
+  border: "1px solid rgba(248, 113, 113, 0.24)",
+  borderRadius: "24px",
+  padding: "24px",
+  background:
+    "radial-gradient(circle at top left, rgba(127, 29, 29, 0.32), transparent 34%), linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.72))",
+  boxShadow: "0 24px 80px rgba(2, 6, 23, 0.28)",
+};
+
+const eyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  color: "#fca5a5",
+  fontSize: "13px",
+  fontWeight: 900,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+};
+
+const titleStyle: CSSProperties = {
+  margin: "0 0 10px",
+  fontSize: "34px",
+  lineHeight: 1.05,
+  letterSpacing: "-0.04em",
+};
+
+const mutedTextStyle: CSSProperties = {
+  color: "#cbd5e1",
+  margin: 0,
+  maxWidth: "860px",
+  lineHeight: 1.65,
+};
+
+const cardStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  padding: "20px",
+  borderRadius: "20px",
+  background:
+    "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
+  marginBottom: "18px",
+  maxWidth: "980px",
+  boxShadow: "0 20px 70px rgba(2, 6, 23, 0.24)",
+};
+
+const secondaryButtonStyle: CSSProperties = {
+  color: "#f8fafc",
+  background: "rgba(15, 23, 42, 0.74)",
+  border: "1px solid rgba(148, 163, 184, 0.25)",
+  padding: "12px 16px",
+  borderRadius: "999px",
   textDecoration: "none",
-  fontWeight: "bold",
-  border: "none",
+  fontWeight: 800,
   cursor: "pointer",
 };
 
 const dangerButtonStyle: CSSProperties = {
-  ...buttonStyle,
-  backgroundColor: "#ffdddd",
+  color: "#fecaca",
+  background: "rgba(127, 29, 29, 0.34)",
+  border: "1px solid rgba(248, 113, 113, 0.42)",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 900,
+  cursor: "pointer",
+};
+
+const disabledDangerButtonStyle: CSSProperties = {
+  ...dangerButtonStyle,
+  opacity: 0.55,
+  cursor: "not-allowed",
 };
 
 const checkboxRowStyle: CSSProperties = {
@@ -74,8 +128,54 @@ const checkboxRowStyle: CSSProperties = {
   gridTemplateColumns: "28px 1fr",
   gap: "10px",
   alignItems: "flex-start",
-  padding: "12px",
-  borderTop: "1px solid #333",
+  padding: "14px",
+  borderTop: "1px solid rgba(148, 163, 184, 0.16)",
+};
+
+const errorStyle: CSSProperties = {
+  border: "1px solid rgba(248, 113, 113, 0.36)",
+  background: "rgba(127, 29, 29, 0.22)",
+  color: "#fecaca",
+  padding: "14px",
+  borderRadius: "16px",
+  marginBottom: "18px",
+  maxWidth: "980px",
+};
+
+const successStyle: CSSProperties = {
+  border: "1px solid rgba(34, 197, 94, 0.32)",
+  background: "rgba(20, 83, 45, 0.22)",
+  color: "#bbf7d0",
+  padding: "20px",
+  borderRadius: "20px",
+  marginBottom: "18px",
+  maxWidth: "980px",
+};
+
+const warningCardStyle: CSSProperties = {
+  ...cardStyle,
+  border: "1px solid rgba(248, 113, 113, 0.34)",
+  background:
+    "linear-gradient(180deg, rgba(127, 29, 29, 0.32), rgba(15, 23, 42, 0.76))",
+};
+
+const modalBackdropStyle: CSSProperties = {
+  position: "fixed",
+  inset: 0,
+  backgroundColor: "rgba(2, 6, 23, 0.82)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "24px",
+  zIndex: 50,
+};
+
+const modalCardStyle: CSSProperties = {
+  ...cardStyle,
+  maxWidth: "580px",
+  border: "1px solid rgba(248, 113, 113, 0.42)",
+  background:
+    "radial-gradient(circle at top left, rgba(127, 29, 29, 0.32), transparent 36%), linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.9))",
 };
 
 function recordKey(type: DeleteType, id: string) {
@@ -131,7 +231,9 @@ export default function DeleteTaskPage() {
 
       const { data: taskRow, error: taskError } = await supabase
         .from("tasks")
-        .select("id, title, description, due_date, priority, status, company_id, contact_id, opportunity_id")
+        .select(
+          "id, title, description, due_date, priority, status, company_id, contact_id, opportunity_id"
+        )
         .eq("id", taskId)
         .single();
 
@@ -255,7 +357,11 @@ export default function DeleteTaskPage() {
           .map((row) => row.id);
 
         await detachIds("activities", "task_id", remainingActivityIds);
-        await detachIds("attachments", "related_task_id", remainingAttachmentIds);
+        await detachIds(
+          "attachments",
+          "related_task_id",
+          remainingAttachmentIds
+        );
 
         await deleteIds("tasks", [task.id]);
       }
@@ -265,7 +371,8 @@ export default function DeleteTaskPage() {
       );
       setConfirming(false);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown delete error";
+      const message =
+        error instanceof Error ? error.message : "Unknown delete error";
       setErrorMessage(message);
     } finally {
       setDeleting(false);
@@ -289,7 +396,7 @@ export default function DeleteTaskPage() {
         <span>
           <strong>{title}</strong>
           <br />
-          <span style={{ color: "#aaa" }}>{details}</span>
+          <span style={{ color: "#94a3b8" }}>{details}</span>
         </span>
       </label>
     );
@@ -297,38 +404,45 @@ export default function DeleteTaskPage() {
 
   return (
     <main style={pageStyle}>
-      <div style={{ display: "flex", gap: "12px", marginBottom: "32px", flexWrap: "wrap" }}>
-        <Link href="/tasks" style={buttonStyle}>
+      <div style={actionRowStyle}>
+        <Link href="/tasks" style={secondaryButtonStyle}>
           Back to Tasks
         </Link>
 
         {task && (
-          <Link href={`/tasks/${task.id}`} style={buttonStyle}>
+          <Link href={`/tasks/${task.id}`} style={secondaryButtonStyle}>
             Back to Task
           </Link>
         )}
       </div>
 
-      <h1>Delete Task Review</h1>
+      <header style={headerStyle}>
+        <p style={eyebrowStyle}>Delete Review</p>
 
-      <p style={{ color: "#aaa", maxWidth: "850px", lineHeight: 1.5 }}>
-        Review everything connected directly to this task before deleting. Only checked
-        records are deleted. Unchecked related records are preserved. If the task itself
-        is deleted, unchecked related records are safely unlinked from the deleted task
-        when possible.
-      </p>
+        <h1 style={titleStyle}>Delete Task</h1>
 
-      {loading && <p>Loading delete review...</p>}
+        <p style={mutedTextStyle}>
+          Review everything connected directly to this task before deleting.
+          Only checked records are deleted. Unchecked related records are
+          preserved and safely unlinked when possible.
+        </p>
+      </header>
 
-      {errorMessage && (
-        <p style={{ color: "red", fontWeight: "bold" }}>Error: {errorMessage}</p>
+      {loading && (
+        <div style={cardStyle}>
+          <p style={{ margin: 0, color: "#cbd5e1" }}>
+            Loading delete review...
+          </p>
+        </div>
       )}
 
+      {errorMessage && <div style={errorStyle}>Error: {errorMessage}</div>}
+
       {successMessage && (
-        <div style={{ ...cardStyle, borderColor: "#2f8f2f" }}>
+        <div style={successStyle}>
           <h2 style={{ marginTop: 0 }}>Delete Complete</h2>
-          <p style={{ color: "#90ee90" }}>{successMessage}</p>
-          <Link href="/tasks" style={buttonStyle}>
+          <p>{successMessage}</p>
+          <Link href="/tasks" style={secondaryButtonStyle}>
             Return to Tasks
           </Link>
         </div>
@@ -343,9 +457,9 @@ export default function DeleteTaskPage() {
               "task",
               task.id,
               task.title,
-              `Status: ${task.status || "None"} | Priority: ${task.priority || "None"} | Due: ${
-                task.due_date || "None"
-              }`
+              `Status: ${task.status || "None"} | Priority: ${
+                task.priority || "None"
+              } | Due: ${task.due_date || "None"}`
             )}
           </div>
 
@@ -362,17 +476,21 @@ export default function DeleteTaskPage() {
             <div>
               <strong>Total selected:</strong> {selectedCount}
               <br />
-              <span style={{ color: "#aaa" }}>
+              <span style={{ color: "#94a3b8" }}>
                 Default selection is task only. Related records start unchecked.
               </span>
             </div>
 
             <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-              <button type="button" onClick={selectAll} style={buttonStyle}>
+              <button type="button" onClick={selectAll} style={secondaryButtonStyle}>
                 Select All
               </button>
 
-              <button type="button" onClick={unselectAll} style={buttonStyle}>
+              <button
+                type="button"
+                onClick={unselectAll}
+                style={secondaryButtonStyle}
+              >
                 Unselect All
               </button>
             </div>
@@ -382,7 +500,7 @@ export default function DeleteTaskPage() {
             <h2 style={{ marginTop: 0 }}>Activities ({activities.length})</h2>
 
             {activities.length === 0 && (
-              <p style={{ color: "#aaa" }}>No related activities.</p>
+              <p style={{ color: "#94a3b8" }}>No related activities.</p>
             )}
 
             {activities.map((activity) =>
@@ -401,7 +519,7 @@ export default function DeleteTaskPage() {
             <h2 style={{ marginTop: 0 }}>Attachments ({attachments.length})</h2>
 
             {attachments.length === 0 && (
-              <p style={{ color: "#aaa" }}>No related attachments.</p>
+              <p style={{ color: "#94a3b8" }}>No related attachments.</p>
             )}
 
             {attachments.map((attachment) =>
@@ -416,20 +534,14 @@ export default function DeleteTaskPage() {
             )}
           </div>
 
-          <div
-            style={{
-              ...cardStyle,
-              borderColor: "#8f2f2f",
-              backgroundColor: "#201111",
-            }}
-          >
+          <div style={warningCardStyle}>
             <h2 style={{ marginTop: 0 }}>Final Delete Action</h2>
 
             <p>
               Selected records: <strong>{selectedCount}</strong>
             </p>
 
-            <p style={{ color: "#ffb3b3" }}>
+            <p style={{ color: "#fecaca" }}>
               This action cannot be undone from inside Sell It yet.
             </p>
 
@@ -437,37 +549,25 @@ export default function DeleteTaskPage() {
               type="button"
               onClick={() => setConfirming(true)}
               disabled={selectedCount === 0 || deleting}
-              style={dangerButtonStyle}
+              style={
+                selectedCount === 0 || deleting
+                  ? disabledDangerButtonStyle
+                  : dangerButtonStyle
+              }
             >
               Review Final Confirmation
             </button>
           </div>
 
           {confirming && (
-            <div
-              style={{
-                position: "fixed",
-                inset: 0,
-                backgroundColor: "rgba(0,0,0,0.78)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "24px",
-              }}
-            >
-              <div
-                style={{
-                  ...cardStyle,
-                  maxWidth: "560px",
-                  borderColor: "#ff9999",
-                  backgroundColor: "#1a1a1a",
-                }}
-              >
+            <div style={modalBackdropStyle}>
+              <div style={modalCardStyle}>
                 <h2 style={{ marginTop: 0 }}>Confirm Delete</h2>
 
-                <p>
-                  You are about to delete or unlink <strong>{selectedCount}</strong>{" "}
-                  selected item(s) for task <strong>{task.title}</strong>.
+                <p style={{ color: "#cbd5e1", lineHeight: 1.6 }}>
+                  You are about to delete or unlink{" "}
+                  <strong>{selectedCount}</strong> selected item(s) for task{" "}
+                  <strong>{task.title}</strong>.
                 </p>
 
                 <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
@@ -475,7 +575,7 @@ export default function DeleteTaskPage() {
                     type="button"
                     onClick={handleDeleteSelected}
                     disabled={deleting}
-                    style={dangerButtonStyle}
+                    style={deleting ? disabledDangerButtonStyle : dangerButtonStyle}
                   >
                     {deleting ? "Deleting..." : "Yes, Delete Selected Records"}
                   </button>
@@ -484,7 +584,7 @@ export default function DeleteTaskPage() {
                     type="button"
                     onClick={() => setConfirming(false)}
                     disabled={deleting}
-                    style={buttonStyle}
+                    style={secondaryButtonStyle}
                   >
                     Cancel
                   </button>
