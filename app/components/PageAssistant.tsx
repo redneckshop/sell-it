@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -1190,7 +1190,7 @@ function LinkList({ links }: { links: LinkItem[] | undefined }) {
     <p style={{ margin: "8px 0 0", lineHeight: 1.5 }}>
       {links.slice(0, MAX_LINKS).map((link, index) => (
         <span key={`${link.href}-${link.label}`}>
-          {index > 0 ? " Ã‚Â· " : ""}
+          {index > 0 ? " Ãƒâ€šÃ‚Â· " : ""}
           <Link
             href={link.href}
             style={{
@@ -1525,3 +1525,4 @@ export default function PageAssistant() {
     </div>
   );
 }
+
