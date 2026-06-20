@@ -84,15 +84,23 @@ export async function createNotificationOnce(input: CreateNotificationOnceInput)
     dedupe_key: input.dedupeKey,
   };
 
-  const existing = await supabase
+  let existingQuery = supabase
     .from("notifications")
     .select("id")
     .eq("workspace_id", NOTIFICATION_WORKSPACE_ID)
     .eq("notification_type", input.type)
-    .eq("related_record_type", input.relatedRecordType ?? "")
-    .eq("related_record_id", input.relatedRecordId ?? "")
     .contains("metadata", { dedupe_key: input.dedupeKey })
     .limit(1);
+
+  if (input.relatedRecordType) {
+    existingQuery = existingQuery.eq("related_record_type", input.relatedRecordType);
+  }
+
+  if (input.relatedRecordId) {
+    existingQuery = existingQuery.eq("related_record_id", input.relatedRecordId);
+  }
+
+  const existing = await existingQuery;
 
   if (!existing.error && existing.data && existing.data.length > 0) {
     return;

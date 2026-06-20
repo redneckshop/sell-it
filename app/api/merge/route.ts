@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 type MergeType = "company" | "contact" | "note" | "task" | "pain_point";
@@ -71,7 +71,7 @@ type PainPointRecord = {
   is_archived?: boolean | null;
 };
 
-const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
+const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832"; const WORKSPACE_ID = "ba491d9b-3b36-426d-b98a-f05b0bf271ed";
 
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -978,6 +978,45 @@ async function mergePainPoint(
   };
 }
 
+async function createMergeCompletedNotification(
+  type: MergeType,
+  survivorId: string,
+  duplicateId: string,
+  result: Record<string, unknown>
+) {
+  const supabase = getSupabaseAdmin();
+  const survivorName =
+    typeof result.survivorName === "string" && result.survivorName.trim()
+      ? result.survivorName
+      : survivorId;
+  const relatedRecordType =
+    type === "pain_point" ? "pain_points" : `${type}s`;
+  const relatedUrl =
+    type === "pain_point"
+      ? `/pain-points/${survivorId}`
+      : `/${type}s/${survivorId}`;
+
+  const { error } = await supabase.from("notifications").insert({
+    workspace_id: WORKSPACE_ID,
+    recipient_user_id: null,
+    notification_type: "Merge Completed",
+    message: `Merge completed: ${type} duplicate merged into ${survivorName}`,
+    related_record_type: relatedRecordType,
+    related_record_id: survivorId,
+    related_url: relatedUrl,
+    metadata: {
+      merge_type: type,
+      survivor_id: survivorId,
+      duplicate_id: duplicateId,
+      source: "Merge API",
+    },
+    created_by: USER_ID,
+  });
+
+  if (error) {
+    console.warn("Merge completed notification was not saved:", error.message);
+  }
+}
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -1036,3 +1075,4 @@ export async function POST(request: Request) {
     );
   }
 }
+

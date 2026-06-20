@@ -17,6 +17,36 @@ type TaskDueRow = {
   status: string | null;
 };
 
+type AssignedTaskRow = {
+  id: string;
+  title: string;
+  assigned_team_member_id: string | null;
+  assigned_to: string | null;
+  updated_at: string | null;
+  created_at: string | null;
+};
+
+type StageHistoryRow = {
+  id: string;
+  opportunity_id: string;
+  old_stage: string | null;
+  new_stage: string | null;
+  changed_at: string | null;
+};
+
+type EmailActivityRow = {
+  id: string;
+  subject: string | null;
+  activity_date: string | null;
+  raw_notes: string | null;
+};
+
+type PainPointRow = {
+  id: string;
+  name: string;
+  category: string | null;
+  created_at: string | null;
+};
 const wrapperStyle: CSSProperties = {
   position: "relative",
 };
@@ -237,6 +267,121 @@ async function seedTaskDueNotifications() {
   }
 }
 
+async function seedEventNotifications() {
+  const assignedTasks = await supabase
+    .from("tasks")
+    .select("id, title, assigned_team_member_id, assigned_to, updated_at, created_at")
+    .eq("workspace_id", NOTIFICATION_WORKSPACE_ID)
+    .not("assigned_team_member_id", "is", null)
+    .order("updated_at", { ascending: false })
+    .limit(75);
+
+  if (!assignedTasks.error) {
+    for (const task of ((assignedTasks.data ?? []) as AssignedTaskRow[])) {
+      if (!task.assigned_team_member_id) continue;
+
+      await createNotificationOnce({
+        type: "Task Assigned",
+        message: `Task assigned: ${task.title}`,
+        relatedRecordType: "tasks",
+        relatedRecordId: task.id,
+        relatedUrl: `/tasks/${task.id}`,
+        recipientUserId: task.assigned_to || null,
+        dedupeKey: `task-assigned:${task.id}:${task.assigned_team_member_id}`,
+        metadata: {
+          task_id: task.id,
+          assigned_team_member_id: task.assigned_team_member_id,
+          source: "Notification Center event scan",
+        },
+      });
+    }
+  } else {
+    console.warn("Task assignment notification scan failed:", assignedTasks.error.message);
+  }
+
+  const stageHistory = await supabase
+    .from("opportunity_stage_history")
+    .select("id, opportunity_id, old_stage, new_stage, changed_at")
+    .order("changed_at", { ascending: false })
+    .limit(75);
+
+  if (!stageHistory.error) {
+    for (const history of ((stageHistory.data ?? []) as StageHistoryRow[])) {
+      await createNotificationOnce({
+        type: "Opportunity Stage Changed",
+        message: `Opportunity stage changed: ${history.old_stage || "No previous stage"} -> ${history.new_stage || "No stage"}`,
+        relatedRecordType: "opportunities",
+        relatedRecordId: history.opportunity_id,
+        relatedUrl: `/opportunities/${history.opportunity_id}`,
+        dedupeKey: `opportunity-stage:${history.id}`,
+        metadata: {
+          stage_history_id: history.id,
+          opportunity_id: history.opportunity_id,
+          old_stage: history.old_stage,
+          new_stage: history.new_stage,
+          source: "Notification Center event scan",
+        },
+      });
+    }
+  } else {
+    console.warn("Opportunity stage notification scan failed:", stageHistory.error.message);
+  }
+
+  const emailActivities = await supabase
+    .from("activities")
+    .select("id, subject, activity_date, raw_notes")
+    .eq("workspace_id", NOTIFICATION_WORKSPACE_ID)
+    .eq("activity_type", "Email")
+    .ilike("raw_notes", "%Source: Email Intelligence%")
+    .order("activity_date", { ascending: false })
+    .limit(75);
+
+  if (!emailActivities.error) {
+    for (const activity of ((emailActivities.data ?? []) as EmailActivityRow[])) {
+      await createNotificationOnce({
+        type: "New Email Intelligence Saved",
+        message: `Email Intelligence saved: ${activity.subject || "Email capture"}`,
+        relatedRecordType: "activities",
+        relatedRecordId: activity.id,
+        relatedUrl: `/activities/${activity.id}`,
+        dedupeKey: `email-intelligence:${activity.id}`,
+        metadata: {
+          activity_id: activity.id,
+          source: "Notification Center event scan",
+        },
+      });
+    }
+  } else {
+    console.warn("Email Intelligence notification scan failed:", emailActivities.error.message);
+  }
+
+  const painPoints = await supabase
+    .from("pain_points")
+    .select("id, name, category, created_at")
+    .eq("workspace_id", NOTIFICATION_WORKSPACE_ID)
+    .order("created_at", { ascending: false })
+    .limit(75);
+
+  if (!painPoints.error) {
+    for (const painPoint of ((painPoints.data ?? []) as PainPointRow[])) {
+      await createNotificationOnce({
+        type: "New Pain Point Created",
+        message: `Pain point created: ${painPoint.name}`,
+        relatedRecordType: "pain_points",
+        relatedRecordId: painPoint.id,
+        relatedUrl: `/pain-points/${painPoint.id}`,
+        dedupeKey: `pain-point-created:${painPoint.id}`,
+        metadata: {
+          pain_point_id: painPoint.id,
+          category: painPoint.category,
+          source: "Notification Center event scan",
+        },
+      });
+    }
+  } else {
+    console.warn("Pain point notification scan failed:", painPoints.error.message);
+  }
+}
 export default function NotificationCenter() {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
@@ -251,6 +396,7 @@ export default function NotificationCenter() {
 
     try {
       await seedTaskDueNotifications();
+      await seedEventNotifications();
 
       const { data, error } = await supabase
         .from("notifications")
@@ -449,4 +595,5 @@ export default function NotificationCenter() {
     </div>
   );
 }
+
 
