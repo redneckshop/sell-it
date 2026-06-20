@@ -69,46 +69,211 @@ type LinkedPost = {
   posts: SupabaseRelation<Post>;
 };
 
-const inputStyle: CSSProperties = {
-  display: "block",
-  width: "100%",
-  padding: "12px",
-  marginTop: "6px",
-  backgroundColor: "white",
-  color: "black",
-  border: "1px solid #555",
-  borderRadius: "6px",
-  fontSize: "16px",
-  boxSizing: "border-box",
+const pageStyle: CSSProperties = {
+  minHeight: "100vh",
+  color: "#f8fafc",
+  padding: "28px",
+  fontFamily: "Arial, sans-serif",
 };
 
-const buttonStyle: CSSProperties = {
-  color: "black",
-  backgroundColor: "white",
-  padding: "10px 14px",
-  borderRadius: "6px",
-  fontWeight: "bold",
-  border: "none",
-  cursor: "pointer",
+const shellStyle: CSSProperties = {
+  maxWidth: "1180px",
+  margin: "0 auto",
 };
 
-const linkButtonStyle: CSSProperties = {
-  color: "black",
-  backgroundColor: "white",
-  padding: "10px 14px",
-  borderRadius: "6px",
+const headerStyle: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: "18px",
+  flexWrap: "wrap",
+  marginBottom: "24px",
+};
+
+const eyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  color: "#c4b5fd",
+  fontSize: "13px",
+  fontWeight: 800,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+};
+
+const titleStyle: CSSProperties = {
+  margin: 0,
+  fontSize: "34px",
+  lineHeight: 1.1,
+  letterSpacing: "-0.04em",
+};
+
+const subtitleStyle: CSSProperties = {
+  margin: "10px 0 0",
+  color: "#cbd5e1",
+  fontSize: "15px",
+  lineHeight: 1.55,
+  maxWidth: "760px",
+};
+
+const actionRowStyle: CSSProperties = {
+  display: "flex",
+  gap: "10px",
+  flexWrap: "wrap",
+  alignItems: "center",
+};
+
+const primaryLinkStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: "42px",
+  padding: "10px 15px",
+  borderRadius: "999px",
+  color: "white",
+  background: "linear-gradient(135deg, #7c3aed, #a855f7)",
   textDecoration: "none",
-  fontWeight: "bold",
+  fontWeight: 800,
+  border: "1px solid rgba(255, 255, 255, 0.14)",
+  boxShadow: "0 18px 36px rgba(124, 58, 237, 0.24)",
+};
+
+const secondaryLinkStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: "42px",
+  padding: "10px 15px",
+  borderRadius: "999px",
+  color: "#e2e8f0",
+  backgroundColor: "rgba(15, 23, 42, 0.82)",
+  textDecoration: "none",
+  fontWeight: 800,
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+};
+
+const dangerLinkStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: "42px",
+  padding: "10px 15px",
+  borderRadius: "999px",
+  color: "#fecdd3",
+  backgroundColor: "rgba(127, 29, 29, 0.34)",
+  textDecoration: "none",
+  fontWeight: 800,
+  border: "1px solid rgba(251, 113, 133, 0.45)",
 };
 
 const cardStyle: CSSProperties = {
-  border: "1px solid #333",
-  padding: "18px",
-  borderRadius: "10px",
-  backgroundColor: "#1a1a1a",
+  border: "1px solid rgba(148, 163, 184, 0.18)",
+  padding: "20px",
+  borderRadius: "20px",
+  background:
+    "linear-gradient(135deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.94))",
+  boxShadow: "0 18px 50px rgba(0, 0, 0, 0.22)",
+};
+
+const detailGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+  gap: "12px",
+  marginTop: "18px",
+};
+
+const detailTileStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "16px",
+  padding: "14px",
+  backgroundColor: "rgba(15, 23, 42, 0.56)",
+};
+
+const labelStyle: CSSProperties = {
+  display: "block",
+  marginBottom: "8px",
+  color: "#cbd5e1",
+  fontSize: "13px",
+  fontWeight: 800,
+};
+
+const selectStyle: CSSProperties = {
+  display: "block",
+  width: "100%",
+  padding: "12px",
+  backgroundColor: "rgba(15, 23, 42, 0.9)",
+  color: "#f8fafc",
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+  borderRadius: "14px",
+  fontSize: "15px",
+  boxSizing: "border-box",
+  outline: "none",
+};
+
+const primaryButtonStyle: CSSProperties = {
+  minHeight: "42px",
   color: "white",
+  background: "linear-gradient(135deg, #7c3aed, #a855f7)",
+  padding: "10px 15px",
+  borderRadius: "999px",
+  fontWeight: 800,
+  border: "1px solid rgba(255, 255, 255, 0.14)",
+  cursor: "pointer",
+  boxShadow: "0 18px 36px rgba(124, 58, 237, 0.22)",
+};
+
+const formCardStyle: CSSProperties = {
+  ...cardStyle,
+  marginBottom: "14px",
+};
+
+const linkedCardStyle: CSSProperties = {
+  display: "block",
+  color: "#f8fafc",
   textDecoration: "none",
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  padding: "16px",
+  borderRadius: "18px",
+  backgroundColor: "rgba(15, 23, 42, 0.6)",
+  marginBottom: "10px",
+};
+
+const sectionStyle: CSSProperties = {
+  marginTop: "26px",
+};
+
+const sectionHeaderStyle: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-end",
+  gap: "14px",
+  flexWrap: "wrap",
   marginBottom: "12px",
+};
+
+const sectionTitleStyle: CSSProperties = {
+  margin: 0,
+  fontSize: "22px",
+};
+
+const mutedTextStyle: CSSProperties = {
+  color: "#94a3b8",
+};
+
+const messageStyle: CSSProperties = {
+  border: "1px solid rgba(250, 204, 21, 0.28)",
+  backgroundColor: "rgba(113, 63, 18, 0.22)",
+  color: "#fde68a",
+  padding: "12px 14px",
+  borderRadius: "16px",
+  marginBottom: "18px",
+};
+
+const errorMessageStyle: CSSProperties = {
+  border: "1px solid rgba(248, 113, 113, 0.32)",
+  backgroundColor: "rgba(127, 29, 29, 0.24)",
+  color: "#fecaca",
+  padding: "12px 14px",
+  borderRadius: "16px",
+  marginBottom: "18px",
 };
 
 function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
@@ -133,6 +298,10 @@ function formatDateTime(value: string | null) {
 
 function contactName(contact: Contact) {
   return `${contact.first_name} ${contact.last_name || ""}`.trim();
+}
+
+function isErrorMessage(message: string) {
+  return message.includes("failed") || message.includes("Could not");
 }
 
 export default function PainPointDetailPage() {
@@ -387,303 +556,378 @@ export default function PainPointDetailPage() {
 
   if (loading) {
     return (
-      <main
-        style={{
-          minHeight: "100vh",
-          backgroundColor: "#111",
-          color: "white",
-          padding: "40px",
-          fontFamily: "Arial, sans-serif",
-        }}
-      >
-        <p>Loading pain point...</p>
+      <main style={pageStyle}>
+        <section style={shellStyle}>
+          <div style={cardStyle}>
+            <p style={eyebrowStyle}>Business Memory</p>
+            <h1 style={titleStyle}>Loading pain point...</h1>
+            <p style={subtitleStyle}>
+              Pulling the pain point and its related companies, contacts,
+              activities, and posts.
+            </p>
+          </div>
+        </section>
       </main>
     );
   }
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#111",
-        color: "white",
-        padding: "40px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          gap: "12px",
-          marginBottom: "32px",
-          flexWrap: "wrap",
-        }}
-      >
-        <Link href="/" style={linkButtonStyle}>
-          Home
-        </Link>
-
-        <Link href="/pain-points" style={linkButtonStyle}>
-          Back to Pain Points
-        </Link>
-
-        <Link href="/pain-points/new" style={linkButtonStyle}>
-          Add Pain Point
-        </Link>
-
-        {painPoint && (
-          <Link
-            href={`/pain-points/${painPoint.id}/edit`}
-            style={linkButtonStyle}
-          >
-            Edit Pain Point
-          </Link>
-        )}
-
-        {painPoint && (
-          <Link
-            href={`/pain-points/${painPoint.id}/delete`}
-            style={{
-              color: "black",
-              backgroundColor: "#ffdddd",
-              padding: "10px 14px",
-              borderRadius: "6px",
-              textDecoration: "none",
-              fontWeight: "bold",
-            }}
-          >
-            Delete Pain Point
-          </Link>
-        )}
-      </div>
-
-      {message && (
-        <p
-          style={{
-            color:
-              message.includes("failed") || message.includes("Could not")
-                ? "red"
-                : "#ffcc66",
-          }}
-        >
-          {message}
-        </p>
-      )}
-
-      {!painPoint && <p style={{ color: "#aaa" }}>Pain point not found.</p>}
-
-      {painPoint && (
-        <>
-          <h1>{painPoint.name}</h1>
-
-          <div
-            style={{
-              border: "1px solid #333",
-              padding: "20px",
-              borderRadius: "8px",
-              backgroundColor: "#1a1a1a",
-              maxWidth: "850px",
-              marginBottom: "28px",
-            }}
-          >
-            <p>
-              <strong>Category:</strong> {painPoint.category || "Not provided"}
-            </p>
-
-            <p>
-              <strong>Description:</strong>
-            </p>
-
-            <p style={{ whiteSpace: "pre-wrap" }}>
-              {painPoint.description || "No description saved yet."}
-            </p>
-
-            <p>
-              <strong>Created:</strong> {formatDateTime(painPoint.created_at)}
-            </p>
-
-            <p>
-              <strong>Last Updated:</strong>{" "}
-              {formatDateTime(painPoint.updated_at)}
+    <main style={pageStyle}>
+      <section style={shellStyle}>
+        <div style={headerStyle}>
+          <div>
+            <p style={eyebrowStyle}>Business Memory / Pain Point</p>
+            <h1 style={titleStyle}>
+              {painPoint ? painPoint.name : "Pain point not found"}
+            </h1>
+            <p style={subtitleStyle}>
+              Track the real-world problem, where it appears, who it affects,
+              and the activity history connected to it.
             </p>
           </div>
 
-          <RelationshipSummaryPanel
-            title={`${painPoint.name} Relationship Summary`}
-            subtitle="Quick business-memory snapshot for this pain point."
-            items={relationshipItems}
-            maxWidth="900px"
-          />
+          <div style={actionRowStyle}>
+            <Link href="/pain-points" style={secondaryLinkStyle}>
+              Back to Pain Points
+            </Link>
 
-          <section style={{ maxWidth: "900px" }}>
-            <h2 id="linked-companies">Linked Companies</h2>
+            <Link href="/pain-points/new" style={primaryLinkStyle}>
+              Add Pain Point
+            </Link>
 
-            <form onSubmit={linkCompany} style={{ marginBottom: "18px" }}>
-              <select
-                value={companyId}
-                onChange={(event) => setCompanyId(event.target.value)}
-                style={inputStyle}
+            {painPoint && (
+              <Link
+                href={`/pain-points/${painPoint.id}/edit`}
+                style={secondaryLinkStyle}
               >
-                <option value="">Choose a company</option>
-                {companies.map((company) => (
-                  <option key={company.id} value={company.id}>
-                    {company.name}
-                  </option>
-                ))}
-              </select>
-
-              <button type="submit" style={{ ...buttonStyle, marginTop: "10px" }}>
-                Link Company
-              </button>
-            </form>
-
-            {linkedCompanies.length === 0 && (
-              <p style={{ color: "#aaa" }}>No companies linked yet.</p>
+                Edit Pain Point
+              </Link>
             )}
 
-            {linkedCompanies.map((linkedCompany) => {
-              const company = singleRelation(linkedCompany.companies);
-
-              return company ? (
-                <Link
-                  key={linkedCompany.id}
-                  href={`/companies/${linkedCompany.company_id}`}
-                  style={{ ...cardStyle, display: "block" }}
-                >
-                  <strong>{company.name}</strong>
-                </Link>
-              ) : null;
-            })}
-
-            <h2 id="linked-contacts" style={{ marginTop: "40px" }}>
-              Linked Contacts
-            </h2>
-
-            <form onSubmit={linkContact} style={{ marginBottom: "18px" }}>
-              <select
-                value={contactId}
-                onChange={(event) => setContactId(event.target.value)}
-                style={inputStyle}
+            {painPoint && (
+              <Link
+                href={`/pain-points/${painPoint.id}/delete`}
+                style={dangerLinkStyle}
               >
-                <option value="">Choose a contact</option>
-                {contacts.map((contact) => (
-                  <option key={contact.id} value={contact.id}>
-                    {contactName(contact)}
-                  </option>
-                ))}
-              </select>
-
-              <button type="submit" style={{ ...buttonStyle, marginTop: "10px" }}>
-                Link Contact
-              </button>
-            </form>
-
-            {linkedContacts.length === 0 && (
-              <p style={{ color: "#aaa" }}>No contacts linked yet.</p>
+                Delete Pain Point
+              </Link>
             )}
+          </div>
+        </div>
 
-            {linkedContacts.map((linkedContact) => {
-              const contact = singleRelation(linkedContact.contacts);
+        {message && (
+          <p style={isErrorMessage(message) ? errorMessageStyle : messageStyle}>
+            {message}
+          </p>
+        )}
 
-              return contact ? (
-                <Link
-                  key={linkedContact.id}
-                  href={`/contacts/${linkedContact.contact_id}`}
-                  style={{ ...cardStyle, display: "block" }}
+        {!painPoint && (
+          <div style={cardStyle}>
+            <h2 style={{ marginTop: 0 }}>No pain point found</h2>
+            <p style={mutedTextStyle}>
+              This record may have been deleted, archived, or the link may be
+              incorrect.
+            </p>
+          </div>
+        )}
+
+        {painPoint && (
+          <>
+            <div style={{ ...cardStyle, marginBottom: "22px" }}>
+              <div style={detailGridStyle}>
+                <div style={detailTileStyle}>
+                  <div style={labelStyle}>Category</div>
+                  <div>{painPoint.category || "Not provided"}</div>
+                </div>
+
+                <div style={detailTileStyle}>
+                  <div style={labelStyle}>Created</div>
+                  <div>{formatDateTime(painPoint.created_at)}</div>
+                </div>
+
+                <div style={detailTileStyle}>
+                  <div style={labelStyle}>Last Updated</div>
+                  <div>{formatDateTime(painPoint.updated_at)}</div>
+                </div>
+              </div>
+
+              <div style={{ marginTop: "18px" }}>
+                <div style={labelStyle}>Description</div>
+                <div
+                  style={{
+                    whiteSpace: "pre-wrap",
+                    color: painPoint.description ? "#f8fafc" : "#94a3b8",
+                    lineHeight: 1.65,
+                  }}
                 >
-                  <strong>{contactName(contact)}</strong>
-                </Link>
-              ) : null;
-            })}
+                  {painPoint.description || "No description saved yet."}
+                </div>
+              </div>
+            </div>
 
-            <h2 id="linked-activities" style={{ marginTop: "40px" }}>
-              Linked Activities
-            </h2>
+            <RelationshipSummaryPanel
+              title={`${painPoint.name} Relationship Summary`}
+              subtitle="Quick business-memory snapshot for this pain point."
+              items={relationshipItems}
+              maxWidth="1180px"
+            />
 
-            <form onSubmit={linkActivity} style={{ marginBottom: "18px" }}>
-              <select
-                value={activityId}
-                onChange={(event) => setActivityId(event.target.value)}
-                style={inputStyle}
-              >
-                <option value="">Choose an activity</option>
-                {activities.map((activity) => (
-                  <option key={activity.id} value={activity.id}>
-                    {activity.subject}
-                  </option>
-                ))}
-              </select>
+            <section id="linked-companies" style={sectionStyle}>
+              <div style={sectionHeaderStyle}>
+                <div>
+                  <h2 style={sectionTitleStyle}>Linked Companies</h2>
+                  <p style={{ ...mutedTextStyle, margin: "6px 0 0" }}>
+                    Companies currently connected to this pain point.
+                  </p>
+                </div>
+              </div>
 
-              <button type="submit" style={{ ...buttonStyle, marginTop: "10px" }}>
-                Link Activity
-              </button>
-            </form>
+              <form onSubmit={linkCompany} style={formCardStyle}>
+                <label style={labelStyle} htmlFor="company-id">
+                  Link a company
+                </label>
 
-            {linkedActivities.length === 0 && (
-              <p style={{ color: "#aaa" }}>No activities linked yet.</p>
-            )}
-
-            {linkedActivities.map((linkedActivity) => {
-              const activity = singleRelation(linkedActivity.activities);
-
-              return activity ? (
-                <Link
-                  key={linkedActivity.id}
-                  href={`/activities/${linkedActivity.activity_id}`}
-                  style={{ ...cardStyle, display: "block" }}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                    gap: "10px",
+                    alignItems: "center",
+                  }}
                 >
-                  <strong>{activity.subject}</strong>
-                  <br />
-                  <span style={{ color: "#aaa" }}>
-                    {formatDateTime(activity.activity_date)}
-                  </span>
-                </Link>
-              ) : null;
-            })}
+                  <select
+                    id="company-id"
+                    value={companyId}
+                    onChange={(event) => setCompanyId(event.target.value)}
+                    style={selectStyle}
+                  >
+                    <option value="">Choose a company</option>
+                    {companies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </select>
 
-            <h2 id="linked-posts" style={{ marginTop: "40px" }}>
-              Linked Posts
-            </h2>
+                  <button type="submit" style={primaryButtonStyle}>
+                    Link Company
+                  </button>
+                </div>
+              </form>
 
-            <form onSubmit={linkPost} style={{ marginBottom: "18px" }}>
-              <select
-                value={postId}
-                onChange={(event) => setPostId(event.target.value)}
-                style={inputStyle}
-              >
-                <option value="">Choose a post</option>
-                {posts.map((post) => (
-                  <option key={post.id} value={post.id}>
-                    {post.title}
-                  </option>
-                ))}
-              </select>
+              {linkedCompanies.length === 0 && (
+                <p style={mutedTextStyle}>No companies linked yet.</p>
+              )}
 
-              <button type="submit" style={{ ...buttonStyle, marginTop: "10px" }}>
-                Link Post
-              </button>
-            </form>
+              {linkedCompanies.map((linkedCompany) => {
+                const company = singleRelation(linkedCompany.companies);
 
-            {linkedPosts.length === 0 && (
-              <p style={{ color: "#aaa" }}>No posts linked yet.</p>
-            )}
+                return company ? (
+                  <Link
+                    key={linkedCompany.id}
+                    href={`/companies/${linkedCompany.company_id}`}
+                    style={linkedCardStyle}
+                  >
+                    <strong>{company.name}</strong>
+                  </Link>
+                ) : null;
+              })}
+            </section>
 
-            {linkedPosts.map((linkedPost) => {
-              const post = singleRelation(linkedPost.posts);
+            <section id="linked-contacts" style={sectionStyle}>
+              <div style={sectionHeaderStyle}>
+                <div>
+                  <h2 style={sectionTitleStyle}>Linked Contacts</h2>
+                  <p style={{ ...mutedTextStyle, margin: "6px 0 0" }}>
+                    People who mentioned, own, or are affected by this pain
+                    point.
+                  </p>
+                </div>
+              </div>
 
-              return post ? (
-                <Link
-                  key={linkedPost.id}
-                  href={`/posts/${linkedPost.post_id}`}
-                  style={{ ...cardStyle, display: "block" }}
+              <form onSubmit={linkContact} style={formCardStyle}>
+                <label style={labelStyle} htmlFor="contact-id">
+                  Link a contact
+                </label>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                    gap: "10px",
+                    alignItems: "center",
+                  }}
                 >
-                  <strong>{post.title}</strong>
-                </Link>
-              ) : null;
-            })}
-          </section>
-        </>
-      )}
+                  <select
+                    id="contact-id"
+                    value={contactId}
+                    onChange={(event) => setContactId(event.target.value)}
+                    style={selectStyle}
+                  >
+                    <option value="">Choose a contact</option>
+                    {contacts.map((contact) => (
+                      <option key={contact.id} value={contact.id}>
+                        {contactName(contact)}
+                      </option>
+                    ))}
+                  </select>
+
+                  <button type="submit" style={primaryButtonStyle}>
+                    Link Contact
+                  </button>
+                </div>
+              </form>
+
+              {linkedContacts.length === 0 && (
+                <p style={mutedTextStyle}>No contacts linked yet.</p>
+              )}
+
+              {linkedContacts.map((linkedContact) => {
+                const contact = singleRelation(linkedContact.contacts);
+
+                return contact ? (
+                  <Link
+                    key={linkedContact.id}
+                    href={`/contacts/${linkedContact.contact_id}`}
+                    style={linkedCardStyle}
+                  >
+                    <strong>{contactName(contact)}</strong>
+                  </Link>
+                ) : null;
+              })}
+            </section>
+
+            <section id="linked-activities" style={sectionStyle}>
+              <div style={sectionHeaderStyle}>
+                <div>
+                  <h2 style={sectionTitleStyle}>Linked Activities</h2>
+                  <p style={{ ...mutedTextStyle, margin: "6px 0 0" }}>
+                    Calls, notes, emails, meetings, or other activity tied to
+                    this issue.
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={linkActivity} style={formCardStyle}>
+                <label style={labelStyle} htmlFor="activity-id">
+                  Link an activity
+                </label>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                    gap: "10px",
+                    alignItems: "center",
+                  }}
+                >
+                  <select
+                    id="activity-id"
+                    value={activityId}
+                    onChange={(event) => setActivityId(event.target.value)}
+                    style={selectStyle}
+                  >
+                    <option value="">Choose an activity</option>
+                    {activities.map((activity) => (
+                      <option key={activity.id} value={activity.id}>
+                        {activity.subject}
+                      </option>
+                    ))}
+                  </select>
+
+                  <button type="submit" style={primaryButtonStyle}>
+                    Link Activity
+                  </button>
+                </div>
+              </form>
+
+              {linkedActivities.length === 0 && (
+                <p style={mutedTextStyle}>No activities linked yet.</p>
+              )}
+
+              {linkedActivities.map((linkedActivity) => {
+                const activity = singleRelation(linkedActivity.activities);
+
+                return activity ? (
+                  <Link
+                    key={linkedActivity.id}
+                    href={`/activities/${linkedActivity.activity_id}`}
+                    style={linkedCardStyle}
+                  >
+                    <strong>{activity.subject}</strong>
+                    <br />
+                    <span style={mutedTextStyle}>
+                      {formatDateTime(activity.activity_date)}
+                    </span>
+                  </Link>
+                ) : null;
+              })}
+            </section>
+
+            <section id="linked-posts" style={sectionStyle}>
+              <div style={sectionHeaderStyle}>
+                <div>
+                  <h2 style={sectionTitleStyle}>Linked Posts</h2>
+                  <p style={{ ...mutedTextStyle, margin: "6px 0 0" }}>
+                    Community or social posts connected to this pain point.
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={linkPost} style={formCardStyle}>
+                <label style={labelStyle} htmlFor="post-id">
+                  Link a post
+                </label>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                    gap: "10px",
+                    alignItems: "center",
+                  }}
+                >
+                  <select
+                    id="post-id"
+                    value={postId}
+                    onChange={(event) => setPostId(event.target.value)}
+                    style={selectStyle}
+                  >
+                    <option value="">Choose a post</option>
+                    {posts.map((post) => (
+                      <option key={post.id} value={post.id}>
+                        {post.title}
+                      </option>
+                    ))}
+                  </select>
+
+                  <button type="submit" style={primaryButtonStyle}>
+                    Link Post
+                  </button>
+                </div>
+              </form>
+
+              {linkedPosts.length === 0 && (
+                <p style={mutedTextStyle}>No posts linked yet.</p>
+              )}
+
+              {linkedPosts.map((linkedPost) => {
+                const post = singleRelation(linkedPost.posts);
+
+                return post ? (
+                  <Link
+                    key={linkedPost.id}
+                    href={`/posts/${linkedPost.post_id}`}
+                    style={linkedCardStyle}
+                  >
+                    <strong>{post.title}</strong>
+                  </Link>
+                ) : null;
+              })}
+            </section>
+          </>
+        )}
+      </section>
     </main>
   );
 }
