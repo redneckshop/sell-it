@@ -99,94 +99,25 @@ type AssistantMessage = {
   links?: LinkItem[];
 };
 
-const panelStyle: CSSProperties = {
-  width: "100%",
-  marginTop: "22px",
-  fontFamily: "Arial, sans-serif",
-};
+const panelStyle: CSSProperties = { width: "100%", marginTop: "10px", fontFamily: "inherit" };
 
-const collapsedButtonStyle: CSSProperties = {
-  width: "100%",
-  border: "1px solid rgba(167, 139, 250, 0.28)",
-  borderRadius: "10px",
-  backgroundColor: "rgba(17, 24, 39, 0.86)",
-  color: "white",
-  padding: "10px 11px",
-  fontWeight: 850,
-  cursor: "pointer",
-  textAlign: "left",
-  boxShadow: "0 8px 22px rgba(0,0,0,0.18)",
-};
+const collapsedButtonStyle: CSSProperties = { width: "100%", border: "1px solid rgba(167, 139, 250, 0.32)", borderRadius: "15px", background: "linear-gradient(180deg, rgba(17, 24, 39, 0.82), rgba(12, 12, 14, 0.94))", color: "white", padding: "11px 12px", fontWeight: 900, cursor: "pointer", textAlign: "left", boxShadow: "0 14px 30px rgba(0,0,0,0.22)" };
 
-const expandedStyle: CSSProperties = {
-  border: "1px solid #333",
-  borderRadius: "8px",
-  backgroundColor: "#0d0d0d",
-  color: "white",
-  overflow: "hidden",
-};
+const expandedStyle: CSSProperties = { border: "1px solid rgba(167, 139, 250, 0.25)", borderRadius: "18px", background: "linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(10, 10, 12, 0.96))", color: "white", overflow: "hidden", boxShadow: "0 18px 42px rgba(0,0,0,0.28)" };
 
-const headerStyle: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  gap: "8px",
-  padding: "8px 10px",
-  borderBottom: "1px solid #222",
-  backgroundColor: "transparent",
-};
+const headerStyle: CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", padding: "12px 12px", borderBottom: "1px solid rgba(255,255,255,0.08)", background: "linear-gradient(135deg, rgba(124, 58, 237, 0.20), rgba(59, 130, 246, 0.08))" };
 
-const bodyStyle: CSSProperties = {
-  padding: "8px",
-};
+const bodyStyle: CSSProperties = { padding: "11px" };
 
-const answerAreaStyle: CSSProperties = {
-  maxHeight: "230px",
-  overflowY: "auto",
-  paddingRight: "4px",
-  marginBottom: "8px",
-};
+const answerAreaStyle: CSSProperties = { maxHeight: "245px", overflowY: "auto", paddingRight: "4px", marginBottom: "10px" };
 
-const inputStyle: CSSProperties = {
-  width: "100%",
-  boxSizing: "border-box",
-  borderRadius: "6px",
-  border: "1px solid #555",
-  padding: "8px",
-  fontSize: "13px",
-  color: "black",
-  backgroundColor: "white",
-};
+const inputStyle: CSSProperties = { width: "100%", boxSizing: "border-box", borderRadius: "12px", border: "1px solid rgba(148, 163, 184, 0.24)", padding: "10px 11px", fontSize: "13px", color: "white", backgroundColor: "rgba(15, 23, 42, 0.86)", outline: "none" };
 
-const buttonStyle: CSSProperties = {
-  border: "none",
-  borderRadius: "6px",
-  padding: "8px",
-  fontWeight: "bold",
-  cursor: "pointer",
-  backgroundColor: "#f5d76e",
-  color: "black",
-};
+const buttonStyle: CSSProperties = { border: "1px solid rgba(196, 181, 253, 0.40)", borderRadius: "12px", padding: "10px 12px", fontWeight: 950, cursor: "pointer", background: "linear-gradient(135deg, #8b5cf6, #7c3aed)", color: "white", boxShadow: "0 12px 24px rgba(124, 58, 237, 0.22)" };
 
-const smallButtonStyle: CSSProperties = {
-  border: "none",
-  borderRadius: "4px",
-  padding: "3px 4px",
-  backgroundColor: "transparent",
-  color: "#aaa",
-  cursor: "pointer",
-  fontSize: "12px",
-};
+const smallButtonStyle: CSSProperties = { border: "1px solid rgba(255,255,255,0.10)", borderRadius: "999px", padding: "5px 8px", backgroundColor: "rgba(255,255,255,0.06)", color: "#cbd5e1", cursor: "pointer", fontSize: "11px", fontWeight: 800 };
 
-const messageStyle: CSSProperties = {
-  border: "none",
-  borderRadius: 0,
-  padding: "0 0 9px",
-  marginBottom: "9px",
-  backgroundColor: "transparent",
-  lineHeight: 1.45,
-  whiteSpace: "pre-wrap",
-};
+const messageStyle: CSSProperties = { border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "9px 10px", marginBottom: "9px", backgroundColor: "rgba(255,255,255,0.035)", lineHeight: 1.45, whiteSpace: "pre-wrap" };
 
 function textValue(value: unknown) {
   if (value === null || value === undefined) {
@@ -1523,5 +1454,6 @@ export default function PageAssistant() {
     </div>
   );
 }
+
 
 

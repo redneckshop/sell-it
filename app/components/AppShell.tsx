@@ -163,9 +163,11 @@ const quickAddItems: QuickAddItem[] = [
 
 const shellStyle: CSSProperties = {
   minHeight: "100vh",
-  backgroundColor: "#101010",
+  background:
+    "radial-gradient(circle at top left, rgba(124, 58, 237, 0.16), transparent 28%), #090909",
   color: "white",
-  fontFamily: "Arial, sans-serif",
+  fontFamily:
+    'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif',
 };
 
 const topBarStyle: CSSProperties = {
@@ -176,9 +178,9 @@ const topBarStyle: CSSProperties = {
   display: "flex",
   alignItems: "center",
   gap: "18px",
-  borderBottom: "1px solid #262626",
-  backgroundColor: "rgba(12, 12, 12, 0.96)",
-  backdropFilter: "blur(10px)",
+  borderBottom: "1px solid rgba(255,255,255,0.08)",
+  backgroundColor: "rgba(8, 8, 10, 0.94)",
+  backdropFilter: "blur(14px)",
   padding: "0 22px",
   boxSizing: "border-box",
 };
@@ -195,20 +197,21 @@ const brandStyle: CSSProperties = {
 const logoStyle: CSSProperties = {
   width: "34px",
   height: "34px",
-  borderRadius: "10px",
+  borderRadius: "12px",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  background: "linear-gradient(135deg, #f4c95d, #8b5cf6)",
+  background: "linear-gradient(135deg, #fde68a, #8b5cf6)",
   color: "black",
-  fontWeight: 900,
-  boxShadow: "0 0 24px rgba(139, 92, 246, 0.28)",
+  fontWeight: 950,
+  boxShadow: "0 0 30px rgba(139, 92, 246, 0.32)",
 };
 
 const brandTitleStyle: CSSProperties = {
-  fontWeight: 900,
+  fontWeight: 950,
   lineHeight: 1.05,
   fontSize: "18px",
+  letterSpacing: "-0.02em",
 };
 
 const brandSubtitleStyle: CSSProperties = {
@@ -236,7 +239,7 @@ const topNavLinkBaseStyle: CSSProperties = {
   color: "#cfcfcf",
   textDecoration: "none",
   fontSize: "14px",
-  fontWeight: 800,
+  fontWeight: 850,
   whiteSpace: "nowrap",
   border: "1px solid transparent",
 };
@@ -252,9 +255,10 @@ const iconButtonStyle: CSSProperties = {
   minWidth: "36px",
   height: "36px",
   borderRadius: "999px",
-  border: "1px solid #303030",
-  backgroundColor: "#171717",
-  color: "#ddd",
+  border: "1px solid rgba(255,255,255,0.1)",
+  background:
+    "linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))",
+  color: "#e5e7eb",
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
@@ -270,43 +274,44 @@ const quickAddWrapperStyle: CSSProperties = {
 };
 
 const quickAddButtonStyle: CSSProperties = {
-  minHeight: "36px",
+  minHeight: "38px",
   borderRadius: "999px",
-  border: "1px solid #7c3aed",
-  backgroundColor: "#7c3aed",
+  border: "1px solid rgba(167, 139, 250, 0.72)",
+  background: "linear-gradient(135deg, #8b5cf6, #7c3aed)",
   color: "white",
-  padding: "0 16px",
-  fontWeight: 900,
+  padding: "0 17px",
+  fontWeight: 950,
   cursor: "pointer",
-  boxShadow: "0 12px 24px rgba(124, 58, 237, 0.24)",
+  boxShadow: "0 14px 30px rgba(124, 58, 237, 0.32)",
 };
 
 const quickAddMenuStyle: CSSProperties = {
   position: "absolute",
-  top: "44px",
+  top: "46px",
   right: 0,
-  width: "230px",
-  border: "1px solid #333",
-  borderRadius: "16px",
-  backgroundColor: "#171717",
-  boxShadow: "0 18px 45px rgba(0,0,0,0.45)",
-  padding: "8px",
+  width: "238px",
+  border: "1px solid rgba(255,255,255,0.12)",
+  borderRadius: "18px",
+  background:
+    "linear-gradient(180deg, rgba(23,23,23,0.98), rgba(12,12,14,0.98))",
+  boxShadow: "0 22px 55px rgba(0,0,0,0.58)",
+  padding: "9px",
   zIndex: 100,
 };
 
 const quickAddMenuHeaderStyle: CSSProperties = {
   padding: "8px 10px 10px",
-  borderBottom: "1px solid #2a2a2a",
+  borderBottom: "1px solid rgba(255,255,255,0.08)",
   marginBottom: "6px",
 };
 
 const quickAddMenuTitleStyle: CSSProperties = {
   margin: 0,
-  color: "#a78bfa",
+  color: "#c4b5fd",
   fontSize: "11px",
   textTransform: "uppercase",
-  letterSpacing: "1.4px",
-  fontWeight: 900,
+  letterSpacing: "1.5px",
+  fontWeight: 950,
 };
 
 const quickAddLinkStyle: CSSProperties = {
@@ -316,8 +321,8 @@ const quickAddLinkStyle: CSSProperties = {
   color: "white",
   textDecoration: "none",
   padding: "10px 12px",
-  borderRadius: "10px",
-  fontWeight: 850,
+  borderRadius: "12px",
+  fontWeight: 900,
 };
 
 const layoutStyle: CSSProperties = {
@@ -327,10 +332,11 @@ const layoutStyle: CSSProperties = {
 };
 
 const sidebarStyle: CSSProperties = {
-  width: "235px",
-  minWidth: "235px",
-  borderRight: "1px solid #262626",
-  backgroundColor: "#0c0c0c",
+  width: "265px",
+  minWidth: "265px",
+  borderRight: "1px solid rgba(255,255,255,0.08)",
+  background:
+    "linear-gradient(180deg, rgba(17, 17, 19, 0.98), rgba(8, 8, 10, 0.98))",
   padding: "18px 14px",
   boxSizing: "border-box",
   position: "sticky",
@@ -338,35 +344,46 @@ const sidebarStyle: CSSProperties = {
   alignSelf: "flex-start",
   height: "calc(100vh - 64px)",
   overflowY: "auto",
+  boxShadow: "18px 0 45px rgba(0,0,0,0.22)",
 };
 
 const sectionLabelStyle: CSSProperties = {
-  color: "#858585",
+  color: "#a78bfa",
   textTransform: "uppercase",
-  letterSpacing: "1.6px",
+  letterSpacing: "2px",
   fontSize: "11px",
-  fontWeight: 900,
-  margin: "0 0 10px",
+  fontWeight: 950,
+  margin: "0 0 9px",
 };
 
 const contextDescriptionStyle: CSSProperties = {
-  color: "#a3a3a3",
-  fontSize: "13px",
-  lineHeight: 1.4,
-  margin: "0 0 16px",
+  color: "#cbd5e1",
+  fontSize: "12.5px",
+  lineHeight: 1.45,
+  margin: "0 0 15px",
+};
+
+const sidebarIntroCardStyle: CSSProperties = {
+  border: "1px solid rgba(255,255,255,0.08)",
+  borderRadius: "16px",
+  background:
+    "linear-gradient(180deg, rgba(15, 23, 42, 0.58), rgba(12, 12, 14, 0.7))",
+  padding: "12px",
+  marginBottom: "14px",
+  boxShadow: "0 12px 30px rgba(0,0,0,0.16)",
 };
 
 const sidebarGroupStyle: CSSProperties = {
-  marginTop: "16px",
+  marginTop: "14px",
 };
 
 const sidebarGroupTitleStyle: CSSProperties = {
-  color: "#737373",
+  color: "#8b8b94",
   textTransform: "uppercase",
-  letterSpacing: "1.5px",
-  fontSize: "10px",
-  fontWeight: 900,
-  margin: "0 0 8px",
+  letterSpacing: "1.8px",
+  fontSize: "10.5px",
+  fontWeight: 950,
+  margin: "0 0 8px 2px",
 };
 
 const navLinkBaseStyle: CSSProperties = {
@@ -375,41 +392,43 @@ const navLinkBaseStyle: CSSProperties = {
   justifyContent: "space-between",
   gap: "10px",
   padding: "10px 11px",
-  borderRadius: "10px",
+  borderRadius: "13px",
   textDecoration: "none",
-  fontWeight: 850,
-  marginBottom: "6px",
+  fontWeight: 900,
+  marginBottom: "7px",
   fontSize: "14px",
+  border: "1px solid rgba(148, 163, 184, 0.11)",
+  boxSizing: "border-box",
 };
 
 const navDisabledStyle: CSSProperties = {
   ...navLinkBaseStyle,
-  color: "#666",
-  border: "1px solid #1f1f1f",
-  backgroundColor: "rgba(31,31,31,0.34)",
+  color: "#6b7280",
+  border: "1px solid rgba(255,255,255,0.06)",
+  backgroundColor: "rgba(255,255,255,0.035)",
   cursor: "not-allowed",
 };
 
 const navBadgeStyle: CSSProperties = {
   borderRadius: "999px",
   padding: "3px 7px",
-  backgroundColor: "rgba(124, 58, 237, 0.18)",
-  border: "1px solid rgba(167, 139, 250, 0.22)",
-  color: "#c4b5fd",
+  backgroundColor: "rgba(124, 58, 237, 0.22)",
+  border: "1px solid rgba(167, 139, 250, 0.30)",
+  color: "#ddd6fe",
   fontSize: "10px",
-  fontWeight: 900,
+  fontWeight: 950,
 };
 
 const sidebarFooterStyle: CSSProperties = {
-  marginTop: "20px",
-  paddingTop: "16px",
-  borderTop: "1px solid #262626",
+  marginTop: "18px",
+  paddingTop: "14px",
+  borderTop: "1px solid rgba(255,255,255,0.08)",
 };
 
 const pageAssistantSlotStyle: CSSProperties = {
   marginTop: "18px",
-  paddingTop: "16px",
-  borderTop: "1px solid #262626",
+  paddingTop: "14px",
+  borderTop: "1px solid rgba(255,255,255,0.08)",
 };
 
 const contentStyle: CSSProperties = {
@@ -510,12 +529,32 @@ function getSectionDescription(section: AppSection) {
   }
 }
 
+function sidebarLinkStyle(active: boolean): CSSProperties {
+  if (active) {
+    return {
+      ...navLinkBaseStyle,
+      color: "white",
+      background:
+        "linear-gradient(135deg, rgba(124, 58, 237, 0.95), rgba(59, 130, 246, 0.48))",
+      border: "1px solid rgba(196, 181, 253, 0.42)",
+      boxShadow: "0 14px 30px rgba(124, 58, 237, 0.23)",
+    };
+  }
+
+  return {
+    ...navLinkBaseStyle,
+    color: "#f5f5f5",
+    background:
+      "linear-gradient(180deg, rgba(15, 23, 42, 0.58), rgba(12, 12, 14, 0.72))",
+  };
+}
+
 function renderSidebarItem(item: SidebarItem, pathname: string) {
   const key = `${item.label}-${item.href ?? item.badge ?? "disabled"}`;
 
   if (item.disabled || !item.href) {
     return (
-      <div key={key} style={navDisabledStyle} title={item.description}>
+      <div key={key} title={item.description} style={navDisabledStyle}>
         <span>{item.label}</span>
         {item.badge && <span style={navBadgeStyle}>{item.badge}</span>}
       </div>
@@ -525,22 +564,12 @@ function renderSidebarItem(item: SidebarItem, pathname: string) {
   const active = isActivePath(pathname, item.href);
 
   return (
-    <Link
-      key={key}
-      href={item.href}
-      title={item.description}
-      style={{
-        ...navLinkBaseStyle,
-        color: active ? "#101010" : "white",
-        backgroundColor: active ? "white" : "transparent",
-        border: active ? "1px solid white" : "1px solid transparent",
-      }}
-    >
+    <Link key={key} href={item.href} title={item.description} style={sidebarLinkStyle(active)}>
       <span>{item.label}</span>
       {item.badge ? (
         <span style={navBadgeStyle}>{item.badge}</span>
       ) : active ? (
-        <span>&gt;</span>
+        <span aria-hidden="true">â†’</span>
       ) : null}
     </Link>
   );
@@ -549,6 +578,7 @@ function renderSidebarItem(item: SidebarItem, pathname: string) {
 export default function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const [quickAddOpen, setQuickAddOpen] = useState(false);
+
   const currentSection = getCurrentSection(pathname);
   const sidebarGroups = contextNavGroups[currentSection];
 
@@ -556,14 +586,14 @@ export default function AppShell({ children }: AppShellProps) {
     <div style={shellStyle}>
       <header style={topBarStyle}>
         <Link href="/" style={brandStyle}>
-          <div style={logoStyle}>S</div>
-          <div>
-            <div style={brandTitleStyle}>Sell It</div>
-            <div style={brandSubtitleStyle}>Knotty Logistics</div>
-          </div>
+          <span style={logoStyle}>S</span>
+          <span>
+            <span style={brandTitleStyle}>Sell It</span>
+            <span style={brandSubtitleStyle}>Knotty Logistics</span>
+          </span>
         </Link>
 
-        <nav style={topNavStyle} aria-label="Primary navigation">
+        <nav aria-label="Main sections" style={topNavStyle}>
           {topNavItems.map((item) => {
             const active = currentSection === item.section;
 
@@ -573,10 +603,16 @@ export default function AppShell({ children }: AppShellProps) {
                 href={item.href}
                 style={{
                   ...topNavLinkBaseStyle,
-                  color: active ? "white" : "#cfcfcf",
-                  backgroundColor: active ? "rgba(124, 58, 237, 0.34)" : "transparent",
-                  borderColor: active ? "#7c3aed" : "transparent",
-                  boxShadow: active ? "0 0 0 1px rgba(167,139,250,0.20)" : "none",
+                  color: active ? "white" : "#d1d5db",
+                  background: active
+                    ? "linear-gradient(135deg, rgba(124, 58, 237, 0.85), rgba(76, 29, 149, 0.6))"
+                    : "transparent",
+                  border: active
+                    ? "1px solid rgba(196, 181, 253, 0.45)"
+                    : "1px solid transparent",
+                  boxShadow: active
+                    ? "0 10px 24px rgba(124, 58, 237, 0.20)"
+                    : "none",
                 }}
               >
                 {item.label}
@@ -586,10 +622,10 @@ export default function AppShell({ children }: AppShellProps) {
         </nav>
 
         <div style={topUtilityStyle}>
-          <Link href="/assistant" style={iconButtonStyle} title="Open Assistant">
+          <Link href="/assistant" style={iconButtonStyle}>
             AI
           </Link>
-          <Link href="/planner" style={iconButtonStyle} title="Open Planner">
+          <Link href="/planner" style={iconButtonStyle}>
             Plan
           </Link>
 
@@ -601,7 +637,7 @@ export default function AppShell({ children }: AppShellProps) {
               aria-expanded={quickAddOpen}
               aria-haspopup="menu"
             >
-              + New v
+              + New â–¾
             </button>
 
             {quickAddOpen && (
@@ -619,43 +655,41 @@ export default function AppShell({ children }: AppShellProps) {
                     role="menuitem"
                   >
                     <span>{item.label}</span>
-                    <span>+</span>
+                    <span aria-hidden="true">+</span>
                   </Link>
                 ))}
               </div>
             )}
           </div>
 
-          <div style={iconButtonStyle} title="Current user">
-            CC
-          </div>
+          <span style={iconButtonStyle}>CC</span>
         </div>
       </header>
 
       <div style={layoutStyle}>
         <aside style={sidebarStyle}>
-          <p style={sectionLabelStyle}>{getSectionTitle(currentSection)}</p>
-          <p style={contextDescriptionStyle}>
-            {getSectionDescription(currentSection)}
-          </p>
+          <div style={sidebarIntroCardStyle}>
+            <p style={sectionLabelStyle}>{getSectionTitle(currentSection)}</p>
+            <p style={contextDescriptionStyle}>{getSectionDescription(currentSection)}</p>
+          </div>
 
           {sidebarGroups.map((group) => (
             <div key={group.label} style={sidebarGroupStyle}>
               <p style={sidebarGroupTitleStyle}>{group.label}</p>
-              {group.items.map((item) => renderSidebarItem(item, pathname))}
+              <div>{group.items.map((item) => renderSidebarItem(item, pathname))}</div>
             </div>
           ))}
 
           <div style={sidebarFooterStyle}>
-            <p style={sectionLabelStyle}>Area</p>
+            <p style={sidebarGroupTitleStyle}>Area</p>
             <p style={contextDescriptionStyle}>
-              Top navigation chooses the business area. This sidebar shows the
-              tools that belong to that area.
+              Top navigation chooses the business area. This sidebar shows the tools that
+              belong to that area.
             </p>
           </div>
 
           <div style={pageAssistantSlotStyle}>
-            <p style={sectionLabelStyle}>Page Assistant</p>
+            <p style={sidebarGroupTitleStyle}>Page Assistant</p>
             <PageAssistant />
           </div>
         </aside>
@@ -665,4 +699,3 @@ export default function AppShell({ children }: AppShellProps) {
     </div>
   );
 }
-
