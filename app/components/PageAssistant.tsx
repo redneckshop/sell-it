@@ -107,14 +107,15 @@ const panelStyle: CSSProperties = {
 
 const collapsedButtonStyle: CSSProperties = {
   width: "100%",
-  border: "none",
-  borderRadius: 0,
-  backgroundColor: "transparent",
-  color: "#6bb6ff",
-  padding: "6px 0",
-  fontWeight: "bold",
+  border: "1px solid rgba(167, 139, 250, 0.28)",
+  borderRadius: "10px",
+  backgroundColor: "rgba(17, 24, 39, 0.86)",
+  color: "white",
+  padding: "10px 11px",
+  fontWeight: 850,
   cursor: "pointer",
   textAlign: "left",
+  boxShadow: "0 8px 22px rgba(0,0,0,0.18)",
 };
 
 const expandedStyle: CSSProperties = {
@@ -295,7 +296,7 @@ function inferPageKind(pathname: string): { kind: PageKind; recordId: string } {
 
 function titleForListPage(kind: PageKind) {
   const titles: Record<string, string> = {
-    company: "Company",
+    home: "Command Center", company: "Company",
     companies: "Companies",
     contact: "Contact",
     contacts: "Contacts",
