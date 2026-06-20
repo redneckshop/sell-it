@@ -24,41 +24,6 @@ type TaskDueRow = {
   status: string | null;
   assigned_team_member_id: string | null;
   assigned_to: string | null;
-  created_by: string | null;
-  updated_by: string | null;
-};
-
-type AssignedTaskRow = {
-  id: string;
-  title: string;
-  assigned_team_member_id: string | null;
-  assigned_to: string | null;
-  updated_by: string | null;
-  created_by: string | null;
-};
-
-type StageHistoryRow = {
-  id: string;
-  opportunity_id: string;
-  old_stage: string | null;
-  new_stage: string | null;
-  changed_by: string | null;
-  changed_at: string | null;
-};
-
-type EmailActivityRow = {
-  id: string;
-  subject: string | null;
-  activity_date: string | null;
-  created_by: string | null;
-};
-
-type PainPointRow = {
-  id: string;
-  name: string;
-  category: string | null;
-  created_at: string | null;
-  created_by: string | null;
 };
 
 const wrapperStyle: CSSProperties = {
@@ -237,18 +202,12 @@ function isClosedTask(status: string | null) {
   return normalized === "completed" || normalized === "cancelled";
 }
 
-function actorIsCurrentUser(user: ActingUserSnapshot, actorId: string | null | undefined) {
-  return isActingUserId(user, actorId);
-}
-
-async function seedTaskDueNotifications(user: ActingUserSnapshot) {
+async function seedAssignedDueNotifications(user: ActingUserSnapshot) {
   const today = todayKey();
 
   const { data, error } = await supabase
     .from("tasks")
-    .select(
-      "id, title, due_date, status, assigned_team_member_id, assigned_to, created_by, updated_by"
-    )
+    .select("id, title, due_date, status, assigned_team_member_id, assigned_to")
     .eq("workspace_id", NOTIFICATION_WORKSPACE_ID)
     .lte("due_date", today)
     .limit(100);
@@ -264,11 +223,11 @@ async function seedTaskDueNotifications(user: ActingUserSnapshot) {
       continue;
     }
 
-    const assignedToCurrentUser =
+    const assignedToActingUser =
       isActingUserId(user, task.assigned_team_member_id) ||
       isActingUserId(user, task.assigned_to);
 
-    if (!assignedToCurrentUser) {
+    if (!assignedToActingUser) {
       continue;
     }
 
@@ -293,151 +252,9 @@ async function seedTaskDueNotifications(user: ActingUserSnapshot) {
         task_id: task.id,
         due_date: dueDate,
         status: task.status,
-        source: "Notification Center assigned task scan",
+        source: "Notification Center assigned due task scan",
       },
     });
-  }
-}
-
-async function seedEventNotifications(user: ActingUserSnapshot) {
-  const assignedTasks = await supabase
-    .from("tasks")
-    .select("id, title, assigned_team_member_id, assigned_to, updated_by, created_by")
-    .eq("workspace_id", NOTIFICATION_WORKSPACE_ID)
-    .not("assigned_team_member_id", "is", null)
-    .order("updated_at", { ascending: false })
-    .limit(75);
-
-  if (!assignedTasks.error) {
-    for (const task of (assignedTasks.data ?? []) as AssignedTaskRow[]) {
-      const assignedToCurrentUser =
-        isActingUserId(user, task.assigned_team_member_id) ||
-        isActingUserId(user, task.assigned_to);
-
-      if (!assignedToCurrentUser) continue;
-
-      const actorId = task.updated_by || task.created_by;
-      if (actorIsCurrentUser(user, actorId)) continue;
-
-      await createNotificationOnce({
-        type: "Task Assigned",
-        message: `Task assigned: ${task.title}`,
-        relatedRecordType: "tasks",
-        relatedRecordId: task.id,
-        relatedUrl: `/tasks/${task.id}`,
-        recipientUserId: user.actorUserId,
-        actorUserId: actorId || "system",
-        dedupeKey: `task-assigned:${user.actorUserId}:${task.id}:${task.assigned_team_member_id || task.assigned_to}`,
-        metadata: {
-          task_id: task.id,
-          assigned_team_member_id: task.assigned_team_member_id,
-          assigned_to: task.assigned_to,
-          actor_id: actorId || null,
-          source: "Notification Center acting user scan",
-        },
-      });
-    }
-  } else {
-    console.warn("Task assignment notification scan failed:", assignedTasks.error.message);
-  }
-
-  const stageHistory = await supabase
-    .from("opportunity_stage_history")
-    .select("id, opportunity_id, old_stage, new_stage, changed_by, changed_at")
-    .order("changed_at", { ascending: false })
-    .limit(75);
-
-  if (!stageHistory.error) {
-    for (const history of (stageHistory.data ?? []) as StageHistoryRow[]) {
-      if (actorIsCurrentUser(user, history.changed_by)) continue;
-
-      await createNotificationOnce({
-        type: "Opportunity Stage Changed",
-        message: `Opportunity stage changed: ${history.old_stage || "No previous stage"} -> ${history.new_stage || "No stage"}`,
-        relatedRecordType: "opportunities",
-        relatedRecordId: history.opportunity_id,
-        relatedUrl: `/opportunities/${history.opportunity_id}`,
-        recipientUserId: user.actorUserId,
-        actorUserId: history.changed_by || "system",
-        dedupeKey: `opportunity-stage:${user.actorUserId}:${history.id}`,
-        metadata: {
-          stage_history_id: history.id,
-          opportunity_id: history.opportunity_id,
-          old_stage: history.old_stage,
-          new_stage: history.new_stage,
-          actor_id: history.changed_by || null,
-          source: "Notification Center acting user scan",
-        },
-      });
-    }
-  } else {
-    console.warn("Opportunity stage notification scan failed:", stageHistory.error.message);
-  }
-
-  const emailActivities = await supabase
-    .from("activities")
-    .select("id, subject, activity_date, created_by")
-    .eq("workspace_id", NOTIFICATION_WORKSPACE_ID)
-    .eq("activity_type", "Email")
-    .order("activity_date", { ascending: false })
-    .limit(75);
-
-  if (!emailActivities.error) {
-    for (const activity of (emailActivities.data ?? []) as EmailActivityRow[]) {
-      if (actorIsCurrentUser(user, activity.created_by)) continue;
-
-      await createNotificationOnce({
-        type: "New Email Intelligence Saved",
-        message: `Email Intelligence saved: ${activity.subject || "Email capture"}`,
-        relatedRecordType: "activities",
-        relatedRecordId: activity.id,
-        relatedUrl: `/activities/${activity.id}`,
-        recipientUserId: user.actorUserId,
-        actorUserId: activity.created_by || "system",
-        system: !activity.created_by,
-        dedupeKey: `email-intelligence:${user.actorUserId}:${activity.id}`,
-        metadata: {
-          activity_id: activity.id,
-          actor_id: activity.created_by || null,
-          source: "Notification Center acting user scan",
-        },
-      });
-    }
-  } else {
-    console.warn("Email Intelligence notification scan failed:", emailActivities.error.message);
-  }
-
-  const painPoints = await supabase
-    .from("pain_points")
-    .select("id, name, category, created_at, created_by")
-    .eq("workspace_id", NOTIFICATION_WORKSPACE_ID)
-    .order("created_at", { ascending: false })
-    .limit(75);
-
-  if (!painPoints.error) {
-    for (const painPoint of (painPoints.data ?? []) as PainPointRow[]) {
-      if (actorIsCurrentUser(user, painPoint.created_by)) continue;
-
-      await createNotificationOnce({
-        type: "New Pain Point Created",
-        message: `Pain point created: ${painPoint.name}`,
-        relatedRecordType: "pain_points",
-        relatedRecordId: painPoint.id,
-        relatedUrl: `/pain-points/${painPoint.id}`,
-        recipientUserId: user.actorUserId,
-        actorUserId: painPoint.created_by || "system",
-        system: !painPoint.created_by,
-        dedupeKey: `pain-point-created:${user.actorUserId}:${painPoint.id}`,
-        metadata: {
-          pain_point_id: painPoint.id,
-          category: painPoint.category,
-          actor_id: painPoint.created_by || null,
-          source: "Notification Center acting user scan",
-        },
-      });
-    }
-  } else {
-    console.warn("Pain point notification scan failed:", painPoints.error.message);
   }
 }
 
@@ -457,8 +274,7 @@ export default function NotificationCenter() {
     setErrorMessage("");
 
     try {
-      await seedTaskDueNotifications(user);
-      await seedEventNotifications(user);
+      await seedAssignedDueNotifications(user);
 
       const identityIds = getActingIdentityIds(user);
 
@@ -606,7 +422,7 @@ export default function NotificationCenter() {
               <p style={eyebrowStyle}>Notification Center</p>
               <h2 style={titleStyle}>For {actingUser.displayName}</h2>
               <div style={mutedStyle}>
-                {unreadCount} unread. Bell notifications are attention items for the acting user, not a work log.
+                {unreadCount} unread. Bell notifications are attention items, not a work log.
               </div>
             </div>
 
