@@ -49,6 +49,8 @@ type CreateNotificationInput = {
   relatedRecordId?: string | null;
   relatedUrl?: string | null;
   recipientUserId?: string | null;
+  actorUserId?: string | null;
+  system?: boolean;
   metadata?: Record<string, unknown>;
 };
 
@@ -60,7 +62,23 @@ export function notificationLabel(type: string) {
   return type || "Notification";
 }
 
+function shouldSkipOwnAction(input: CreateNotificationInput) {
+  if (input.system) {
+    return false;
+  }
+
+  if (!input.actorUserId || !input.recipientUserId) {
+    return false;
+  }
+
+  return input.actorUserId === input.recipientUserId;
+}
+
 export async function createNotification(input: CreateNotificationInput) {
+  if (shouldSkipOwnAction(input)) {
+    return;
+  }
+
   const { error } = await supabase.from("notifications").insert({
     workspace_id: NOTIFICATION_WORKSPACE_ID,
     recipient_user_id: input.recipientUserId ?? null,
@@ -69,8 +87,15 @@ export async function createNotification(input: CreateNotificationInput) {
     related_record_type: input.relatedRecordType ?? null,
     related_record_id: input.relatedRecordId ?? null,
     related_url: input.relatedUrl ?? null,
-    metadata: input.metadata ?? {},
-    created_by: NOTIFICATION_USER_ID,
+    metadata: {
+      ...(input.metadata ?? {}),
+      actor_user_id: input.actorUserId ?? null,
+      system: Boolean(input.system),
+    },
+    created_by:
+      input.actorUserId && input.actorUserId !== "system"
+        ? input.actorUserId
+        : NOTIFICATION_USER_ID,
   });
 
   if (error) {

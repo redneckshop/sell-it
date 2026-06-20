@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabase"; import { createNotification } from "../../../lib/notifications";
+import { getCurrentActingUserSnapshot } from "../../../lib/actingUser";
 
 const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
@@ -364,7 +365,7 @@ export default function EditTaskPage() {
         opportunity_id: opportunityId || null,
         completed_at: nextCompletedAt,
         completed_by: nextCompletedBy,
-        updated_by: USER_ID,
+        updated_by: getCurrentActingUserSnapshot().actorUserId,
         updated_at: changedAt,
       })
       .eq("id", taskId);
@@ -614,5 +615,7 @@ export default function EditTaskPage() {
     </main>
   );
 }
+
+
 
 

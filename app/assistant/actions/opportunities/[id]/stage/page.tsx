@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../../../lib/supabase"; import { createNotification } from "../../../../../lib/notifications";
+import { getCurrentActingUserSnapshot } from "../../../../../lib/actingUser";
 
 const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
@@ -157,7 +158,7 @@ export default function AssistantMoveOpportunityStagePage() {
       .from("opportunities")
       .update({
         stage: newStage,
-        updated_by: USER_ID,
+        updated_by: getCurrentActingUserSnapshot().actorUserId,
         updated_at: changedAt,
       })
       .eq("id", opportunityId);
@@ -175,7 +176,7 @@ export default function AssistantMoveOpportunityStagePage() {
         opportunity_id: opportunityId,
         old_stage: oldStage || null,
         new_stage: newStage,
-        changed_by: USER_ID,
+        changed_by: getCurrentActingUserSnapshot().actorUserId,
         changed_at: changedAt,
         notes: "Stage moved from Assistant Action Center.",
       });
@@ -346,5 +347,7 @@ export default function AssistantMoveOpportunityStagePage() {
     </main>
   );
 }
+
+
 
 

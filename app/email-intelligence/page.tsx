@@ -9,6 +9,7 @@ import {
   type FormEvent,
 } from "react";
 import { supabase } from "../lib/supabase"; import { createNotification } from "../lib/notifications";
+import { getCurrentActingUserSnapshot } from "../lib/actingUser";
 
 type EmailSourceType =
   | "Incoming Email"
@@ -567,8 +568,8 @@ export default function EmailIntelligencePage() {
       .insert({
         workspace_id: WORKSPACE_ID,
         name,
-        created_by: USER_ID,
-        updated_by: USER_ID,
+        created_by: getCurrentActingUserSnapshot().actorUserId,
+        updated_by: getCurrentActingUserSnapshot().actorUserId,
       })
       .select("id")
       .single();
@@ -606,8 +607,8 @@ export default function EmailIntelligencePage() {
         last_name: parsedName.lastName || null,
         email: emailAddress || null,
         company_id: companyId || null,
-        created_by: USER_ID,
-        updated_by: USER_ID,
+        created_by: getCurrentActingUserSnapshot().actorUserId,
+        updated_by: getCurrentActingUserSnapshot().actorUserId,
       })
       .select("id")
       .single();
@@ -660,8 +661,8 @@ export default function EmailIntelligencePage() {
             .filter(Boolean)
             .join("\n\n")
         ),
-        created_by: USER_ID,
-        updated_by: USER_ID,
+        created_by: getCurrentActingUserSnapshot().actorUserId,
+        updated_by: getCurrentActingUserSnapshot().actorUserId,
       })
       .select("id")
       .single();
@@ -725,8 +726,8 @@ export default function EmailIntelligencePage() {
         company_id: companyId || null,
         contact_id: contactId || null,
         opportunity_id: opportunityId || null,
-        created_by: USER_ID,
-        updated_by: USER_ID,
+        created_by: getCurrentActingUserSnapshot().actorUserId,
+        updated_by: getCurrentActingUserSnapshot().actorUserId,
       })
       .select("id")
       .single();
@@ -777,8 +778,8 @@ export default function EmailIntelligencePage() {
         contact_id: contactId || null,
         task_id: taskId || null,
         opportunity_id: opportunityId || null,
-        created_by: USER_ID,
-        updated_by: USER_ID,
+        created_by: getCurrentActingUserSnapshot().actorUserId,
+        updated_by: getCurrentActingUserSnapshot().actorUserId,
       })
       .select("id")
       .single();
@@ -1423,6 +1424,8 @@ export default function EmailIntelligencePage() {
     </main>
   );
 }
+
+
 
 
 
