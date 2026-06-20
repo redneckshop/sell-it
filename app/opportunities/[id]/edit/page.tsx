@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabase"; import { createNotification } from "../../../lib/notifications";
-import { getCurrentActingUserSnapshot } from "../../../lib/actingUser";
+import { getCurrentActingUserSnapshot, getDatabaseSafeUserId } from "../../../lib/actingUser";
 
 const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
@@ -311,7 +311,7 @@ export default function EditOpportunityPage() {
         expected_close_date: expectedCloseDate || null,
         next_step: nextStep || null,
         notes: notes || null,
-        updated_by: getCurrentActingUserSnapshot().actorUserId,
+        updated_by: getDatabaseSafeUserId(),
         updated_at: changedAt,
       })
       .eq("id", opportunityId);
@@ -330,7 +330,7 @@ export default function EditOpportunityPage() {
           opportunity_id: opportunityId,
           old_stage: originalStage || null,
           new_stage: stage,
-          changed_by: getCurrentActingUserSnapshot().actorUserId,
+          changed_by: getDatabaseSafeUserId(),
           changed_at: changedAt,
           notes: null,
         });
@@ -619,6 +619,7 @@ export default function EditOpportunityPage() {
     </main>
   );
 }
+
 
 
 

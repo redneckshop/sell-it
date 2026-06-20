@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { supabase } from "../../../lib/supabase"; import { createNotification } from "../../../lib/notifications";
-import { getCurrentActingUserSnapshot } from "../../../lib/actingUser";
+import { supabase } from "../../../lib/supabase"; import { createNotification, createNotificationOnce } from "../../../lib/notifications";
+import { getCurrentActingUserSnapshot, getDatabaseSafeUserId } from "../../../lib/actingUser";
 
 const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
@@ -365,7 +365,7 @@ export default function EditTaskPage() {
         opportunity_id: opportunityId || null,
         completed_at: nextCompletedAt,
         completed_by: nextCompletedBy,
-        updated_by: getCurrentActingUserSnapshot().actorUserId,
+        updated_by: getDatabaseSafeUserId(),
         updated_at: changedAt,
       })
       .eq("id", taskId);
@@ -377,7 +377,35 @@ export default function EditTaskPage() {
       return;
     }
 
-    router.push(`/tasks/${taskId}`);
+    if (assignedTeamMemberId) {
+    const actingUser = getCurrentActingUserSnapshot();
+    const recipientId = selectedTeamMember?.profile_id || selectedTeamMember?.id || null;
+    const actorIsRecipient =
+      recipientId === actingUser.actorUserId ||
+      recipientId === actingUser.profileId ||
+      recipientId === actingUser.teamMemberId;
+
+    if (recipientId && !actorIsRecipient) {
+      await createNotificationOnce({
+        type: "Task Assigned",
+        message: `Task assigned: ${title}`,
+        relatedRecordType: "tasks",
+        relatedRecordId: taskId,
+        relatedUrl: `/tasks/${taskId}`,
+        recipientUserId: recipientId,
+        actorUserId: actingUser.actorUserId,
+        dedupeKey: `task-edit-assigned:${taskId}:${actingUser.actorUserId}:${recipientId}:${assignedTeamMemberId}`,
+        metadata: {
+          task_id: taskId,
+          assigned_team_member_id: assignedTeamMemberId,
+          actor_user_key: actingUser.key,
+          source: "Task Edit Acting User V1",
+        },
+      });
+    }
+  }
+
+  router.push(`/tasks/${taskId}`);
     router.refresh();
   }
 
@@ -615,6 +643,8 @@ export default function EditTaskPage() {
     </main>
   );
 }
+
+
 
 
 

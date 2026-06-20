@@ -121,3 +121,9 @@ export function isActingUserId(
   if (!value) return false;
   return getActingIdentityIds(user).includes(value);
 }
+
+export function getDatabaseSafeUserId(
+  user: ActingUserSnapshot = getCurrentActingUserSnapshot()
+) {
+  return user.profileId || DEFAULT_CHARLES_PROFILE_ID;
+}

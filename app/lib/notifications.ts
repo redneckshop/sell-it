@@ -94,7 +94,7 @@ export async function createNotification(input: CreateNotificationInput) {
     },
     created_by:
       input.actorUserId && input.actorUserId !== "system"
-        ? input.actorUserId
+        ? NOTIFICATION_USER_ID
         : NOTIFICATION_USER_ID,
   });
 
