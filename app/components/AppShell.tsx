@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type CSSProperties, type ReactNode } from "react";
-import PageAssistant from "./PageAssistant";
+import PageAssistant from "./PageAssistant"; import NotificationCenter from "./NotificationCenter";
 
 type AppShellProps = {
   children: ReactNode;
@@ -631,7 +631,7 @@ export default function AppShell({ children }: AppShellProps) {
             Plan
           </Link>
 
-          <div style={quickAddWrapperStyle}>
+          <NotificationCenter /> <div style={quickAddWrapperStyle}>
             <button
               type="button"
               onClick={() => setQuickAddOpen((value) => !value)}
@@ -701,5 +701,6 @@ export default function AppShell({ children }: AppShellProps) {
     </div>
   );
 }
+
 
 

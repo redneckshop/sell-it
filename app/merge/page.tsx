@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../lib/supabase"; import { createNotification } from "../lib/notifications";
 import UniversalDuplicateReview from "./UniversalDuplicateReview";
 
 const MERGE_SLIDE_COMPLETE_VALUE = 100;
@@ -918,6 +918,8 @@ export default function MergeManagerPage() {
     </main>
   );
 }
+
+
 
 
 

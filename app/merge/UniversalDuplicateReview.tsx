@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../lib/supabase"; import { createNotification } from "../lib/notifications";
 
 const MAX_ROWS_PER_TYPE = 150;
 const MAX_CANDIDATES_PER_TYPE = 40;
@@ -1273,3 +1273,5 @@ export default function UniversalDuplicateReview() {
     </section>
   );
 }
+
+

@@ -9,7 +9,7 @@ import {
   type FormEvent,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "../../../../lib/supabase";
+import { supabase } from "../../../../lib/supabase"; import { createNotification } from "../../../../lib/notifications";
 
 const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
@@ -671,6 +671,8 @@ export default function AssistantAssignTaskPage() {
     </Suspense>
   );
 }
+
+
 
 
 

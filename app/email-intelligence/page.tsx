@@ -8,7 +8,7 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from "react";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../lib/supabase"; import { createNotification } from "../lib/notifications";
 
 type EmailSourceType =
   | "Incoming Email"
@@ -1423,6 +1423,8 @@ export default function EmailIntelligencePage() {
     </main>
   );
 }
+
+
 
 
 
