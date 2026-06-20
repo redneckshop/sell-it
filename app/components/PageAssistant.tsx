@@ -1428,9 +1428,7 @@ export default function PageAssistant() {
     }
   }
 
-  if (pathname === "/") {
-    return null;
-  }
+  
 
   if (!isOpen) {
     return (
@@ -1525,4 +1523,5 @@ export default function PageAssistant() {
     </div>
   );
 }
+
 
