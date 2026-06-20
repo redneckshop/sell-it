@@ -118,29 +118,43 @@ const pageStyle: CSSProperties = {
   fontFamily: "Arial, sans-serif",
 };
 
+const shellStyle: CSSProperties = {
+  maxWidth: "1180px",
+  margin: "0 auto",
+};
+
 const actionRowStyle: CSSProperties = {
   display: "flex",
-  gap: "12px",
+  gap: "10px",
   marginBottom: "20px",
   flexWrap: "wrap",
+  alignItems: "center",
 };
 
 const secondaryButtonStyle: CSSProperties = {
-  color: "#f8fafc",
-  background: "rgba(15, 23, 42, 0.74)",
-  border: "1px solid rgba(148, 163, 184, 0.25)",
-  padding: "12px 16px",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: "44px",
+  color: "#e2e8f0",
+  backgroundColor: "rgba(15, 23, 42, 0.82)",
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+  padding: "10px 16px",
   borderRadius: "999px",
   textDecoration: "none",
-  fontWeight: 800,
+  fontWeight: 900,
   cursor: "pointer",
 };
 
 const dangerButtonStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: "44px",
   color: "#fecaca",
-  background: "rgba(127, 29, 29, 0.24)",
-  border: "1px solid rgba(248, 113, 113, 0.35)",
-  padding: "12px 16px",
+  backgroundColor: "rgba(127, 29, 29, 0.28)",
+  border: "1px solid rgba(248, 113, 113, 0.45)",
+  padding: "10px 16px",
   borderRadius: "999px",
   textDecoration: "none",
   fontWeight: 900,
@@ -154,14 +168,13 @@ const disabledDangerButtonStyle: CSSProperties = {
 };
 
 const headerStyle: CSSProperties = {
-  maxWidth: "1080px",
   marginBottom: "24px",
-  border: "1px solid rgba(248, 113, 113, 0.24)",
+  border: "1px solid rgba(248, 113, 113, 0.28)",
   borderRadius: "24px",
   padding: "24px",
   background:
-    "radial-gradient(circle at top left, rgba(239, 68, 68, 0.18), transparent 34%), linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.72))",
-  boxShadow: "0 24px 80px rgba(2, 6, 23, 0.28)",
+    "radial-gradient(circle at top left, rgba(239, 68, 68, 0.20), transparent 34%), linear-gradient(135deg, rgba(30, 41, 59, 0.96), rgba(15, 23, 42, 0.88))",
+  boxShadow: "0 18px 50px rgba(0, 0, 0, 0.22)",
 };
 
 const eyebrowStyle: CSSProperties = {
@@ -169,14 +182,14 @@ const eyebrowStyle: CSSProperties = {
   color: "#fca5a5",
   fontSize: "13px",
   fontWeight: 900,
-  letterSpacing: "0.12em",
+  letterSpacing: "0.08em",
   textTransform: "uppercase",
 };
 
 const titleStyle: CSSProperties = {
   margin: "0 0 10px",
   fontSize: "34px",
-  lineHeight: 1.05,
+  lineHeight: 1.1,
   letterSpacing: "-0.04em",
 };
 
@@ -184,39 +197,38 @@ const mutedTextStyle: CSSProperties = {
   color: "#cbd5e1",
   margin: 0,
   maxWidth: "900px",
-  lineHeight: 1.65,
+  lineHeight: 1.55,
 };
 
 const cardStyle: CSSProperties = {
-  border: "1px solid rgba(148, 163, 184, 0.16)",
-  borderRadius: "20px",
-  padding: "20px",
+  border: "1px solid rgba(148, 163, 184, 0.18)",
+  borderRadius: "22px",
+  padding: "22px",
   background:
-    "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
+    "linear-gradient(135deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.94))",
   marginBottom: "16px",
-  maxWidth: "1080px",
-  boxShadow: "0 20px 70px rgba(2, 6, 23, 0.22)",
+  boxShadow: "0 18px 50px rgba(0, 0, 0, 0.22)",
 };
 
 const warningCardStyle: CSSProperties = {
   ...cardStyle,
-  borderColor: "rgba(245, 158, 11, 0.36)",
+  borderColor: "rgba(245, 158, 11, 0.38)",
   background:
-    "linear-gradient(180deg, rgba(120, 53, 15, 0.35), rgba(15, 23, 42, 0.72))",
+    "linear-gradient(135deg, rgba(120, 53, 15, 0.35), rgba(15, 23, 42, 0.92))",
 };
 
 const dangerCardStyle: CSSProperties = {
   ...cardStyle,
-  borderColor: "rgba(248, 113, 113, 0.4)",
+  borderColor: "rgba(248, 113, 113, 0.42)",
   background:
-    "linear-gradient(180deg, rgba(127, 29, 29, 0.34), rgba(15, 23, 42, 0.72))",
+    "linear-gradient(135deg, rgba(127, 29, 29, 0.36), rgba(15, 23, 42, 0.92))",
 };
 
 const successCardStyle: CSSProperties = {
   ...cardStyle,
   borderColor: "rgba(74, 222, 128, 0.34)",
   background:
-    "linear-gradient(180deg, rgba(20, 83, 45, 0.28), rgba(15, 23, 42, 0.72))",
+    "linear-gradient(135deg, rgba(20, 83, 45, 0.30), rgba(15, 23, 42, 0.92))",
 };
 
 const checkboxRowStyle: CSSProperties = {
@@ -226,16 +238,16 @@ const checkboxRowStyle: CSSProperties = {
   alignItems: "flex-start",
   padding: "12px",
   borderTop: "1px solid rgba(148, 163, 184, 0.14)",
+  backgroundColor: "rgba(15, 23, 42, 0.24)",
 };
 
 const errorStyle: CSSProperties = {
   border: "1px solid rgba(248, 113, 113, 0.36)",
-  background: "rgba(127, 29, 29, 0.22)",
+  backgroundColor: "rgba(127, 29, 29, 0.24)",
   color: "#fecaca",
   padding: "14px",
   borderRadius: "16px",
   marginBottom: "18px",
-  maxWidth: "1080px",
   fontWeight: 800,
 };
 
@@ -791,7 +803,12 @@ export default function DeleteCompanyPage() {
           type="checkbox"
           checked={isChecked(type, id)}
           onChange={() => toggleSelected(type, id)}
-          style={{ width: "18px", height: "18px", marginTop: "2px" }}
+          style={{
+            width: "18px",
+            height: "18px",
+            marginTop: "2px",
+            accentColor: "#f87171",
+          }}
         />
         <span>
           <strong>{title}</strong>
@@ -804,7 +821,8 @@ export default function DeleteCompanyPage() {
 
   return (
     <main style={pageStyle}>
-      <div style={actionRowStyle}>
+      <section style={shellStyle}>
+        <div style={actionRowStyle}>
         <Link href="/companies" style={secondaryButtonStyle}>
           Back to Companies
         </Link>
@@ -1115,6 +1133,7 @@ export default function DeleteCompanyPage() {
           )}
         </>
       )}
+      </section>
     </main>
   );
 }

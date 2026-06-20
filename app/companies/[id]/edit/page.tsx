@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { supabase } from "../../../lib/supabase";
 
 const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
@@ -26,87 +26,58 @@ const pageStyle: CSSProperties = {
   fontFamily: "Arial, sans-serif",
 };
 
-const actionRowStyle: CSSProperties = {
-  display: "flex",
-  gap: "12px",
-  marginBottom: "20px",
-  flexWrap: "wrap",
-};
-
-const secondaryButtonStyle: CSSProperties = {
-  color: "#f8fafc",
-  background: "rgba(15, 23, 42, 0.74)",
-  border: "1px solid rgba(148, 163, 184, 0.25)",
-  padding: "12px 16px",
-  borderRadius: "999px",
-  textDecoration: "none",
-  fontWeight: 800,
-};
-
-const primaryButtonStyle: CSSProperties = {
-  color: "white",
-  background:
-    "linear-gradient(135deg, rgba(124, 58, 237, 1), rgba(99, 102, 241, 1))",
-  border: "1px solid rgba(167, 139, 250, 0.45)",
-  padding: "12px 16px",
-  borderRadius: "999px",
-  textDecoration: "none",
-  fontWeight: 900,
-  cursor: "pointer",
-  boxShadow: "0 16px 36px rgba(79, 70, 229, 0.28)",
-};
-
-const disabledButtonStyle: CSSProperties = {
-  ...primaryButtonStyle,
-  opacity: 0.55,
-  cursor: "not-allowed",
+const shellStyle: CSSProperties = {
+  maxWidth: "1180px",
+  margin: "0 auto",
 };
 
 const headerStyle: CSSProperties = {
-  maxWidth: "980px",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: "18px",
+  flexWrap: "wrap",
   marginBottom: "24px",
-  border: "1px solid rgba(148, 163, 184, 0.16)",
-  borderRadius: "24px",
-  padding: "24px",
-  background:
-    "radial-gradient(circle at top left, rgba(124, 58, 237, 0.22), transparent 34%), linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.72))",
-  boxShadow: "0 24px 80px rgba(2, 6, 23, 0.28)",
 };
 
 const eyebrowStyle: CSSProperties = {
   margin: "0 0 8px",
-  color: "#a78bfa",
+  color: "#c4b5fd",
   fontSize: "13px",
   fontWeight: 900,
-  letterSpacing: "0.12em",
+  letterSpacing: "0.08em",
   textTransform: "uppercase",
 };
 
 const titleStyle: CSSProperties = {
-  margin: "0 0 10px",
+  margin: 0,
   fontSize: "34px",
-  lineHeight: 1.05,
+  lineHeight: 1.1,
   letterSpacing: "-0.04em",
 };
 
-const mutedTextStyle: CSSProperties = {
+const subtitleStyle: CSSProperties = {
+  margin: "10px 0 0",
   color: "#cbd5e1",
-  margin: 0,
-  maxWidth: "860px",
-  lineHeight: 1.65,
+  fontSize: "15px",
+  lineHeight: 1.55,
+  maxWidth: "820px",
 };
 
-const formStyle: CSSProperties = {
+const actionRowStyle: CSSProperties = {
   display: "flex",
-  flexDirection: "column",
-  gap: "18px",
-  maxWidth: "860px",
-  border: "1px solid rgba(148, 163, 184, 0.16)",
-  borderRadius: "20px",
-  padding: "20px",
+  gap: "10px",
+  flexWrap: "wrap",
+  alignItems: "center",
+};
+
+const cardStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.18)",
+  padding: "22px",
+  borderRadius: "22px",
   background:
-    "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
-  boxShadow: "0 20px 70px rgba(2, 6, 23, 0.24)",
+    "linear-gradient(135deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.94))",
+  boxShadow: "0 18px 50px rgba(0, 0, 0, 0.22)",
 };
 
 const inputStyle: CSSProperties = {
@@ -114,28 +85,93 @@ const inputStyle: CSSProperties = {
   width: "100%",
   padding: "12px 14px",
   marginTop: "8px",
-  backgroundColor: "#0f172a",
+  backgroundColor: "rgba(15, 23, 42, 0.9)",
   color: "#f8fafc",
   border: "1px solid rgba(148, 163, 184, 0.28)",
-  borderRadius: "12px",
-  fontSize: "16px",
+  borderRadius: "14px",
+  fontSize: "15px",
   boxSizing: "border-box",
   outline: "none",
 };
 
 const labelStyle: CSSProperties = {
-  color: "#cbd5e1",
+  display: "block",
+  color: "#e2e8f0",
+  fontSize: "14px",
   fontWeight: 800,
+};
+
+const primaryButtonStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: "46px",
+  color: "white",
+  background: "linear-gradient(135deg, #7c3aed, #a855f7)",
+  padding: "12px 18px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 900,
+  border: "1px solid rgba(255, 255, 255, 0.14)",
+  boxShadow: "0 18px 36px rgba(124, 58, 237, 0.24)",
+  cursor: "pointer",
+  fontSize: "15px",
+};
+
+const secondaryButtonStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: "46px",
+  color: "#e2e8f0",
+  backgroundColor: "rgba(15, 23, 42, 0.82)",
+  padding: "12px 18px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 900,
+  border: "1px solid rgba(148, 163, 184, 0.28)",
+  cursor: "pointer",
+  fontSize: "15px",
+};
+
+const disabledStyle: CSSProperties = {
+  opacity: 0.6,
+  cursor: "not-allowed",
+};
+
+const formGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+  gap: "18px",
+};
+
+const formSectionStyle: CSSProperties = {
+  display: "grid",
+  gap: "18px",
 };
 
 const errorStyle: CSSProperties = {
   border: "1px solid rgba(248, 113, 113, 0.36)",
-  background: "rgba(127, 29, 29, 0.22)",
+  backgroundColor: "rgba(127, 29, 29, 0.24)",
   color: "#fecaca",
   padding: "14px",
   borderRadius: "16px",
   marginBottom: "18px",
-  maxWidth: "860px",
+  fontWeight: 800,
+};
+
+const loadingStyle: CSSProperties = {
+  ...cardStyle,
+  color: "#cbd5e1",
+};
+
+const metaStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.14)",
+  borderRadius: "16px",
+  padding: "12px 14px",
+  backgroundColor: "rgba(15, 23, 42, 0.58)",
+  color: "#94a3b8",
+  margin: 0,
 };
 
 export default function EditCompanyPage() {
@@ -228,144 +264,155 @@ export default function EditCompanyPage() {
 
   return (
     <main style={pageStyle}>
-      <div style={actionRowStyle}>
-        <Link href={`/companies/${companyId}`} style={secondaryButtonStyle}>
-          Back to Company
-        </Link>
+      <section style={shellStyle}>
+        <div style={headerStyle}>
+          <div>
+            <p style={eyebrowStyle}>Sales / Companies</p>
+            <h1 style={titleStyle}>Edit Company</h1>
+            <p style={subtitleStyle}>
+              Update company details, lead temperature, operating regions, and
+              truck/equipment profile.
+            </p>
+          </div>
 
-        <Link href="/companies" style={secondaryButtonStyle}>
-          Back to Companies
-        </Link>
-      </div>
-
-      <header style={headerStyle}>
-        <p style={eyebrowStyle}>Company Management</p>
-
-        <h1 style={titleStyle}>Edit Company</h1>
-
-        <p style={mutedTextStyle}>
-          Update company details, lead temperature, operating regions, and
-          truck/equipment profile.
-        </p>
-      </header>
-
-      {loading && (
-        <div style={formStyle}>
-          <p style={{ margin: 0, color: "#cbd5e1" }}>Loading company...</p>
-        </div>
-      )}
-
-      {errorMessage && <div style={errorStyle}>Error: {errorMessage}</div>}
-
-      {!loading && (
-        <form onSubmit={handleSubmit} style={formStyle}>
-          <label style={labelStyle}>
-            Company Name
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              required
-              style={inputStyle}
-            />
-          </label>
-
-          <label style={labelStyle}>
-            Website
-            <input
-              value={website}
-              onChange={(event) => setWebsite(event.target.value)}
-              placeholder="https://example.com"
-              style={inputStyle}
-            />
-          </label>
-
-          <label style={labelStyle}>
-            Phone
-            <input
-              value={phone}
-              onChange={(event) => setPhone(event.target.value)}
-              placeholder="208-555-0000"
-              style={inputStyle}
-            />
-          </label>
-
-          <label style={labelStyle}>
-            Email
-            <input
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="contact@example.com"
-              style={inputStyle}
-            />
-          </label>
-
-          <label style={labelStyle}>
-            Lead Temperature
-            <select
-              value={leadTemperature}
-              onChange={(event) => setLeadTemperature(event.target.value)}
-              style={inputStyle}
-            >
-              <option value="Cold">Cold</option>
-              <option value="Warm">Warm</option>
-              <option value="Hot">Hot</option>
-              <option value="Active">Active</option>
-              <option value="Dead">Dead</option>
-            </select>
-          </label>
-
-          <label style={labelStyle}>
-            Operating Regions
-            <textarea
-              value={operatingRegions}
-              onChange={(event) => setOperatingRegions(event.target.value)}
-              rows={4}
-              placeholder="Example: Idaho, Eastern Washington, North Dakota"
-              style={{
-                ...inputStyle,
-                resize: "vertical",
-                minHeight: "110px",
-              }}
-            />
-          </label>
-
-          <label style={labelStyle}>
-            Assets / Equipment
-            <textarea
-              value={assetsEquipment}
-              onChange={(event) => setAssetsEquipment(event.target.value)}
-              rows={4}
-              placeholder="Example: End dumps, belly dumps, side dumps"
-              style={{
-                ...inputStyle,
-                resize: "vertical",
-                minHeight: "110px",
-              }}
-            />
-          </label>
-
-          <p style={{ color: "#94a3b8", margin: 0 }}>
-            Last Updated:{" "}
-            {lastUpdated
-              ? new Date(lastUpdated).toLocaleString()
-              : "Not available"}
-          </p>
-
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            <button
-              type="submit"
-              disabled={saving}
-              style={saving ? disabledButtonStyle : primaryButtonStyle}
-            >
-              {saving ? "Saving..." : "Save Company"}
-            </button>
-
+          <div style={actionRowStyle}>
             <Link href={`/companies/${companyId}`} style={secondaryButtonStyle}>
-              Cancel
+              Back to Company
+            </Link>
+
+            <Link href="/companies" style={secondaryButtonStyle}>
+              Back to Companies
             </Link>
           </div>
-        </form>
-      )}
+        </div>
+
+        {loading && (
+          <div style={loadingStyle}>
+            <p style={{ margin: 0 }}>Loading company...</p>
+          </div>
+        )}
+
+        {errorMessage && <div style={errorStyle}>Error: {errorMessage}</div>}
+
+        {!loading && (
+          <form onSubmit={handleSubmit} style={cardStyle}>
+            <div style={formSectionStyle}>
+              <label style={labelStyle}>
+                Company Name
+                <input
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  required
+                  style={inputStyle}
+                />
+              </label>
+
+              <div style={formGridStyle}>
+                <label style={labelStyle}>
+                  Website
+                  <input
+                    value={website}
+                    onChange={(event) => setWebsite(event.target.value)}
+                    placeholder="https://example.com"
+                    style={inputStyle}
+                  />
+                </label>
+
+                <label style={labelStyle}>
+                  Phone
+                  <input
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                    placeholder="208-555-0000"
+                    style={inputStyle}
+                  />
+                </label>
+
+                <label style={labelStyle}>
+                  Email
+                  <input
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    placeholder="contact@example.com"
+                    style={inputStyle}
+                  />
+                </label>
+
+                <label style={labelStyle}>
+                  Lead Temperature
+                  <select
+                    value={leadTemperature}
+                    onChange={(event) => setLeadTemperature(event.target.value)}
+                    style={inputStyle}
+                  >
+                    <option value="Cold">Cold</option>
+                    <option value="Warm">Warm</option>
+                    <option value="Hot">Hot</option>
+                    <option value="Active">Active</option>
+                    <option value="Dead">Dead</option>
+                  </select>
+                </label>
+              </div>
+
+              <label style={labelStyle}>
+                Operating Regions
+                <textarea
+                  value={operatingRegions}
+                  onChange={(event) => setOperatingRegions(event.target.value)}
+                  rows={4}
+                  placeholder="Example: Idaho, Eastern Washington, North Dakota"
+                  style={{
+                    ...inputStyle,
+                    resize: "vertical",
+                    minHeight: "120px",
+                    lineHeight: 1.5,
+                  }}
+                />
+              </label>
+
+              <label style={labelStyle}>
+                Assets / Equipment
+                <textarea
+                  value={assetsEquipment}
+                  onChange={(event) => setAssetsEquipment(event.target.value)}
+                  rows={4}
+                  placeholder="Example: End dumps, belly dumps, side dumps"
+                  style={{
+                    ...inputStyle,
+                    resize: "vertical",
+                    minHeight: "120px",
+                    lineHeight: 1.5,
+                  }}
+                />
+              </label>
+
+              <p style={metaStyle}>
+                Last Updated:{" "}
+                {lastUpdated
+                  ? new Date(lastUpdated).toLocaleString()
+                  : "Not available"}
+              </p>
+
+              <div style={actionRowStyle}>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  style={{
+                    ...primaryButtonStyle,
+                    ...(saving ? disabledStyle : {}),
+                  }}
+                >
+                  {saving ? "Saving..." : "Save Company"}
+                </button>
+
+                <Link href={`/companies/${companyId}`} style={secondaryButtonStyle}>
+                  Cancel
+                </Link>
+              </div>
+            </div>
+          </form>
+        )}
+      </section>
     </main>
   );
 }
