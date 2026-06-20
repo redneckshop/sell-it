@@ -98,44 +98,134 @@ type SelectedMap = Record<string, boolean>;
 
 const pageStyle: CSSProperties = {
   minHeight: "100vh",
-  backgroundColor: "#111",
-  color: "white",
-  padding: "40px",
+  color: "#f8fafc",
+  padding: "28px",
   fontFamily: "Arial, sans-serif",
 };
 
-const cardStyle: CSSProperties = {
-  border: "1px solid #333",
-  padding: "18px",
-  borderRadius: "10px",
-  backgroundColor: "#1a1a1a",
-  marginBottom: "16px",
-  maxWidth: "950px",
+const actionRowStyle: CSSProperties = {
+  display: "flex",
+  gap: "12px",
+  marginBottom: "20px",
+  flexWrap: "wrap",
 };
 
-const buttonStyle: CSSProperties = {
-  color: "black",
-  backgroundColor: "white",
-  padding: "10px 14px",
-  borderRadius: "6px",
+const secondaryButtonStyle: CSSProperties = {
+  color: "#f8fafc",
+  background: "rgba(15, 23, 42, 0.74)",
+  border: "1px solid rgba(148, 163, 184, 0.25)",
+  padding: "12px 16px",
+  borderRadius: "999px",
   textDecoration: "none",
-  fontWeight: "bold",
-  border: "none",
+  fontWeight: 800,
   cursor: "pointer",
 };
 
 const dangerButtonStyle: CSSProperties = {
-  ...buttonStyle,
-  backgroundColor: "#ffdddd",
+  color: "#fecaca",
+  background: "rgba(127, 29, 29, 0.24)",
+  border: "1px solid rgba(248, 113, 113, 0.35)",
+  padding: "12px 16px",
+  borderRadius: "999px",
+  textDecoration: "none",
+  fontWeight: 900,
+  cursor: "pointer",
+};
+
+const disabledDangerButtonStyle: CSSProperties = {
+  ...dangerButtonStyle,
+  opacity: 0.45,
+  cursor: "not-allowed",
+};
+
+const headerStyle: CSSProperties = {
+  maxWidth: "1080px",
+  marginBottom: "24px",
+  border: "1px solid rgba(248, 113, 113, 0.24)",
+  borderRadius: "24px",
+  padding: "24px",
+  background:
+    "radial-gradient(circle at top left, rgba(239, 68, 68, 0.18), transparent 34%), linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.72))",
+  boxShadow: "0 24px 80px rgba(2, 6, 23, 0.28)",
+};
+
+const eyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  color: "#fca5a5",
+  fontSize: "13px",
+  fontWeight: 900,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+};
+
+const titleStyle: CSSProperties = {
+  margin: "0 0 10px",
+  fontSize: "34px",
+  lineHeight: 1.05,
+  letterSpacing: "-0.04em",
+};
+
+const mutedTextStyle: CSSProperties = {
+  color: "#cbd5e1",
+  margin: 0,
+  maxWidth: "900px",
+  lineHeight: 1.65,
+};
+
+const cardStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.16)",
+  borderRadius: "20px",
+  padding: "20px",
+  background:
+    "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
+  marginBottom: "16px",
+  maxWidth: "1080px",
+  boxShadow: "0 20px 70px rgba(2, 6, 23, 0.22)",
+};
+
+const warningCardStyle: CSSProperties = {
+  ...cardStyle,
+  borderColor: "rgba(245, 158, 11, 0.36)",
+  background:
+    "linear-gradient(180deg, rgba(120, 53, 15, 0.35), rgba(15, 23, 42, 0.72))",
+};
+
+const dangerCardStyle: CSSProperties = {
+  ...cardStyle,
+  borderColor: "rgba(248, 113, 113, 0.4)",
+  background:
+    "linear-gradient(180deg, rgba(127, 29, 29, 0.34), rgba(15, 23, 42, 0.72))",
+};
+
+const successCardStyle: CSSProperties = {
+  ...cardStyle,
+  borderColor: "rgba(74, 222, 128, 0.34)",
+  background:
+    "linear-gradient(180deg, rgba(20, 83, 45, 0.28), rgba(15, 23, 42, 0.72))",
 };
 
 const checkboxRowStyle: CSSProperties = {
   display: "grid",
   gridTemplateColumns: "28px 1fr",
-  gap: "10px",
+  gap: "12px",
   alignItems: "flex-start",
   padding: "12px",
-  borderTop: "1px solid #333",
+  borderTop: "1px solid rgba(148, 163, 184, 0.14)",
+};
+
+const errorStyle: CSSProperties = {
+  border: "1px solid rgba(248, 113, 113, 0.36)",
+  background: "rgba(127, 29, 29, 0.22)",
+  color: "#fecaca",
+  padding: "14px",
+  borderRadius: "16px",
+  marginBottom: "18px",
+  maxWidth: "1080px",
+  fontWeight: 800,
+};
+
+const emptyTextStyle: CSSProperties = {
+  color: "#94a3b8",
 };
 
 function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
@@ -193,7 +283,9 @@ export default function DeleteContactPage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [painPointRelationships, setPainPointRelationships] = useState<PainPointRelationship[]>([]);
+  const [painPointRelationships, setPainPointRelationships] = useState<
+    PainPointRelationship[]
+  >([]);
   const [selected, setSelected] = useState<SelectedMap>({});
 
   const allKeys = useMemo(() => {
@@ -207,10 +299,21 @@ export default function DeleteContactPage() {
     activities.forEach((row) => keys.push(recordKey("activity", row.id)));
     notes.forEach((row) => keys.push(recordKey("note", row.id)));
     attachments.forEach((row) => keys.push(recordKey("attachment", row.id)));
-    painPointRelationships.forEach((row) => keys.push(recordKey("painPointRelationship", row.id)));
+    painPointRelationships.forEach((row) =>
+      keys.push(recordKey("painPointRelationship", row.id))
+    );
 
     return keys;
-  }, [contact, company, opportunities, tasks, activities, notes, attachments, painPointRelationships]);
+  }, [
+    contact,
+    company,
+    opportunities,
+    tasks,
+    activities,
+    notes,
+    attachments,
+    painPointRelationships,
+  ]);
 
   const selectedCount = countSelected(selected);
 
@@ -313,7 +416,9 @@ export default function DeleteContactPage() {
       setActivities((activityResult.data ?? []) as unknown as Activity[]);
       setNotes((noteResult.data ?? []) as unknown as Note[]);
       setAttachments((attachmentResult.data ?? []) as unknown as Attachment[]);
-      setPainPointRelationships((painPointResult.data ?? []) as unknown as PainPointRelationship[]);
+      setPainPointRelationships(
+        (painPointResult.data ?? []) as unknown as PainPointRelationship[]
+      );
 
       setSelected({
         [recordKey("contact", loadedContact.id)]: true,
@@ -477,7 +582,7 @@ export default function DeleteContactPage() {
         <span>
           <strong>{title}</strong>
           <br />
-          <span style={{ color: "#aaa" }}>{details}</span>
+          <span style={{ color: "#94a3b8" }}>{details}</span>
         </span>
       </label>
     );
@@ -485,68 +590,67 @@ export default function DeleteContactPage() {
 
   return (
     <main style={pageStyle}>
-      <div style={{ display: "flex", gap: "12px", marginBottom: "32px" }}>
-        <Link href="/contacts" style={buttonStyle}>
+      <div style={actionRowStyle}>
+        <Link href="/contacts" style={secondaryButtonStyle}>
           Back to Contacts
         </Link>
 
         {contact && (
-          <Link href={`/contacts/${contact.id}`} style={buttonStyle}>
+          <Link href={`/contacts/${contact.id}`} style={secondaryButtonStyle}>
             Back to Contact
           </Link>
         )}
       </div>
 
-      <h1>Delete Contact Review</h1>
+      <header style={headerStyle}>
+        <p style={eyebrowStyle}>Permanent Delete Review</p>
 
-      <div
-        style={{
-          ...cardStyle,
-          borderColor: "#d6a400",
-          backgroundColor: "#211c0d",
-        }}
-      >
+        <h1 style={titleStyle}>Delete Contact Review</h1>
+
+        <p style={mutedTextStyle}>
+          Review everything connected to this contact before permanent delete.
+          Only checked records are deleted. Unchecked related records are
+          preserved and safely unlinked from the deleted contact when possible.
+        </p>
+      </header>
+
+      <section style={warningCardStyle}>
         <h2 style={{ marginTop: 0 }}>Archive Recommended First</h2>
 
-        <p style={{ color: "#f5d76e", lineHeight: 1.5 }}>
+        <p style={{ color: "#fde68a", lineHeight: 1.6 }}>
           Archive should be the normal workflow for old, inactive, duplicate, or
           uncertain records. Permanent delete remains available, but should be
           reserved for records you are sure should be removed from Sell It.
         </p>
 
         {contact && (
-          <Link href={`/contacts/${contact.id}`} style={buttonStyle}>
+          <Link href={`/contacts/${contact.id}`} style={secondaryButtonStyle}>
             Go Back and Archive Instead
           </Link>
         )}
-      </div>
+      </section>
 
-      <p style={{ color: "#aaa", maxWidth: "850px", lineHeight: 1.5 }}>
-        Review everything connected to this contact before permanently deleting.
-        Only checked records are deleted. Unchecked related records are preserved.
-        If the contact itself is deleted, unchecked related records are safely
-        unlinked from the deleted contact when possible.
-      </p>
-
-      {loading && <p>Loading delete review...</p>}
-
-      {errorMessage && (
-        <p style={{ color: "red", fontWeight: "bold" }}>Error: {errorMessage}</p>
+      {loading && (
+        <section style={cardStyle}>
+          <p style={{ margin: 0, color: "#cbd5e1" }}>Loading delete review...</p>
+        </section>
       )}
 
+      {errorMessage && <div style={errorStyle}>Error: {errorMessage}</div>}
+
       {successMessage && (
-        <div style={{ ...cardStyle, borderColor: "#2f8f2f" }}>
+        <section style={successCardStyle}>
           <h2 style={{ marginTop: 0 }}>Delete Complete</h2>
-          <p style={{ color: "#90ee90" }}>{successMessage}</p>
-          <Link href="/contacts" style={buttonStyle}>
+          <p style={{ color: "#bbf7d0" }}>{successMessage}</p>
+          <Link href="/contacts" style={secondaryButtonStyle}>
             Return to Contacts
           </Link>
-        </div>
+        </section>
       )}
 
       {!loading && contact && !successMessage && (
         <>
-          <div style={cardStyle}>
+          <section style={cardStyle}>
             <h2 style={{ marginTop: 0 }}>Selected Contact</h2>
 
             {renderCheckbox(
@@ -557,9 +661,9 @@ export default function DeleteContactPage() {
                 contact.phone || "None"
               } | Email: ${contact.email || "None"}`
             )}
-          </div>
+          </section>
 
-          <div
+          <section
             style={{
               ...cardStyle,
               display: "flex",
@@ -572,26 +676,26 @@ export default function DeleteContactPage() {
             <div>
               <strong>Total selected:</strong> {selectedCount}
               <br />
-              <span style={{ color: "#aaa" }}>
+              <span style={{ color: "#94a3b8" }}>
                 Default selection is contact only. Related records start unchecked.
               </span>
             </div>
 
             <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-              <button type="button" onClick={selectAll} style={buttonStyle}>
+              <button type="button" onClick={selectAll} style={secondaryButtonStyle}>
                 Select All
               </button>
 
-              <button type="button" onClick={unselectAll} style={buttonStyle}>
+              <button type="button" onClick={unselectAll} style={secondaryButtonStyle}>
                 Unselect All
               </button>
             </div>
-          </div>
+          </section>
 
-          <div style={cardStyle}>
+          <section style={cardStyle}>
             <h2 style={{ marginTop: 0 }}>Company ({company ? 1 : 0})</h2>
 
-            {!company && <p style={{ color: "#aaa" }}>No linked company.</p>}
+            {!company && <p style={emptyTextStyle}>No linked company.</p>}
 
             {company &&
               renderCheckbox(
@@ -600,13 +704,13 @@ export default function DeleteContactPage() {
                 company.name,
                 "Company deletion is optional and unchecked by default."
               )}
-          </div>
+          </section>
 
-          <div style={cardStyle}>
+          <section style={cardStyle}>
             <h2 style={{ marginTop: 0 }}>Opportunities ({opportunities.length})</h2>
 
             {opportunities.length === 0 && (
-              <p style={{ color: "#aaa" }}>No related opportunities.</p>
+              <p style={emptyTextStyle}>No related opportunities.</p>
             )}
 
             {opportunities.map((opportunity) =>
@@ -619,30 +723,30 @@ export default function DeleteContactPage() {
                 }`
               )
             )}
-          </div>
+          </section>
 
-          <div style={cardStyle}>
+          <section style={cardStyle}>
             <h2 style={{ marginTop: 0 }}>Tasks ({tasks.length})</h2>
 
-            {tasks.length === 0 && (
-              <p style={{ color: "#aaa" }}>No related tasks.</p>
-            )}
+            {tasks.length === 0 && <p style={emptyTextStyle}>No related tasks.</p>}
 
             {tasks.map((task) =>
               renderCheckbox(
                 "task",
                 task.id,
                 task.title,
-                `Status: ${task.status || "None"} | Priority: ${task.priority || "None"}`
+                `Status: ${task.status || "None"} | Priority: ${
+                  task.priority || "None"
+                }`
               )
             )}
-          </div>
+          </section>
 
-          <div style={cardStyle}>
+          <section style={cardStyle}>
             <h2 style={{ marginTop: 0 }}>Activities ({activities.length})</h2>
 
             {activities.length === 0 && (
-              <p style={{ color: "#aaa" }}>No related activities.</p>
+              <p style={emptyTextStyle}>No related activities.</p>
             )}
 
             {activities.map((activity) =>
@@ -655,30 +759,30 @@ export default function DeleteContactPage() {
                 )}`
               )
             )}
-          </div>
+          </section>
 
-          <div style={cardStyle}>
+          <section style={cardStyle}>
             <h2 style={{ marginTop: 0 }}>Notes ({notes.length})</h2>
 
-            {notes.length === 0 && (
-              <p style={{ color: "#aaa" }}>No related notes.</p>
-            )}
+            {notes.length === 0 && <p style={emptyTextStyle}>No related notes.</p>}
 
             {notes.map((note) =>
               renderCheckbox(
                 "note",
                 note.id,
                 note.title,
-                `Source: ${note.source || "None"} | Created: ${formatDate(note.created_at)}`
+                `Source: ${note.source || "None"} | Created: ${formatDate(
+                  note.created_at
+                )}`
               )
             )}
-          </div>
+          </section>
 
-          <div style={cardStyle}>
+          <section style={cardStyle}>
             <h2 style={{ marginTop: 0 }}>Attachments ({attachments.length})</h2>
 
             {attachments.length === 0 && (
-              <p style={{ color: "#aaa" }}>No related attachments.</p>
+              <p style={emptyTextStyle}>No related attachments.</p>
             )}
 
             {attachments.map((attachment) =>
@@ -691,15 +795,15 @@ export default function DeleteContactPage() {
                 )}`
               )
             )}
-          </div>
+          </section>
 
-          <div style={cardStyle}>
+          <section style={cardStyle}>
             <h2 style={{ marginTop: 0 }}>
               Pain Point Relationships ({painPointRelationships.length})
             </h2>
 
             {painPointRelationships.length === 0 && (
-              <p style={{ color: "#aaa" }}>No pain point relationships.</p>
+              <p style={emptyTextStyle}>No pain point relationships.</p>
             )}
 
             {painPointRelationships.map((relationship) =>
@@ -710,34 +814,33 @@ export default function DeleteContactPage() {
                 "This removes the relationship link only. It does not delete the pain point record."
               )
             )}
-          </div>
+          </section>
 
-          <div
-            style={{
-              ...cardStyle,
-              borderColor: "#8f2f2f",
-              backgroundColor: "#201111",
-            }}
-          >
+          <section style={dangerCardStyle}>
             <h2 style={{ marginTop: 0 }}>Final Delete Action</h2>
 
             <p>
               Selected records: <strong>{selectedCount}</strong>
             </p>
 
-            <p style={{ color: "#ffb3b3" }}>
-              Permanent delete cannot be undone from inside Sell It. Use Archive first unless you are sure this record should be removed.
+            <p style={{ color: "#fecaca", lineHeight: 1.6 }}>
+              Permanent delete cannot be undone from inside Sell It. Use Archive
+              first unless you are sure this record should be removed.
             </p>
 
             <button
               type="button"
               onClick={() => setConfirming(true)}
               disabled={selectedCount === 0 || deleting}
-              style={dangerButtonStyle}
+              style={
+                selectedCount === 0 || deleting
+                  ? disabledDangerButtonStyle
+                  : dangerButtonStyle
+              }
             >
               Review Final Confirmation
             </button>
-          </div>
+          </section>
 
           {confirming && (
             <div
@@ -749,25 +852,27 @@ export default function DeleteContactPage() {
                 alignItems: "center",
                 justifyContent: "center",
                 padding: "24px",
+                zIndex: 50,
               }}
             >
-              <div
+              <section
                 style={{
-                  ...cardStyle,
+                  ...dangerCardStyle,
                   maxWidth: "560px",
-                  borderColor: "#ff9999",
-                  backgroundColor: "#1a1a1a",
+                  marginBottom: 0,
                 }}
               >
                 <h2 style={{ marginTop: 0 }}>Confirm Delete</h2>
 
                 <p>
-                  You are about to delete or unlink <strong>{selectedCount}</strong>{" "}
-                  selected item(s) for <strong>{formatContactName(contact)}</strong>.
+                  You are about to delete or unlink{" "}
+                  <strong>{selectedCount}</strong> selected item(s) for{" "}
+                  <strong>{formatContactName(contact)}</strong>.
                 </p>
 
-                <p style={{ color: "#ffb3b3" }}>
-                  Company records are not deleted unless their checkbox was selected.
+                <p style={{ color: "#fecaca" }}>
+                  Company records are not deleted unless their checkbox was
+                  selected.
                 </p>
 
                 <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
@@ -775,7 +880,7 @@ export default function DeleteContactPage() {
                     type="button"
                     onClick={handleDeleteSelected}
                     disabled={deleting}
-                    style={dangerButtonStyle}
+                    style={deleting ? disabledDangerButtonStyle : dangerButtonStyle}
                   >
                     {deleting ? "Deleting..." : "Yes, Delete Selected Records"}
                   </button>
@@ -784,12 +889,12 @@ export default function DeleteContactPage() {
                     type="button"
                     onClick={() => setConfirming(false)}
                     disabled={deleting}
-                    style={buttonStyle}
+                    style={secondaryButtonStyle}
                   >
                     Cancel
                   </button>
                 </div>
-              </div>
+              </section>
             </div>
           )}
         </>
