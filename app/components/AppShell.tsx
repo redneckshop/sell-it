@@ -249,7 +249,7 @@ const topUtilityStyle: CSSProperties = {
 };
 
 const iconButtonStyle: CSSProperties = {
-  width: "36px",
+  minWidth: "36px",
   height: "36px",
   borderRadius: "999px",
   border: "1px solid #303030",
@@ -260,6 +260,9 @@ const iconButtonStyle: CSSProperties = {
   justifyContent: "center",
   textDecoration: "none",
   fontWeight: 900,
+  fontSize: "12px",
+  padding: "0 9px",
+  boxSizing: "border-box",
 };
 
 const quickAddWrapperStyle: CSSProperties = {
@@ -403,6 +406,12 @@ const sidebarFooterStyle: CSSProperties = {
   borderTop: "1px solid #262626",
 };
 
+const pageAssistantSlotStyle: CSSProperties = {
+  marginTop: "18px",
+  paddingTop: "16px",
+  borderTop: "1px solid #262626",
+};
+
 const contentStyle: CSSProperties = {
   flex: 1,
   minWidth: 0,
@@ -435,10 +444,6 @@ function getCurrentSection(pathname: string): AppSection {
     return "management";
   }
 
-  if (pathname.startsWith("/capture") || pathname.startsWith("/import")) {
-    return "capture";
-  }
-
   if (
     pathname.startsWith("/communities") ||
     pathname.startsWith("/posts") ||
@@ -447,6 +452,10 @@ function getCurrentSection(pathname: string): AppSection {
     pathname.startsWith("/import-leads")
   ) {
     return "intelligence";
+  }
+
+  if (pathname.startsWith("/capture") || pathname.startsWith("/import")) {
+    return "capture";
   }
 
   if (
@@ -501,14 +510,12 @@ function getSectionDescription(section: AppSection) {
   }
 }
 
-function renderSidebarItem(
-  item: SidebarItem,
-  pathname: string,
-  closeQuickAdd?: () => void
-) {
+function renderSidebarItem(item: SidebarItem, pathname: string) {
+  const key = `${item.label}-${item.href ?? item.badge ?? "disabled"}`;
+
   if (item.disabled || !item.href) {
     return (
-      <div key={item.label} style={navDisabledStyle} title={item.description}>
+      <div key={key} style={navDisabledStyle} title={item.description}>
         <span>{item.label}</span>
         {item.badge && <span style={navBadgeStyle}>{item.badge}</span>}
       </div>
@@ -519,22 +526,21 @@ function renderSidebarItem(
 
   return (
     <Link
-      key={`${item.label}-${item.href}`}
+      key={key}
       href={item.href}
-      onClick={closeQuickAdd}
       title={item.description}
       style={{
         ...navLinkBaseStyle,
-        color: active ? "#0b0b0b" : "white",
-        backgroundColor: active ? "#f5f5f5" : "transparent",
-        border: active ? "1px solid #f5f5f5" : "1px solid transparent",
+        color: active ? "#101010" : "white",
+        backgroundColor: active ? "white" : "transparent",
+        border: active ? "1px solid white" : "1px solid transparent",
       }}
     >
       <span>{item.label}</span>
       {item.badge ? (
         <span style={navBadgeStyle}>{item.badge}</span>
       ) : active ? (
-        <span>â€º</span>
+        <span>&gt;</span>
       ) : null}
     </Link>
   );
@@ -549,15 +555,15 @@ export default function AppShell({ children }: AppShellProps) {
   return (
     <div style={shellStyle}>
       <header style={topBarStyle}>
-        <Link href="/" style={brandStyle} aria-label="Go to Dashboard">
-          <span style={logoStyle}>S</span>
-          <span>
-            <span style={brandTitleStyle}>Sell It</span>
-            <span style={brandSubtitleStyle}>Knotty Logistics</span>
-          </span>
+        <Link href="/" style={brandStyle}>
+          <div style={logoStyle}>S</div>
+          <div>
+            <div style={brandTitleStyle}>Sell It</div>
+            <div style={brandSubtitleStyle}>Knotty Logistics</div>
+          </div>
         </Link>
 
-        <nav aria-label="Primary business areas" style={topNavStyle}>
+        <nav style={topNavStyle} aria-label="Primary navigation">
           {topNavItems.map((item) => {
             const active = currentSection === item.section;
 
@@ -568,13 +574,9 @@ export default function AppShell({ children }: AppShellProps) {
                 style={{
                   ...topNavLinkBaseStyle,
                   color: active ? "white" : "#cfcfcf",
-                  backgroundColor: active
-                    ? "rgba(124, 58, 237, 0.28)"
-                    : "transparent",
+                  backgroundColor: active ? "rgba(124, 58, 237, 0.34)" : "transparent",
                   borderColor: active ? "#7c3aed" : "transparent",
-                  boxShadow: active
-                    ? "0 0 22px rgba(124, 58, 237, 0.22)"
-                    : "none",
+                  boxShadow: active ? "0 0 0 1px rgba(167,139,250,0.20)" : "none",
                 }}
               >
                 {item.label}
@@ -584,12 +586,12 @@ export default function AppShell({ children }: AppShellProps) {
         </nav>
 
         <div style={topUtilityStyle}>
-          <Link href="/" style={iconButtonStyle} title="Search from Dashboard">
-            ðŸ”Ž
+          <Link href="/assistant" style={iconButtonStyle} title="Open Assistant">
+            AI
           </Link>
-          <span style={iconButtonStyle} title="Notifications are future work">
-            ðŸ””
-          </span>
+          <Link href="/planner" style={iconButtonStyle} title="Open Planner">
+            Plan
+          </Link>
 
           <div style={quickAddWrapperStyle}>
             <button
@@ -599,7 +601,7 @@ export default function AppShell({ children }: AppShellProps) {
               aria-expanded={quickAddOpen}
               aria-haspopup="menu"
             >
-              + New â–¾
+              + New v
             </button>
 
             {quickAddOpen && (
@@ -624,16 +626,18 @@ export default function AppShell({ children }: AppShellProps) {
             )}
           </div>
 
-          <span style={iconButtonStyle} title="Charles Charlebois">
+          <div style={iconButtonStyle} title="Current user">
             CC
-          </span>
+          </div>
         </div>
       </header>
 
       <div style={layoutStyle}>
-        <aside style={sidebarStyle} aria-label="Context navigation">
+        <aside style={sidebarStyle}>
           <p style={sectionLabelStyle}>{getSectionTitle(currentSection)}</p>
-          <p style={contextDescriptionStyle}>{getSectionDescription(currentSection)}</p>
+          <p style={contextDescriptionStyle}>
+            {getSectionDescription(currentSection)}
+          </p>
 
           {sidebarGroups.map((group) => (
             <div key={group.label} style={sidebarGroupStyle}>
@@ -645,16 +649,19 @@ export default function AppShell({ children }: AppShellProps) {
           <div style={sidebarFooterStyle}>
             <p style={sectionLabelStyle}>Area</p>
             <p style={contextDescriptionStyle}>
-              Top navigation chooses the business area. This sidebar now shows the
+              Top navigation chooses the business area. This sidebar shows the
               tools that belong to that area.
             </p>
+          </div>
+
+          <div style={pageAssistantSlotStyle}>
+            <p style={sectionLabelStyle}>Page Assistant</p>
+            <PageAssistant />
           </div>
         </aside>
 
         <main style={contentStyle}>{children}</main>
       </div>
-
-      <PageAssistant />
     </div>
   );
 }
