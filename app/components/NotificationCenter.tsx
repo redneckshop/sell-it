@@ -422,7 +422,7 @@ export default function NotificationCenter() {
                     {notification.related_url ? (
                       <Link
                         href={notification.related_url}
-                        onClick={() => void markRead(notification.id)}
+                        onClick={() => { setOpen(false); void markRead(notification.id); }}
                         style={linkStyle}
                       >
                         Open related record
@@ -449,3 +449,4 @@ export default function NotificationCenter() {
     </div>
   );
 }
+
