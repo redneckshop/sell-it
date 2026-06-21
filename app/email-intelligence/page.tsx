@@ -8,8 +8,8 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from "react";
-import { supabase } from "../lib/supabase"; import { createNotification } from "../lib/notifications";
-import { getCurrentActingUserSnapshot, getDatabaseSafeUserId } from "../lib/actingUser";
+import { supabase } from "../lib/supabase";
+import { getDatabaseSafeUserId } from "../lib/actingUser";
 
 type EmailSourceType =
   | "Incoming Email"
@@ -67,15 +67,168 @@ function nullableText(value: string) {
   return cleaned ? cleaned : null;
 }
 
+function isJsonLikeText(value: string) {
+  const cleaned = value.trim();
+
+  if (!cleaned) return false;
+
+  if (
+    (cleaned.startsWith("{") && cleaned.endsWith("}")) ||
+    (cleaned.startsWith("[") && cleaned.endsWith("]"))
+  ) {
+    return true;
+  }
+
+  const lower = cleaned.toLowerCase();
+
+  return (
+    lower.includes("```json") ||
+    (lower.includes('"company"') &&
+      lower.includes('"contact"') &&
+      lower.includes('"opportunity"'))
+  );
+}
+
+function userSafeErrorMessage(value: string, fallback: string) {
+  const cleaned = cleanText(value);
+
+  if (!cleaned || isJsonLikeText(cleaned)) return fallback;
+
+  return cleaned;
+}
+
+function isMeaningfulDetectedText(value: string) {
+  const cleaned = cleanText(value);
+
+  if (!cleaned || isJsonLikeText(cleaned)) return false;
+
+  const lower = cleaned.toLowerCase();
+
+  const exactUnknownValues = new Set([
+    "unknown",
+    "unknown company",
+    "unknown contact",
+    "unknown opportunity",
+    "not detected",
+    "not found",
+    "not provided",
+    "none",
+    "no",
+    "n/a",
+    "na",
+    "null",
+    "undefined",
+    "blank",
+    "empty",
+    "unsure",
+    "unavailable",
+    "no company",
+    "no contact",
+    "no opportunity",
+    "company unknown",
+    "contact unknown",
+    "opportunity unknown",
+  ]);
+
+  if (exactUnknownValues.has(lower)) return false;
+
+  return !(
+    lower.includes("not detected") ||
+    lower.includes("not provided") ||
+    lower.includes("unable to determine") ||
+    lower.includes("could not determine") ||
+    lower.includes("no company detected") ||
+    lower.includes("no contact detected") ||
+    lower.includes("no opportunity detected")
+  );
+}
+
+function safeHumanText(value: string) {
+  const cleaned = value.trim();
+
+  if (!cleaned || isJsonLikeText(cleaned)) return "";
+
+  return cleaned;
+}
+
+function detectedText(value: string) {
+  const cleaned = safeHumanText(value);
+
+  return isMeaningfulDetectedText(cleaned) ? cleaned : "";
+}
+
 function extractEmailAddress(value: string) {
   const match = value.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
 
   return match ? match[0].toLowerCase() : "";
 }
 
-function parseContactName(value: string) {
+function getPrimaryContactSource(input: {
+  sourceType: EmailSourceType;
+  from: string;
+  to: string;
+}) {
+  if (input.sourceType === "Outgoing Email") {
+    return input.to || input.from;
+  }
+
+  return input.from || input.to;
+}
+
+function extractDisplayNameFromAddress(value: string) {
   const withoutEmail = value.replace(/<[^>]+>/g, "").trim();
   const cleaned = cleanText(withoutEmail);
+
+  if (!cleaned) return "";
+
+  const emailAddress = extractEmailAddress(cleaned);
+
+  if (emailAddress && cleaned.toLowerCase() === emailAddress) return "";
+  if (cleaned.includes("@")) return "";
+
+  return detectedText(cleaned);
+}
+
+function titleCase(value: string) {
+  if (!value) return "";
+
+  return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+}
+
+function deriveNameFromEmail(emailAddress: string) {
+  if (!emailAddress) return "";
+
+  const localPart = emailAddress.split("@")[0] || "";
+  const withoutPlus = localPart.split("+")[0] || localPart;
+  const normalized = withoutPlus.replace(/[._-]+/g, " ").trim();
+
+  if (!normalized) return "";
+
+  const genericNames = new Set([
+    "admin",
+    "billing",
+    "contact",
+    "hello",
+    "info",
+    "mail",
+    "no reply",
+    "noreply",
+    "sales",
+    "support",
+    "team",
+  ]);
+
+  if (genericNames.has(normalized.toLowerCase())) return "";
+
+  return normalized
+    .split(" ")
+    .filter(Boolean)
+    .map(titleCase)
+    .join(" ");
+}
+
+function parseContactName(value: string) {
+  const cleaned = cleanText(value);
   const parts = cleaned.split(" ").filter(Boolean);
 
   if (parts.length === 0) {
@@ -101,7 +254,7 @@ function parseContactName(value: string) {
 function splitPainPoints(value: string) {
   return value
     .split(/,|\n/)
-    .map((item) => cleanText(item))
+    .map((item) => detectedText(item))
     .filter(Boolean)
     .slice(0, 12);
 }
@@ -118,6 +271,33 @@ function emailActivityDate(value: string) {
   return parsed.toISOString();
 }
 
+function mapUrgencyToLeadTemperature(value: string) {
+  const lower = value.toLowerCase();
+
+  if (lower.includes("dead") || lower.includes("lost")) return "Dead";
+  if (lower.includes("active")) return "Active";
+  if (
+    lower.includes("urgent") ||
+    lower.includes("high") ||
+    lower.includes("hot")
+  ) {
+    return "Hot";
+  }
+  if (lower.includes("low") || lower.includes("cold")) return "Cold";
+
+  return "Warm";
+}
+
+function mapUrgencyToTaskPriority(value: string) {
+  const lower = value.toLowerCase();
+
+  if (lower.includes("urgent")) return "Urgent";
+  if (lower.includes("high") || lower.includes("hot")) return "High";
+  if (lower.includes("low")) return "Low";
+
+  return "Normal";
+}
+
 const pageStyle: CSSProperties = {
   minHeight: "100vh",
   color: "#f8fafc",
@@ -128,10 +308,6 @@ const pageStyle: CSSProperties = {
 const shellStyle: CSSProperties = {
   maxWidth: "1180px",
   margin: "0 auto",
-};
-
-const navStyle: CSSProperties = {
-  display: "none",
 };
 
 const linkStyle: CSSProperties = {
@@ -220,6 +396,44 @@ const mutedTextStyle: CSSProperties = {
   lineHeight: 1.55,
 };
 
+const detectionGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+  gap: "12px",
+  marginTop: "16px",
+  marginBottom: "18px",
+};
+
+const detectionCardStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.18)",
+  borderRadius: "16px",
+  padding: "14px",
+  backgroundColor: "rgba(15, 23, 42, 0.55)",
+};
+
+const detectionLabelStyle: CSSProperties = {
+  margin: "0 0 6px",
+  color: "#94a3b8",
+  fontSize: "12px",
+  fontWeight: 900,
+  letterSpacing: "0.06em",
+  textTransform: "uppercase",
+};
+
+const detectedValueStyle: CSSProperties = {
+  margin: 0,
+  color: "#f8fafc",
+  fontWeight: 800,
+  lineHeight: 1.35,
+};
+
+const missingValueStyle: CSSProperties = {
+  margin: 0,
+  color: "#fbbf24",
+  fontWeight: 800,
+  lineHeight: 1.35,
+};
+
 function asRecord(value: unknown): Record<string, unknown> {
   if (value && typeof value === "object" && !Array.isArray(value)) {
     return value as Record<string, unknown>;
@@ -237,7 +451,7 @@ function textValue(value: unknown): string {
 
 function firstText(source: Record<string, unknown>, keys: string[]) {
   for (const key of keys) {
-    const value = textValue(source[key]).trim();
+    const value = safeHumanText(textValue(source[key]));
 
     if (value) return value;
   }
@@ -288,6 +502,7 @@ function buildEmailInputText(input: {
     "This is manually pasted or uploaded email content.",
     "Analyze it as an email, not as a generic note.",
     "Extract company, contact, opportunity, task, activity, pain points, urgency, follow-up needed, summary, and suggested next action.",
+    "If company, contact, or opportunity cannot be detected, leave that field blank instead of returning Unknown.",
     "",
     `Email Source Type: ${input.sourceType}`,
     `Mailbox: ${input.mailbox || "[not provided]"}`,
@@ -403,21 +618,46 @@ function extractReviewFromAnalysis(analysis: unknown, fallbackSubject: string) {
   ]);
 
   return {
-    company,
-    contact,
-    opportunity,
-    taskTitle,
-    taskDescription,
-    activitySubject,
-    activitySummary,
-    painPoints,
-    urgency,
+    company: detectedText(company),
+    contact: detectedText(contact),
+    opportunity: detectedText(opportunity),
+    taskTitle: safeHumanText(taskTitle),
+    taskDescription: safeHumanText(taskDescription),
+    activitySubject: safeHumanText(activitySubject || fallbackSubject),
+    activitySummary: safeHumanText(activitySummary),
+    painPoints: safeHumanText(painPoints),
+    urgency: safeHumanText(urgency),
     followUpNeeded: boolValue(data, [
       "follow_up_needed",
       "followUpNeeded",
       "needs_follow_up",
     ]),
-    suggestedNextAction,
+    suggestedNextAction: safeHumanText(suggestedNextAction),
+  };
+}
+
+function normalizeReviewForEmailSource(
+  extractedReview: EmailReview,
+  input: {
+    sourceType: EmailSourceType;
+    from: string;
+    to: string;
+  }
+) {
+  if (input.sourceType !== "Outgoing Email") {
+    return extractedReview;
+  }
+
+  const recipientSource = input.to || input.from;
+  const recipientEmail = extractEmailAddress(recipientSource);
+  const recipientDisplayName =
+    extractDisplayNameFromAddress(recipientSource) ||
+    deriveNameFromEmail(recipientEmail) ||
+    recipientEmail;
+
+  return {
+    ...extractedReview,
+    contact: recipientDisplayName || extractedReview.contact,
   };
 }
 
@@ -429,6 +669,36 @@ function getFileDataUrl(file: File) {
     reader.onerror = () => reject(new Error("Could not read selected file."));
     reader.readAsDataURL(file);
   });
+}
+
+function DetectionCard(props: {
+  label: string;
+  value: string;
+  fallback: string;
+  note?: string;
+}) {
+  const hasValue = isMeaningfulDetectedText(props.value);
+
+  return (
+    <div style={detectionCardStyle}>
+      <p style={detectionLabelStyle}>{props.label}</p>
+      <p style={hasValue ? detectedValueStyle : missingValueStyle}>
+        {hasValue ? cleanText(props.value) : props.fallback}
+      </p>
+      {props.note && (
+        <p
+          style={{
+            margin: "8px 0 0",
+            color: "#cbd5e1",
+            fontSize: "13px",
+            lineHeight: 1.45,
+          }}
+        >
+          {props.note}
+        </p>
+      )}
+    </div>
+  );
 }
 
 export default function EmailIntelligencePage() {
@@ -451,12 +721,19 @@ export default function EmailIntelligencePage() {
 
   const [analyzing, setAnalyzing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [analysis, setAnalysis] = useState<unknown>(null);
+  const [reviewReady, setReviewReady] = useState(false);
   const [review, setReview] = useState<EmailReview>(emptyReview);
 
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [savedRecords, setSavedRecords] = useState<SavedRecords | null>(null);
+
+  const primaryContactSource = getPrimaryContactSource({ sourceType, from, to });
+  const primaryContactEmail = extractEmailAddress(primaryContactSource);
+  const detectedContactNote =
+    !review.contact && primaryContactEmail
+      ? `No contact name was detected. Save can still create or link a contact using ${primaryContactEmail}.`
+      : "";
 
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -486,7 +763,9 @@ export default function EmailIntelligencePage() {
       const message =
         error instanceof Error ? error.message : "Could not read selected file.";
 
-      setErrorMessage(message);
+      setErrorMessage(
+        userSafeErrorMessage(message, "Could not read selected file.")
+      );
     }
   }
 
@@ -497,7 +776,8 @@ export default function EmailIntelligencePage() {
     setErrorMessage("");
     setSaveMessage("");
     setSavedRecords(null);
-    setAnalysis(null);
+    setReviewReady(false);
+    setReview(emptyReview);
 
     const inputText = buildEmailInputText({
       sourceType,
@@ -533,23 +813,31 @@ export default function EmailIntelligencePage() {
       const json = await response.json();
 
       if (!response.ok) {
-        throw new Error(textValue(json.error) || "Email analysis failed.");
+        throw new Error(
+          userSafeErrorMessage(textValue(asRecord(json).error), "Email analysis failed.")
+        );
       }
 
-      setAnalysis(json);
-      setReview(extractReviewFromAnalysis(json, subject));
+      setReview(
+  normalizeReviewForEmailSource(extractReviewFromAnalysis(json, subject), {
+    sourceType,
+    from,
+    to,
+  })
+);
+      setReviewReady(true);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Email analysis failed.";
 
-      setErrorMessage(message);
+      setErrorMessage(userSafeErrorMessage(message, "Email analysis failed."));
     } finally {
       setAnalyzing(false);
     }
   }
 
   async function findOrCreateCompany(companyName: string) {
-    const name = cleanText(companyName);
+    const name = detectedText(companyName);
 
     if (!name) return "";
 
@@ -558,6 +846,7 @@ export default function EmailIntelligencePage() {
       .select("id, name")
       .eq("workspace_id", WORKSPACE_ID)
       .eq("name", name)
+      .limit(1)
       .maybeSingle();
 
     if (existing.error) throw new Error(existing.error.message);
@@ -580,8 +869,16 @@ export default function EmailIntelligencePage() {
   }
 
   async function findOrCreateContact(contactName: string, companyId: string) {
-    const emailAddress = extractEmailAddress(from);
-    const displayName = cleanText(contactName || from || emailAddress);
+    const contactSource = getPrimaryContactSource({ sourceType, from, to });
+    const emailAddress =
+      extractEmailAddress(contactSource) ||
+      extractEmailAddress(from) ||
+      extractEmailAddress(to);
+
+    const explicitName = detectedText(contactName);
+    const sourceDisplayName = extractDisplayNameFromAddress(contactSource);
+    const derivedEmailName = deriveNameFromEmail(emailAddress);
+    const displayName = explicitName || sourceDisplayName || derivedEmailName;
 
     if (!displayName && !emailAddress) return "";
 
@@ -591,13 +888,14 @@ export default function EmailIntelligencePage() {
         .select("id")
         .eq("workspace_id", WORKSPACE_ID)
         .eq("email", emailAddress)
+        .limit(1)
         .maybeSingle();
 
       if (existingByEmail.error) throw new Error(existingByEmail.error.message);
       if (existingByEmail.data?.id) return existingByEmail.data.id as string;
     }
 
-    const parsedName = parseContactName(displayName || emailAddress);
+    const parsedName = parseContactName(displayName || "Unknown");
 
     const created = await supabase
       .from("contacts")
@@ -623,15 +921,16 @@ export default function EmailIntelligencePage() {
     companyId: string,
     contactId: string
   ) {
-    const name = cleanText(opportunityName);
+    const name = detectedText(opportunityName);
 
-    if (!name) return "";
+    if (!name || !companyId) return "";
 
     let query = supabase
       .from("opportunities")
       .select("id")
       .eq("workspace_id", WORKSPACE_ID)
-      .eq("name", name);
+      .eq("name", name)
+      .limit(1);
 
     if (companyId) {
       query = query.eq("company_id", companyId);
@@ -651,7 +950,7 @@ export default function EmailIntelligencePage() {
         primary_contact_id: contactId || null,
         opportunity_type: "Other",
         stage: "New Lead",
-        lead_temperature: review.urgency || "Warm",
+        lead_temperature: mapUrgencyToLeadTemperature(review.urgency),
         next_step: nullableText(review.suggestedNextAction),
         notes: nullableText(
           [
@@ -677,7 +976,7 @@ export default function EmailIntelligencePage() {
     contactId: string,
     opportunityId: string
   ) {
-    const title = cleanText(review.taskTitle);
+    const title = safeHumanText(review.taskTitle);
 
     if (!title) return "";
 
@@ -707,20 +1006,16 @@ export default function EmailIntelligencePage() {
         title,
         description: nullableText(
           [
-            review.taskDescription,
-            review.suggestedNextAction
-              ? `Suggested next action: ${review.suggestedNextAction}`
+            safeHumanText(review.taskDescription),
+            safeHumanText(review.suggestedNextAction)
+              ? `Suggested next action: ${safeHumanText(review.suggestedNextAction)}`
               : "",
             "Source: Email Intelligence",
           ]
             .filter(Boolean)
             .join("\n\n")
         ),
-        priority: review.urgency.toLowerCase().includes("urgent")
-          ? "Urgent"
-          : review.urgency.toLowerCase().includes("high")
-            ? "High"
-            : "Normal",
+        priority: mapUrgencyToTaskPriority(review.urgency),
         status: "Open",
         assigned_to: USER_ID,
         company_id: companyId || null,
@@ -767,10 +1062,10 @@ export default function EmailIntelligencePage() {
         activity_type: "Email",
         activity_date: emailActivityDate(emailDate),
         subject:
-          cleanText(review.activitySubject) ||
+          cleanText(safeHumanText(review.activitySubject)) ||
           cleanText(subject) ||
           "Email Intelligence Capture",
-        summary: nullableText(review.activitySummary),
+        summary: nullableText(safeHumanText(review.activitySummary)),
         raw_notes: rawNotes,
         outcome: review.followUpNeeded ? "Follow-Up Needed" : null,
         follow_up_needed: review.followUpNeeded,
@@ -790,14 +1085,16 @@ export default function EmailIntelligencePage() {
   }
 
   async function findOrCreatePainPoint(name: string) {
-    const cleanName = cleanText(name);
+    const cleanName = detectedText(name);
 
     if (!cleanName) return "";
 
     const existing = await supabase
       .from("pain_points")
       .select("id")
+      .eq("workspace_id", WORKSPACE_ID)
       .eq("name", cleanName)
+      .limit(1)
       .maybeSingle();
 
     if (existing.error) throw new Error(existing.error.message);
@@ -862,7 +1159,10 @@ export default function EmailIntelligencePage() {
     const results = await Promise.all(linkAttempts);
 
     for (const result of results) {
-      if (result.error && !result.error.message.toLowerCase().includes("duplicate")) {
+      if (
+        result.error &&
+        !result.error.message.toLowerCase().includes("duplicate")
+      ) {
         throw new Error(result.error.message);
       }
     }
@@ -956,6 +1256,7 @@ export default function EmailIntelligencePage() {
 
     throw new Error(lastInsertError || "Attachment database save failed.");
   }
+
   async function handleSaveReviewedEmail() {
     setSaving(true);
     setErrorMessage("");
@@ -1000,18 +1301,25 @@ export default function EmailIntelligencePage() {
         attachmentId,
         painPointIds,
       });
+
       setSaveMessage("Email Intelligence save complete.");
       router.refresh();
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Could not save reviewed email.";
 
-      setErrorMessage(message);
+      setErrorMessage(
+        userSafeErrorMessage(message, "Could not save reviewed email.")
+      );
     } finally {
       setSaving(false);
     }
   }
-  function updateReview<K extends keyof EmailReview>(key: K, value: EmailReview[K]) {
+
+  function updateReview<K extends keyof EmailReview>(
+    key: K,
+    value: EmailReview[K]
+  ) {
     setReview((current) => ({
       ...current,
       [key]: value,
@@ -1022,391 +1330,427 @@ export default function EmailIntelligencePage() {
     <main style={pageStyle}>
       <section style={shellStyle}>
         <header style={headerStyle}>
-        <p style={eyebrowStyle}>Capture</p>
+          <p style={eyebrowStyle}>Capture</p>
 
-        <h1 style={titleStyle}>Email Intelligence</h1>
+          <h1 style={titleStyle}>Email Intelligence</h1>
 
-        <p style={mutedTextStyle}>
-          Manual email capture for Sell It. Paste email content, review AI
-          suggestions, and save only after confirmation. This version does not
-          connect to Bluehost, IMAP, SMTP, polling, or email sending.
-        </p>
-      </header>
-
-      <form onSubmit={handleAnalyze} style={cardStyle}>
-        <h2 style={{ marginTop: 0 }}>Manual Email Capture</h2>
-
-        <div style={gridStyle}>
-          <label>
-            Email Source Type
-            <select
-              value={sourceType}
-              onChange={(event) =>
-                setSourceType(event.target.value as EmailSourceType)
-              }
-              style={inputStyle}
-            >
-              <option>Incoming Email</option>
-              <option>Outgoing Email</option>
-              <option>Shared Mailbox Email</option>
-            </select>
-          </label>
-
-          <label>
-            Mailbox
-            <input
-              value={mailbox}
-              onChange={(event) => setMailbox(event.target.value)}
-              placeholder="Example: sales@knottylogistics.com"
-              style={inputStyle}
-            />
-          </label>
-
-          <label>
-            From
-            <input
-              value={from}
-              onChange={(event) => setFrom(event.target.value)}
-              placeholder="sender@example.com"
-              style={inputStyle}
-            />
-          </label>
-
-          <label>
-            To
-            <input
-              value={to}
-              onChange={(event) => setTo(event.target.value)}
-              placeholder="recipient@example.com"
-              style={inputStyle}
-            />
-          </label>
-
-          <label>
-            CC
-            <input
-              value={cc}
-              onChange={(event) => setCc(event.target.value)}
-              placeholder="Optional"
-              style={inputStyle}
-            />
-          </label>
-
-          <label>
-            Date
-            <input
-              type="datetime-local"
-              value={emailDate}
-              onChange={(event) => setEmailDate(event.target.value)}
-              style={inputStyle}
-            />
-          </label>
-        </div>
-
-        <label style={{ display: "block", marginTop: "14px" }}>
-          Subject
-          <input
-            value={subject}
-            onChange={(event) => setSubject(event.target.value)}
-            placeholder="Email subject"
-            style={inputStyle}
-          />
-        </label>
-
-        <label style={{ display: "block", marginTop: "14px" }}>
-          Body / Email Content
-          <textarea
-            value={body}
-            onChange={(event) => setBody(event.target.value)}
-            rows={12}
-            placeholder="Paste the email body, forwarded email, or raw email content here."
-            style={inputStyle}
-          />
-        </label>
-
-        <label style={{ display: "block", marginTop: "14px" }}>
-          Optional Screenshot, PDF, or Email File
-          <input
-            type="file"
-            accept="image/*,.pdf,.txt,.csv,.json,.doc,.docx,.xls,.xlsx"
-            onChange={handleFileChange}
-            style={inputStyle}
-          />
-        </label>
-
-        {fileName && (
-          <p style={{ color: "#aaa" }}>
-            Selected file: {fileName} ({fileMimeType || "unknown type"})
+          <p style={mutedTextStyle}>
+            Manual email capture for Sell It. Paste email content, review AI
+            suggestions, and save only after confirmation. This version does not
+            connect to Bluehost, IMAP, SMTP, polling, or email sending.
           </p>
-        )}
+        </header>
 
-        {errorMessage && <p style={{ color: "red" }}>Error: {errorMessage}</p>}
-
-        <button
-          type="submit"
-          disabled={analyzing}
-          style={{
-            ...buttonStyle,
-            opacity: analyzing ? 0.6 : 1,
-            cursor: analyzing ? "not-allowed" : "pointer",
-          }}
-        >
-          {analyzing ? "Analyzing Email..." : "Analyze Email"}
-        </button>
-      </form>
-
-      {analysis !== null && (
-        <section style={cardStyle}>
-          <h2 style={{ marginTop: 0 }}>Review AI Email Analysis</h2>
-
-          <p style={{ color: "#aaa" }}>
-            Review and edit these fields before saving. No records have been
-            written yet.
-          </p>
+        <form onSubmit={handleAnalyze} style={cardStyle}>
+          <h2 style={{ marginTop: 0 }}>Manual Email Capture</h2>
 
           <div style={gridStyle}>
             <label>
-              Company
-              <input
-                value={review.company}
-                onChange={(event) => updateReview("company", event.target.value)}
-                style={inputStyle}
-              />
-            </label>
-
-            <label>
-              Contact
-              <input
-                value={review.contact}
-                onChange={(event) => updateReview("contact", event.target.value)}
-                style={inputStyle}
-              />
-            </label>
-
-            <label>
-              Opportunity
-              <input
-                value={review.opportunity}
+              Email Source Type
+              <select
+                value={sourceType}
                 onChange={(event) =>
-                  updateReview("opportunity", event.target.value)
+                  setSourceType(event.target.value as EmailSourceType)
                 }
                 style={inputStyle}
+              >
+                <option>Incoming Email</option>
+                <option>Outgoing Email</option>
+                <option>Shared Mailbox Email</option>
+              </select>
+            </label>
+
+            <label>
+              Mailbox
+              <input
+                value={mailbox}
+                onChange={(event) => setMailbox(event.target.value)}
+                placeholder="Example: sales@knottylogistics.com"
+                style={inputStyle}
               />
             </label>
 
             <label>
-              Urgency
+              From
               <input
-                value={review.urgency}
-                onChange={(event) => updateReview("urgency", event.target.value)}
+                value={from}
+                onChange={(event) => setFrom(event.target.value)}
+                placeholder="sender@example.com"
+                style={inputStyle}
+              />
+            </label>
+
+            <label>
+              To
+              <input
+                value={to}
+                onChange={(event) => setTo(event.target.value)}
+                placeholder="recipient@example.com"
+                style={inputStyle}
+              />
+            </label>
+
+            <label>
+              CC
+              <input
+                value={cc}
+                onChange={(event) => setCc(event.target.value)}
+                placeholder="Optional"
+                style={inputStyle}
+              />
+            </label>
+
+            <label>
+              Date
+              <input
+                type="datetime-local"
+                value={emailDate}
+                onChange={(event) => setEmailDate(event.target.value)}
                 style={inputStyle}
               />
             </label>
           </div>
 
           <label style={{ display: "block", marginTop: "14px" }}>
-            Activity Subject
+            Subject
             <input
-              value={review.activitySubject}
-              onChange={(event) =>
-                updateReview("activitySubject", event.target.value)
-              }
+              value={subject}
+              onChange={(event) => setSubject(event.target.value)}
+              placeholder="Email subject"
               style={inputStyle}
             />
           </label>
 
           <label style={{ display: "block", marginTop: "14px" }}>
-            Activity Summary
+            Body / Email Content
             <textarea
-              value={review.activitySummary}
-              onChange={(event) =>
-                updateReview("activitySummary", event.target.value)
-              }
-              rows={4}
+              value={body}
+              onChange={(event) => setBody(event.target.value)}
+              rows={12}
+              placeholder="Paste the email body, forwarded email, or raw email content here."
               style={inputStyle}
             />
           </label>
 
           <label style={{ display: "block", marginTop: "14px" }}>
-            Suggested Task Title
+            Optional Screenshot, PDF, or Email File
             <input
-              value={review.taskTitle}
-              onChange={(event) =>
-                updateReview("taskTitle", event.target.value)
-              }
+              type="file"
+              accept="image/*,.pdf,.txt,.csv,.json,.doc,.docx,.xls,.xlsx"
+              onChange={handleFileChange}
               style={inputStyle}
             />
           </label>
 
-          <label style={{ display: "block", marginTop: "14px" }}>
-            Suggested Task Description
-            <textarea
-              value={review.taskDescription}
-              onChange={(event) =>
-                updateReview("taskDescription", event.target.value)
-              }
-              rows={4}
-              style={inputStyle}
-            />
-          </label>
-
-          <label style={{ display: "block", marginTop: "14px" }}>
-            Pain Points
-            <textarea
-              value={review.painPoints}
-              onChange={(event) =>
-                updateReview("painPoints", event.target.value)
-              }
-              rows={3}
-              style={inputStyle}
-            />
-          </label>
-
-          <label style={{ display: "block", marginTop: "14px" }}>
-            Suggested Next Action
-            <textarea
-              value={review.suggestedNextAction}
-              onChange={(event) =>
-                updateReview("suggestedNextAction", event.target.value)
-              }
-              rows={3}
-              style={inputStyle}
-            />
-          </label>
-
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              marginTop: "14px",
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={review.followUpNeeded}
-              onChange={(event) =>
-                updateReview("followUpNeeded", event.target.checked)
-              }
-            />
-            Follow-up needed
-          </label>
-
-          <button
-            type="button"
-            disabled={saving}
-            onClick={handleSaveReviewedEmail}
-            style={{
-              ...buttonStyle,
-              opacity: saving ? 0.6 : 1,
-              cursor: saving ? "not-allowed" : "pointer",
-            }}
-          >
-            {saving ? "Saving Reviewed Email..." : "Save Reviewed Email"}
-          </button>
-
-          {saveMessage && (
-            <div
-              style={{
-                marginTop: "14px",
-                padding: "12px",
-                borderRadius: "8px",
-                border: "1px solid rgba(34, 197, 94, 0.35)",
-                backgroundColor: "rgba(20, 83, 45, 0.22)",
-                color: "#bbf7d0",
-              }}
-            >
-              <strong>{saveMessage}</strong>
-
-              {savedRecords && (
-                <ul style={{ lineHeight: 1.8, marginBottom: 0 }}>
-                  {savedRecords.companyId && (
-                    <li>
-                      <Link
-                        href={`/companies/${savedRecords.companyId}`}
-                        style={linkStyle}
-                      >
-                        Open Company
-                      </Link>
-                    </li>
-                  )}
-
-                  {savedRecords.contactId && (
-                    <li>
-                      <Link
-                        href={`/contacts/${savedRecords.contactId}`}
-                        style={linkStyle}
-                      >
-                        Open Contact
-                      </Link>
-                    </li>
-                  )}
-
-                  {savedRecords.opportunityId && (
-                    <li>
-                      <Link
-                        href={`/opportunities/${savedRecords.opportunityId}`}
-                        style={linkStyle}
-                      >
-                        Open Opportunity
-                      </Link>
-                    </li>
-                  )}
-
-                  {savedRecords.taskId && (
-                    <li>
-                      <Link href={`/tasks/${savedRecords.taskId}`} style={linkStyle}>
-                        Open Task
-                      </Link>
-                    </li>
-                  )}
-
-                  {savedRecords.activityId && (
-                    <li>
-                      <Link
-                        href={`/activities/${savedRecords.activityId}`}
-                        style={linkStyle}
-                      >
-                        Open Activity
-                      </Link>
-                    </li>
-                  )}
-
-                  {savedRecords.attachmentId && (
-                    <li>Attachment linked to Activity</li>
-                  )}
-
-                  {savedRecords.painPointIds.length > 0 && (
-                    <li>
-                      Pain point links created:{" "}
-                      {savedRecords.painPointIds.length}
-                    </li>
-                  )}
-                </ul>
-              )}
-            </div>
+          {fileName && (
+            <p style={{ color: "#aaa" }}>
+              Selected file: {fileName} ({fileMimeType || "unknown type"})
+            </p>
           )}
 
-          <details style={{ marginTop: "18px" }}>
-            <summary style={{ cursor: "pointer", color: "#8ab4ff" }}>
-              Raw AI result
-            </summary>
+          {errorMessage && <p style={{ color: "#fca5a5" }}>Error: {errorMessage}</p>}
 
-            <pre
+          <button
+            type="submit"
+            disabled={analyzing}
+            style={{
+              ...buttonStyle,
+              opacity: analyzing ? 0.6 : 1,
+              cursor: analyzing ? "not-allowed" : "pointer",
+            }}
+          >
+            {analyzing ? "Analyzing Email..." : "Analyze Email"}
+          </button>
+        </form>
+
+        {reviewReady && (
+          <section style={cardStyle}>
+            <h2 style={{ marginTop: 0 }}>Review AI Email Analysis</h2>
+
+            <p style={{ color: "#aaa", lineHeight: 1.55 }}>
+              Review and edit these fields before saving. Blank or unknown
+              company, contact, and opportunity fields are allowed. No records
+              have been written yet.
+            </p>
+
+            <div style={detectionGridStyle}>
+              <DetectionCard
+                label="Company"
+                value={review.company}
+                fallback="Company unknown"
+              />
+
+              <DetectionCard
+                label="Contact"
+                value={review.contact}
+                fallback={primaryContactEmail ? "Contact name unknown" : "Contact unknown"}
+                note={detectedContactNote}
+              />
+
+              <DetectionCard
+                label="Opportunity"
+                value={review.opportunity}
+                fallback="Opportunity unknown"
+              />
+
+              <DetectionCard
+                label="Activity"
+                value={review.activitySubject || subject}
+                fallback="Email activity will still be created"
+              />
+
+              <DetectionCard
+                label="Task"
+                value={review.taskTitle}
+                fallback="No task suggested"
+              />
+
+              <DetectionCard
+                label="Pain Points"
+                value={review.painPoints}
+                fallback="No pain points detected"
+              />
+            </div>
+
+            <div style={gridStyle}>
+              <label>
+                Company
+                <input
+                  value={review.company}
+                  onChange={(event) => updateReview("company", event.target.value)}
+                  placeholder="Optional. Leave blank if unknown."
+                  style={inputStyle}
+                />
+              </label>
+
+              <label>
+                Contact
+                <input
+                  value={review.contact}
+                  onChange={(event) => updateReview("contact", event.target.value)}
+                  placeholder="Optional. Email address can still be used."
+                  style={inputStyle}
+                />
+              </label>
+
+              <label>
+                Opportunity
+                <input
+                  value={review.opportunity}
+                  onChange={(event) =>
+                    updateReview("opportunity", event.target.value)
+                  }
+                  placeholder="Optional. Leave blank if unknown."
+                  style={inputStyle}
+                />
+              </label>
+
+              <label>
+                Urgency
+                <input
+                  value={review.urgency}
+                  onChange={(event) => updateReview("urgency", event.target.value)}
+                  placeholder="Optional"
+                  style={inputStyle}
+                />
+              </label>
+            </div>
+
+            <label style={{ display: "block", marginTop: "14px" }}>
+              Activity Subject
+              <input
+                value={review.activitySubject}
+                onChange={(event) =>
+                  updateReview("activitySubject", event.target.value)
+                }
+                placeholder="Optional. Falls back to email subject."
+                style={inputStyle}
+              />
+            </label>
+
+            <label style={{ display: "block", marginTop: "14px" }}>
+              Activity Summary
+              <textarea
+                value={review.activitySummary}
+                onChange={(event) =>
+                  updateReview("activitySummary", event.target.value)
+                }
+                rows={4}
+                placeholder="Human-readable summary only."
+                style={inputStyle}
+              />
+            </label>
+
+            <label style={{ display: "block", marginTop: "14px" }}>
+              Suggested Task Title
+              <input
+                value={review.taskTitle}
+                onChange={(event) => updateReview("taskTitle", event.target.value)}
+                placeholder="Optional. Leave blank to skip task creation."
+                style={inputStyle}
+              />
+            </label>
+
+            <label style={{ display: "block", marginTop: "14px" }}>
+              Suggested Task Description
+              <textarea
+                value={review.taskDescription}
+                onChange={(event) =>
+                  updateReview("taskDescription", event.target.value)
+                }
+                rows={4}
+                placeholder="Optional"
+                style={inputStyle}
+              />
+            </label>
+
+            <label style={{ display: "block", marginTop: "14px" }}>
+              Pain Points
+              <textarea
+                value={review.painPoints}
+                onChange={(event) => updateReview("painPoints", event.target.value)}
+                rows={3}
+                placeholder="Optional. Separate multiple pain points with commas or new lines."
+                style={inputStyle}
+              />
+            </label>
+
+            <label style={{ display: "block", marginTop: "14px" }}>
+              Suggested Next Action
+              <textarea
+                value={review.suggestedNextAction}
+                onChange={(event) =>
+                  updateReview("suggestedNextAction", event.target.value)
+                }
+                rows={3}
+                placeholder="Optional"
+                style={inputStyle}
+              />
+            </label>
+
+            <label
               style={{
-                whiteSpace: "pre-wrap",
-                backgroundColor: "#0f172a",
-                border: "1px solid rgba(148, 163, 184, 0.22)",
-                borderRadius: "12px",
-                padding: "12px",
-                overflowX: "auto",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                marginTop: "14px",
               }}
             >
-              {JSON.stringify(analysis, null, 2)}
-            </pre>
-          </details>
-        </section>
-      )}
+              <input
+                type="checkbox"
+                checked={review.followUpNeeded}
+                onChange={(event) =>
+                  updateReview("followUpNeeded", event.target.checked)
+                }
+              />
+              Follow-up needed
+            </label>
+
+            <button
+              type="button"
+              disabled={saving}
+              onClick={handleSaveReviewedEmail}
+              style={{
+                ...buttonStyle,
+                opacity: saving ? 0.6 : 1,
+                cursor: saving ? "not-allowed" : "pointer",
+              }}
+            >
+              {saving ? "Saving Reviewed Email..." : "Save Reviewed Email"}
+            </button>
+
+            {saveMessage && (
+              <div
+                style={{
+                  marginTop: "14px",
+                  padding: "12px",
+                  borderRadius: "8px",
+                  border: "1px solid rgba(34, 197, 94, 0.35)",
+                  backgroundColor: "rgba(20, 83, 45, 0.22)",
+                  color: "#bbf7d0",
+                }}
+              >
+                <strong>{saveMessage}</strong>
+
+                {savedRecords && (
+                  <ul style={{ lineHeight: 1.8, marginBottom: 0 }}>
+                    {savedRecords.companyId ? (
+                      <li>
+                        <Link
+                          href={`/companies/${savedRecords.companyId}`}
+                          style={linkStyle}
+                        >
+                          Open Company
+                        </Link>
+                      </li>
+                    ) : (
+                      <li>Company not detected — skipped safely.</li>
+                    )}
+
+                    {savedRecords.contactId ? (
+                      <li>
+                        <Link
+                          href={`/contacts/${savedRecords.contactId}`}
+                          style={linkStyle}
+                        >
+                          Open Contact
+                        </Link>
+                      </li>
+                    ) : (
+                      <li>Contact not detected — skipped safely.</li>
+                    )}
+
+                    {savedRecords.opportunityId ? (
+                      <li>
+                        <Link
+                          href={`/opportunities/${savedRecords.opportunityId}`}
+                          style={linkStyle}
+                        >
+                          Open Opportunity
+                        </Link>
+                      </li>
+                    ) : (
+                      <li>Opportunity not detected — skipped safely.</li>
+                    )}
+
+                    {savedRecords.taskId ? (
+                      <li>
+                        <Link href={`/tasks/${savedRecords.taskId}`} style={linkStyle}>
+                          Open Task
+                        </Link>
+                      </li>
+                    ) : (
+                      <li>No task suggested — skipped safely.</li>
+                    )}
+
+                    {savedRecords.activityId && (
+                      <li>
+                        <Link
+                          href={`/activities/${savedRecords.activityId}`}
+                          style={linkStyle}
+                        >
+                          Open Activity
+                        </Link>
+                      </li>
+                    )}
+
+                    {savedRecords.attachmentId && (
+                      <li>Attachment linked to Activity</li>
+                    )}
+
+                    {savedRecords.painPointIds.length > 0 ? (
+                      <li>
+                        Pain point links created: {savedRecords.painPointIds.length}
+                      </li>
+                    ) : (
+                      <li>No pain points detected — skipped safely.</li>
+                    )}
+                  </ul>
+                )}
+              </div>
+            )}
+          </section>
+        )}
 
         <section style={cardStyle}>
           <h2 style={{ marginTop: 0 }}>Safety Rules</h2>
@@ -1418,25 +1762,11 @@ export default function EmailIntelligencePage() {
             <li>No inbox polling.</li>
             <li>No silent writes.</li>
             <li>Review before save.</li>
+            <li>No raw AI JSON shown to normal users.</li>
+            <li>Company, contact, and opportunity are optional.</li>
           </ul>
         </section>
       </section>
     </main>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
