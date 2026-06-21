@@ -355,12 +355,32 @@ export default function EditTaskPage() {
       ? completedBy || databaseSafeUserId
       : null;
 
+    const { data: currentTaskBeforeSave, error: currentTaskLoadError } =
+      await supabase
+        .from("tasks")
+        .select("assigned_to, assigned_team_member_id")
+        .eq("id", taskId)
+        .single();
+
+    if (currentTaskLoadError) {
+      setSaving(false);
+      setErrorMessage(currentTaskLoadError.message);
+      return;
+    }
+
+    const priorAssignedTo =
+      currentTaskBeforeSave?.assigned_to || originalAssignedTo || "";
+    const priorAssignedTeamMemberId =
+      currentTaskBeforeSave?.assigned_team_member_id ||
+      originalAssignedTeamMemberId ||
+      "";
+
     const selectedTeamMember = teamMembers.find(
       (member) => member.id === assignedTeamMemberId
     );
 
     const previousTeamMember = teamMembers.find(
-      (member) => member.id === originalAssignedTeamMemberId
+      (member) => member.id === priorAssignedTeamMemberId
     );
 
     const nextAssignedTo = selectedTeamMember?.profile_id || assignedTo || null;
@@ -368,7 +388,7 @@ export default function EditTaskPage() {
     const previousRecipientId =
       previousTeamMember?.profile_id ||
       previousTeamMember?.id ||
-      originalAssignedTo ||
+      priorAssignedTo ||
       null;
 
     const newRecipientId =
@@ -378,8 +398,8 @@ export default function EditTaskPage() {
       null;
 
     const assignmentChanged =
-      (originalAssignedTeamMemberId || "") !== (assignedTeamMemberId || "") ||
-      (originalAssignedTo || "") !== (nextAssignedTo || "");
+      (priorAssignedTeamMemberId || "") !== (assignedTeamMemberId || "") ||
+      (priorAssignedTo || "") !== (nextAssignedTo || "");
 
     const { error } = await supabase
       .from("tasks")
@@ -459,7 +479,7 @@ export default function EditTaskPage() {
           metadata: {
             task_id: taskId,
             previous_assigned_team_member_id:
-              originalAssignedTeamMemberId || null,
+              priorAssignedTeamMemberId || null,
             new_assigned_team_member_id: assignedTeamMemberId || null,
             actor_user_key: actingUser.key,
             source: "Task Edit Reassignment V1",
@@ -706,6 +726,7 @@ export default function EditTaskPage() {
     </main>
   );
 }
+
 
 
 
