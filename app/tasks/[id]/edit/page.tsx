@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { supabase } from "../../../lib/supabase"; import { createNotification, createNotificationOnce } from "../../../lib/notifications";
+import { supabase } from "../../../lib/supabase";
+import { createNotificationOnce } from "../../../lib/notifications";
 import { getCurrentActingUserSnapshot, getDatabaseSafeUserId } from "../../../lib/actingUser";
 
 const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
@@ -221,6 +222,9 @@ export default function EditTaskPage() {
   const [completedBy, setCompletedBy] = useState<string | null>(null);
   const [assignedTo, setAssignedTo] = useState("");
   const [assignedTeamMemberId, setAssignedTeamMemberId] = useState("");
+  const [originalAssignedTo, setOriginalAssignedTo] = useState("");
+  const [originalAssignedTeamMemberId, setOriginalAssignedTeamMemberId] =
+    useState("");
   const [companyId, setCompanyId] = useState("");
   const [contactId, setContactId] = useState("");
   const [opportunityId, setOpportunityId] = useState("");
@@ -342,13 +346,40 @@ export default function EditTaskPage() {
     setErrorMessage("");
 
     const changedAt = new Date().toISOString();
+    const actingUser = getCurrentActingUserSnapshot();
+    const databaseSafeUserId = getDatabaseSafeUserId(actingUser);
+
     const isCompleted = status === "Completed";
     const nextCompletedAt = isCompleted ? completedAt || changedAt : null;
-    const nextCompletedBy = isCompleted ? completedBy || USER_ID : null;
+    const nextCompletedBy = isCompleted
+      ? completedBy || databaseSafeUserId
+      : null;
 
     const selectedTeamMember = teamMembers.find(
       (member) => member.id === assignedTeamMemberId
     );
+
+    const previousTeamMember = teamMembers.find(
+      (member) => member.id === originalAssignedTeamMemberId
+    );
+
+    const nextAssignedTo = selectedTeamMember?.profile_id || assignedTo || null;
+
+    const previousRecipientId =
+      previousTeamMember?.profile_id ||
+      previousTeamMember?.id ||
+      originalAssignedTo ||
+      null;
+
+    const newRecipientId =
+      selectedTeamMember?.profile_id ||
+      selectedTeamMember?.id ||
+      nextAssignedTo ||
+      null;
+
+    const assignmentChanged =
+      (originalAssignedTeamMemberId || "") !== (assignedTeamMemberId || "") ||
+      (originalAssignedTo || "") !== (nextAssignedTo || "");
 
     const { error } = await supabase
       .from("tasks")
@@ -358,57 +389,89 @@ export default function EditTaskPage() {
         due_date: dueDate || null,
         priority,
         status,
-        assigned_to: selectedTeamMember?.profile_id || assignedTo || null,
+        assigned_to: nextAssignedTo,
         assigned_team_member_id: assignedTeamMemberId || null,
         company_id: companyId || null,
         contact_id: contactId || null,
         opportunity_id: opportunityId || null,
         completed_at: nextCompletedAt,
         completed_by: nextCompletedBy,
-        updated_by: getDatabaseSafeUserId(),
+        updated_by: databaseSafeUserId,
         updated_at: changedAt,
       })
       .eq("id", taskId);
 
-    setSaving(false);
-
     if (error) {
+      setSaving(false);
       setErrorMessage(error.message);
       return;
     }
 
-    if (assignedTeamMemberId) {
-    const actingUser = getCurrentActingUserSnapshot();
-    const recipientId = selectedTeamMember?.profile_id || selectedTeamMember?.id || null;
-    const actorIsRecipient =
-      recipientId === actingUser.actorUserId ||
-      recipientId === actingUser.profileId ||
-      recipientId === actingUser.teamMemberId;
+    function actorMatchesRecipient(recipientId: string | null) {
+      if (!recipientId) return false;
 
-    if (recipientId && !actorIsRecipient) {
-      await createNotificationOnce({
-        type: "Task Assigned",
-        message: `Task assigned: ${title}`,
-        relatedRecordType: "tasks",
-        relatedRecordId: taskId,
-        relatedUrl: `/tasks/${taskId}`,
-        recipientUserId: recipientId,
-        actorUserId: actingUser.actorUserId,
-        dedupeKey: `task-edit-assigned:${taskId}:${actingUser.actorUserId}:${recipientId}:${assignedTeamMemberId}`,
-        metadata: {
-          task_id: taskId,
-          assigned_team_member_id: assignedTeamMemberId,
-          actor_user_key: actingUser.key,
-          source: "Task Edit Acting User V1",
-        },
-      });
+      return (
+        recipientId === actingUser.actorUserId ||
+        recipientId === actingUser.profileId ||
+        recipientId === actingUser.teamMemberId
+      );
     }
-  }
 
-  router.push(`/tasks/${taskId}`);
+    if (assignmentChanged) {
+      const newAssigneeName =
+        selectedTeamMember?.display_name ||
+        selectedTeamMember?.email ||
+        "Unassigned";
+
+      if (newRecipientId && !actorMatchesRecipient(newRecipientId)) {
+        await createNotificationOnce({
+          type: "Task Assigned",
+          message: `Task assigned to you: ${title}`,
+          relatedRecordType: "tasks",
+          relatedRecordId: taskId,
+          relatedUrl: `/tasks/${taskId}`,
+          recipientUserId: newRecipientId,
+          actorUserId: actingUser.actorUserId,
+          dedupeKey: `task-assigned-to:${taskId}:${actingUser.actorUserId}:${newRecipientId}:${changedAt}`,
+          metadata: {
+            task_id: taskId,
+            assigned_team_member_id: assignedTeamMemberId || null,
+            actor_user_key: actingUser.key,
+            source: "Task Edit Reassignment V1",
+          },
+        });
+      }
+
+      if (
+        previousRecipientId &&
+        previousRecipientId !== newRecipientId &&
+        !actorMatchesRecipient(previousRecipientId)
+      ) {
+        await createNotificationOnce({
+          type: "Task Assigned",
+          message: `Task reassigned from you: ${title} is now assigned to ${newAssigneeName}`,
+          relatedRecordType: "tasks",
+          relatedRecordId: taskId,
+          relatedUrl: `/tasks/${taskId}`,
+          recipientUserId: previousRecipientId,
+          actorUserId: actingUser.actorUserId,
+          dedupeKey: `task-reassigned-from:${taskId}:${actingUser.actorUserId}:${previousRecipientId}:${newRecipientId || "unassigned"}:${changedAt}`,
+          metadata: {
+            task_id: taskId,
+            previous_assigned_team_member_id:
+              originalAssignedTeamMemberId || null,
+            new_assigned_team_member_id: assignedTeamMemberId || null,
+            actor_user_key: actingUser.key,
+            source: "Task Edit Reassignment V1",
+          },
+        });
+      }
+    }
+
+    setSaving(false);
+    router.push(`/tasks/${taskId}`);
     router.refresh();
   }
-
   const filteredContacts = companyId
     ? contacts.filter(
         (contact) => contact.company_id === companyId || contact.company_id === null
@@ -643,6 +706,7 @@ export default function EditTaskPage() {
     </main>
   );
 }
+
 
 
 
