@@ -5,6 +5,7 @@ import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../../../lib/supabase";
 import { getCurrentActingUserSnapshot, getDatabaseSafeUserId } from "../../../../../lib/actingUser";
+import { createWorkLogEntry } from "../../../../../lib/workLog";
 
 const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
@@ -231,14 +232,16 @@ export default function AssistantCompleteTaskPage() {
     setSuccessMessage("");
 
     const changedAt = new Date().toISOString();
+    const actingUser = getCurrentActingUserSnapshot();
+    const databaseSafeUserId = getDatabaseSafeUserId(actingUser);
 
     const { error: statusError } = await supabase
       .from("tasks")
       .update({
         status: "Completed",
         completed_at: changedAt,
-        completed_by: getDatabaseSafeUserId(),
-        updated_by: getDatabaseSafeUserId(),
+        completed_by: databaseSafeUserId,
+        updated_by: databaseSafeUserId,
         updated_at: changedAt,
       })
       .eq("id", taskId);
@@ -253,15 +256,32 @@ export default function AssistantCompleteTaskPage() {
       .from("tasks")
       .update({
         completed_at: changedAt,
-        completed_by: getDatabaseSafeUserId(),
+        completed_by: databaseSafeUserId,
       })
       .eq("id", taskId);
+
+    await createWorkLogEntry({
+      actingUser,
+      actionType: "task_completion",
+      entityType: "task",
+      entityId: taskId,
+      entityLabel: task.title,
+      summary: `${actingUser.displayName} completed task "${task.title}".`,
+      details: "Task status changed to Completed from the Assistant complete action.",
+      metadata: {
+        source: "Task Complete Assistant Work Log V1",
+        previous_status: task.status,
+        new_status: "Completed",
+        completed_at: changedAt,
+        completed_by: databaseSafeUserId,
+      },
+    });
 
     setTask({
       ...task,
       status: "Completed",
       completed_at: changedAt,
-      completed_by: getDatabaseSafeUserId(),
+      completed_by: databaseSafeUserId,
       updated_at: changedAt,
     });
 
@@ -441,5 +461,8 @@ export default function AssistantCompleteTaskPage() {
     </main>
   );
 }
+
+
+
 
 

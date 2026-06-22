@@ -5,6 +5,7 @@ import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../../../lib/supabase"; import { createNotification } from "../../../../../lib/notifications";
 import { getCurrentActingUserSnapshot, getDatabaseSafeUserId } from "../../../../../lib/actingUser";
+import { createWorkLogEntry } from "../../../../../lib/workLog";
 
 const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
@@ -153,12 +154,14 @@ export default function AssistantMoveOpportunityStagePage() {
     setSuccessMessage("");
 
     const changedAt = new Date().toISOString();
+    const actingUser = getCurrentActingUserSnapshot();
+    const databaseSafeUserId = getDatabaseSafeUserId(actingUser);
 
     const { error: updateError } = await supabase
       .from("opportunities")
       .update({
         stage: newStage,
-        updated_by: getDatabaseSafeUserId(),
+        updated_by: databaseSafeUserId,
         updated_at: changedAt,
       })
       .eq("id", opportunityId);
@@ -176,7 +179,7 @@ export default function AssistantMoveOpportunityStagePage() {
         opportunity_id: opportunityId,
         old_stage: oldStage || null,
         new_stage: newStage,
-        changed_by: getDatabaseSafeUserId(),
+        changed_by: databaseSafeUserId,
         changed_at: changedAt,
         notes: "Stage moved from Assistant Action Center.",
       });
@@ -189,6 +192,23 @@ export default function AssistantMoveOpportunityStagePage() {
       router.refresh();
       return;
     }
+
+    await createWorkLogEntry({
+      actingUser,
+      actionType: "opportunity_stage_change",
+      entityType: "opportunity",
+      entityId: opportunityId,
+      entityLabel: opportunity.name,
+      summary: `${actingUser.displayName} moved opportunity "${opportunity.name}" from "${oldStage}" to "${newStage}".`,
+      details: "Opportunity stage changed from the Assistant stage action.",
+      metadata: {
+        source: "Assistant Opportunity Stage Work Log V1",
+        previous_stage: oldStage || null,
+        new_stage: newStage,
+        changed_at: changedAt,
+        changed_by: databaseSafeUserId,
+      },
+    });
 
     setOpportunity({
       ...opportunity,
@@ -347,6 +367,9 @@ export default function AssistantMoveOpportunityStagePage() {
     </main>
   );
 }
+
+
+
 
 
 

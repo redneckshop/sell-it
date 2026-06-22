@@ -5,6 +5,7 @@ import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabase"; import { createNotification } from "../../../lib/notifications";
 import { getCurrentActingUserSnapshot, getDatabaseSafeUserId } from "../../../lib/actingUser";
+import { createWorkLogEntry } from "../../../lib/workLog";
 
 const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
@@ -286,6 +287,8 @@ export default function EditOpportunityPage() {
     setErrorMessage("");
 
     const changedAt = new Date().toISOString();
+    const actingUser = getCurrentActingUserSnapshot();
+    const databaseSafeUserId = getDatabaseSafeUserId(actingUser);
     const shouldRecordStageHistory =
       workspaceId && stagesAreDifferent(originalStage, stage);
 
@@ -311,7 +314,7 @@ export default function EditOpportunityPage() {
         expected_close_date: expectedCloseDate || null,
         next_step: nextStep || null,
         notes: notes || null,
-        updated_by: getDatabaseSafeUserId(),
+        updated_by: databaseSafeUserId,
         updated_at: changedAt,
       })
       .eq("id", opportunityId);
@@ -330,7 +333,7 @@ export default function EditOpportunityPage() {
           opportunity_id: opportunityId,
           old_stage: originalStage || null,
           new_stage: stage,
-          changed_by: getDatabaseSafeUserId(),
+          changed_by: databaseSafeUserId,
           changed_at: changedAt,
           notes: null,
         });
@@ -342,6 +345,23 @@ export default function EditOpportunityPage() {
         );
         return;
       }
+
+      await createWorkLogEntry({
+        actingUser,
+        actionType: "opportunity_stage_change",
+        entityType: "opportunity",
+        entityId: opportunityId,
+        entityLabel: name,
+        summary: `${actingUser.displayName} moved opportunity "${name}" from "${originalStage}" to "${stage}".`,
+        details: "Opportunity stage changed from the opportunity edit page.",
+        metadata: {
+          source: "Opportunity Edit Stage Work Log V1",
+          previous_stage: originalStage || null,
+          new_stage: stage,
+          changed_at: changedAt,
+          changed_by: databaseSafeUserId,
+        },
+      });
     }
 
     setSaving(false);
@@ -619,6 +639,9 @@ export default function EditOpportunityPage() {
     </main>
   );
 }
+
+
+
 
 
 

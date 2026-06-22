@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useMemo, useState, type CSSProperties, type FormEvent } from "react";
 import { supabase } from "../lib/supabase";
+import { getCurrentActingUserSnapshot } from "../lib/actingUser";
+import { createWorkLogEntry } from "../lib/workLog";
 
 const WORKSPACE_ID = "ba491d9b-3b36-426d-b98a-f05b0bf271ed";
 const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
@@ -832,6 +834,29 @@ export default function ImportLeadsPage() {
         )
       );
 
+      const actingUser = getCurrentActingUserSnapshot();
+
+      await createWorkLogEntry({
+        actingUser,
+        actionType: "import_leads_save",
+        entityType: "import_leads",
+        entityId: null,
+        entityLabel: searchInput || "Import Leads Save",
+        summary: `${actingUser.displayName} saved Import Leads results (${createdCount} created, ${updatedCount} updated).`,
+        details: `Search: ${searchInput || "Not provided"}. Selected: ${selectedLeads.length}. Lead temperature: ${leadTemperature}.`,
+        metadata: {
+          source: "Import Leads Save Work Log V1",
+          search_input: searchInput || null,
+          selected_count: selectedLeads.length,
+          created_count: createdCount,
+          updated_count: updatedCount,
+          lead_temperature: leadTemperature,
+          saved_lead_names: selectedLeads.map((lead) => lead.name),
+          saved_place_ids: selectedLeads.map((lead) => lead.placeId).filter(Boolean),
+          save_modes: selectedLeads.map((lead) => lead.saveMode),
+        },
+      });
+
       setSuccessMessage(
         `Created ${createdCount} company lead(s). Updated ${updatedCount} existing company record(s).`
       );
@@ -1269,3 +1294,4 @@ export default function ImportLeadsPage() {
     </main>
   );
 }
+

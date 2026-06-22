@@ -9,6 +9,8 @@ import {
   type ChangeEvent,
 } from "react";
 import { supabase } from "../lib/supabase";
+import { getCurrentActingUserSnapshot } from "../lib/actingUser";
+import { createWorkLogEntry } from "../lib/workLog";
 
 const WORKSPACE_ID = "ba491d9b-3b36-426d-b98a-f05b0bf271ed";
 const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
@@ -796,6 +798,39 @@ export default function ImportPage() {
         throw new Error(historyError.message);
       }
 
+      const actingUser = getCurrentActingUserSnapshot();
+      const importTypeLabel =
+        importType === "companies_only"
+          ? "Companies Only"
+          : "Companies + Contacts";
+      const duplicateHandlingLabel =
+        duplicateHandling === "skip_existing"
+          ? "Skip Existing"
+          : duplicateHandling === "update_existing"
+            ? "Update Existing"
+            : "Create Duplicate";
+
+      await createWorkLogEntry({
+        actingUser,
+        actionType: "csv_import_run",
+        entityType: "csv_import",
+        entityId: attachmentId,
+        entityLabel: selectedFile.name,
+        summary: `${actingUser.displayName} ran CSV Import for "${selectedFile.name}" (${rowsImported} imported, ${rowsSkipped} skipped).`,
+        details: `Import type: ${importTypeLabel}. Duplicate handling: ${duplicateHandlingLabel}. Total rows: ${rows.length}.`,
+        metadata: {
+          source: "CSV Import Run Work Log V1",
+          file_name: selectedFile.name,
+          attachment_id: attachmentId,
+          import_type: importTypeLabel,
+          duplicate_handling: duplicateHandlingLabel,
+          row_count: rows.length,
+          rows_imported: rowsImported,
+          rows_skipped: rowsSkipped,
+          attachment_saved: true,
+        },
+      });
+
       setResult({
         rowsImported,
         rowsSkipped,
@@ -1085,3 +1120,4 @@ export default function ImportPage() {
     </main>
   );
 }
+

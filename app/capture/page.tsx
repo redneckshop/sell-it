@@ -9,6 +9,8 @@ import {
   type FormEvent,
 } from "react";
 import { supabase } from "../lib/supabase";
+import { getCurrentActingUserSnapshot } from "../lib/actingUser";
+import { createWorkLogEntry } from "../lib/workLog";
 
 const WORKSPACE_ID = "ba491d9b-3b36-426d-b98a-f05b0bf271ed";
 const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
@@ -1878,6 +1880,47 @@ export default function CapturePage() {
         }
       }
 
+      const actingUser = getCurrentActingUserSnapshot();
+
+      await createWorkLogEntry({
+        actingUser,
+        actionType: "ai_capture_save",
+        entityType: activityId ? "activity" : "ai_capture",
+        entityId: activityId || null,
+        entityLabel:
+          reviewActivity ||
+          reviewOpportunity ||
+          reviewCompany ||
+          reviewTask ||
+          "AI Capture Save",
+        relatedEntityType: opportunityId
+          ? "opportunity"
+          : companyId
+            ? "company"
+            : primaryContactId
+              ? "contact"
+              : taskId
+                ? "task"
+                : null,
+        relatedEntityId:
+          opportunityId || companyId || primaryContactId || taskId || null,
+        summary: `${actingUser.displayName} saved reviewed AI Capture result${
+          reviewCompany ? ` for "${reviewCompany}"` : ""
+        }.`,
+        details: "Reviewed AI Capture result saved to Sell It records after manual review.",
+        metadata: {
+          source: "AI Capture Save Work Log V1",
+          company_id: companyId || null,
+          contact_ids: contactIds,
+          primary_contact_id: primaryContactId || null,
+          opportunity_id: opportunityId || null,
+          task_id: taskId || null,
+          activity_id: activityId || null,
+          pain_point_ids: painPointIds,
+          source_file_attached: sourceFileAttached,
+        },
+      });
+
       setSavedLinks({
         companyId: companyId || undefined,
         contactId: primaryContactId || undefined,
@@ -1963,6 +2006,27 @@ export default function CapturePage() {
 
       const uniqueCompanyIds = dedupeStrings(companyIds);
       const uniqueContactIds = dedupeStrings(contactIds);
+
+      const actingUser = getCurrentActingUserSnapshot();
+
+      await createWorkLogEntry({
+        actingUser,
+        actionType: "ai_capture_save",
+        entityType: importActivityId ? "activity" : "ai_capture_multi",
+        entityId: importActivityId || null,
+        entityLabel: "AI Capture Multi-Record Save",
+        summary: `${actingUser.displayName} saved ${selectedRecords.length} selected AI Capture records.`,
+        details:
+          "Selected AI Capture records were saved to Sell It. Companies and contacts were created or reused.",
+        metadata: {
+          source: "AI Capture Multi Save Work Log V1",
+          selected_count: selectedRecords.length,
+          import_activity_id: importActivityId || null,
+          company_ids: uniqueCompanyIds,
+          contact_ids: uniqueContactIds,
+          source_file_attached: sourceFileAttached,
+        },
+      });
 
       setMultiSaveSummary({
         importActivityId,
@@ -2754,6 +2818,7 @@ export default function CapturePage() {
     </main>
   );
 }
+
 
 
 

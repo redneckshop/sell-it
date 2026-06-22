@@ -1017,6 +1017,84 @@ async function createMergeCompletedNotification(
     console.warn("Merge completed notification was not saved:", error.message);
   }
 }
+function getMergeWorkLogEntityType(type: MergeType) {
+  return type === "pain_point" ? "pain_point" : type;
+}
+
+function getMergeResultLabel(
+  result: Record<string, unknown>,
+  primaryKeys: string[],
+  fallback: string
+) {
+  for (const key of primaryKeys) {
+    const value = result[key];
+
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return fallback;
+}
+
+async function createMergeWorkLogEntry(
+  type: MergeType,
+  survivorId: string,
+  duplicateId: string,
+  result: Record<string, unknown>,
+  allowPermanentDelete: boolean
+) {
+  const supabase = getSupabaseAdmin();
+  const entityType = getMergeWorkLogEntityType(type);
+  const readableType = type.replace("_", " ");
+  const survivorLabel = getMergeResultLabel(
+    result,
+    ["survivorName", "survivorTitle", "survivorLabel"],
+    survivorId
+  );
+  const duplicateLabel = getMergeResultLabel(
+    result,
+    ["duplicateName", "duplicateTitle", "duplicateLabel"],
+    duplicateId
+  );
+  const duplicateDisposition =
+    typeof result.duplicateDisposition === "string" &&
+    result.duplicateDisposition.trim()
+      ? result.duplicateDisposition.trim()
+      : "archived";
+
+  const { error } = await supabase.from("work_log").insert({
+    workspace_id: WORKSPACE_ID,
+    actor_type: "system",
+    actor_profile_id: null,
+    actor_team_member_id: null,
+    actor_display_name: "Sell It Merge API",
+    action_type: "merge",
+    entity_type: entityType,
+    entity_id: survivorId,
+    entity_label: survivorLabel,
+    related_entity_type: entityType,
+    related_entity_id: duplicateId,
+    summary: `Sell It Merge API merged ${readableType} duplicate "${duplicateLabel}" into "${survivorLabel}".`,
+    details: `Duplicate record disposition: ${duplicateDisposition}.`,
+    metadata: {
+      source: "Merge Action Work Log V1",
+      merge_type: type,
+      survivor_id: survivorId,
+      duplicate_id: duplicateId,
+      survivor_label: survivorLabel,
+      duplicate_label: duplicateLabel,
+      duplicate_disposition: duplicateDisposition,
+      allow_permanent_delete: allowPermanentDelete,
+      result,
+    },
+  });
+
+  if (error) {
+    console.warn("Merge Work Log entry was not saved:", error.message);
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -1055,6 +1133,14 @@ export async function POST(request: Request) {
       );
     }
 
+    await createMergeWorkLogEntry(
+      type,
+      survivorId,
+      duplicateId,
+      result,
+      allowPermanentDelete
+    );
+
     return NextResponse.json({
       ok: true,
       type,
@@ -1075,4 +1161,5 @@ export async function POST(request: Request) {
     );
   }
 }
+
 

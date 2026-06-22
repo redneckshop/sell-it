@@ -111,6 +111,7 @@ const contextNavGroups: Record<AppSection, SidebarGroup[]> = {
       label: "Operations",
       items: [
         { label: "Merge Manager", href: "/merge" },
+        { label: "Work Log", href: "/work-log" },
         {
           label: "Archive Tools",
           href: "/merge",
@@ -461,7 +462,7 @@ function getCurrentSection(pathname: string): AppSection {
     return "assistant";
   }
 
-  if (pathname.startsWith("/merge")) {
+  if (pathname.startsWith("/merge") || pathname.startsWith("/work-log")) {
     return "management";
   }
 
@@ -701,6 +702,7 @@ export default function AppShell({ children }: AppShellProps) {
     </div>
   );
 }
+
 
 
 

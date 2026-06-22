@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 import { createNotificationOnce } from "../../../lib/notifications";
 import { getCurrentActingUserSnapshot, getDatabaseSafeUserId } from "../../../lib/actingUser";
+import { createWorkLogEntry } from "../../../lib/workLog";
 
 const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
@@ -427,6 +428,76 @@ export default function EditTaskPage() {
       return;
     }
 
+    const nextAssignedProfile = profiles.find(
+      (profile) => profile.id === nextAssignedTo
+    );
+
+    const previousAssignedProfile = profiles.find(
+      (profile) => profile.id === priorAssignedTo
+    );
+
+    const newAssigneeNameForLog =
+      selectedTeamMember?.display_name ||
+      selectedTeamMember?.email ||
+      nextAssignedProfile?.full_name ||
+      nextAssignedProfile?.email ||
+      nextAssignedTo ||
+      "Unassigned";
+
+    const previousAssigneeNameForLog =
+      previousTeamMember?.display_name ||
+      previousTeamMember?.email ||
+      previousAssignedProfile?.full_name ||
+      previousAssignedProfile?.email ||
+      priorAssignedTo ||
+      "Unassigned";
+
+    if (assignmentChanged) {
+      const assignmentActionType =
+        priorAssignedTeamMemberId || priorAssignedTo
+          ? "task_reassignment"
+          : "task_assignment";
+
+      await createWorkLogEntry({
+        actingUser,
+        actionType: assignmentActionType,
+        entityType: "task",
+        entityId: taskId,
+        entityLabel: title,
+        summary:
+          assignmentActionType === "task_assignment"
+            ? `${actingUser.displayName} assigned task "${title}" to ${newAssigneeNameForLog}.`
+            : `${actingUser.displayName} reassigned task "${title}" from ${previousAssigneeNameForLog} to ${newAssigneeNameForLog}.`,
+        details: `Previous assignee: ${previousAssigneeNameForLog}. New assignee: ${newAssigneeNameForLog}.`,
+        metadata: {
+          source: "Task Edit Work Log V1",
+          previous_assigned_to: priorAssignedTo || null,
+          previous_assigned_team_member_id: priorAssignedTeamMemberId || null,
+          new_assigned_to: nextAssignedTo,
+          new_assigned_team_member_id: assignedTeamMemberId || null,
+        },
+      });
+    }
+
+    if (originalStatus !== "Completed" && status === "Completed") {
+      await createWorkLogEntry({
+        actingUser,
+        actionType: "task_completion",
+        entityType: "task",
+        entityId: taskId,
+        entityLabel: title,
+        summary: `${actingUser.displayName} completed task "${title}".`,
+        details: "Task status changed to Completed from the task edit page.",
+        metadata: {
+          source: "Task Edit Work Log V1",
+          previous_status: originalStatus,
+          new_status: status,
+          completed_at: nextCompletedAt,
+          completed_by: nextCompletedBy,
+        },
+      });
+    }
+
     function actorMatchesRecipient(recipientId: string | null) {
       if (!recipientId) return false;
 
@@ -726,6 +797,8 @@ export default function EditTaskPage() {
     </main>
   );
 }
+
+
 
 
 

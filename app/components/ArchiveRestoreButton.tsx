@@ -2,6 +2,8 @@
 
 import { useState, type CSSProperties } from "react";
 import { supabase } from "../lib/supabase";
+import { getCurrentActingUserSnapshot, getDatabaseSafeUserId } from "../lib/actingUser";
+import { createWorkLogEntry } from "../lib/workLog";
 
 type ArchiveTable = "companies" | "contacts" | "opportunities";
 
@@ -10,6 +12,12 @@ type ArchiveRestoreButtonProps = {
   recordId: string;
   isArchived: boolean;
   returnPath: string;
+};
+
+type LabelRecord = {
+  name?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
 };
 
 const baseButtonStyle: CSSProperties = {
@@ -32,6 +40,60 @@ function reloadToPath(path: string) {
   window.location.href = path;
 }
 
+function entityTypeFromTable(tableName: ArchiveTable) {
+  if (tableName === "companies") {
+    return "company";
+  }
+
+  if (tableName === "contacts") {
+    return "contact";
+  }
+
+  return "opportunity";
+}
+
+function readableEntityType(tableName: ArchiveTable) {
+  if (tableName === "companies") {
+    return "Company";
+  }
+
+  if (tableName === "contacts") {
+    return "Contact";
+  }
+
+  return "Opportunity";
+}
+
+function labelFromRecord(tableName: ArchiveTable, record: LabelRecord | null) {
+  if (!record) {
+    return readableEntityType(tableName);
+  }
+
+  if (tableName === "contacts") {
+    const fullName = `${record.first_name || ""} ${record.last_name || ""}`.trim();
+    return fullName || "Contact";
+  }
+
+  return record.name || readableEntityType(tableName);
+}
+
+async function loadEntityLabel(tableName: ArchiveTable, recordId: string) {
+  const selectFields =
+    tableName === "contacts" ? "first_name, last_name" : "name";
+
+  const { data, error } = await supabase
+    .from(tableName)
+    .select(selectFields)
+    .eq("id", recordId)
+    .single();
+
+  if (error) {
+    return readableEntityType(tableName);
+  }
+
+  return labelFromRecord(tableName, data as LabelRecord);
+}
+
 export default function ArchiveRestoreButton({
   tableName,
   recordId,
@@ -46,6 +108,11 @@ export default function ArchiveRestoreButton({
     setErrorMessage("");
 
     try {
+      const actingUser = getCurrentActingUserSnapshot();
+      const databaseSafeUserId = getDatabaseSafeUserId(actingUser);
+      const entityType = entityTypeFromTable(tableName);
+      const entityLabel = await loadEntityLabel(tableName, recordId);
+
       if (isArchived) {
         const confirmed = window.confirm(
           "Restore this record? It will return to normal active lists."
@@ -69,6 +136,22 @@ export default function ArchiveRestoreButton({
         if (error) {
           throw new Error(error.message);
         }
+
+        await createWorkLogEntry({
+          actingUser,
+          actionType: "restore",
+          entityType,
+          entityId: recordId,
+          entityLabel,
+          summary: `${actingUser.displayName} restored ${readableEntityType(tableName)} "${entityLabel}".`,
+          details: "Record was restored from archived status.",
+          metadata: {
+            table_name: tableName,
+            return_path: returnPath,
+            previous_is_archived: true,
+            next_is_archived: false,
+          },
+        });
       } else {
         const reason = window.prompt(
           "Archive reason? Optional, but recommended for recovery history."
@@ -79,21 +162,38 @@ export default function ArchiveRestoreButton({
           return;
         }
 
-        const { data: userData } = await supabase.auth.getUser();
+        const cleanedReason = reason.trim();
 
         const { error } = await supabase
           .from(tableName)
           .update({
             is_archived: true,
             archived_at: new Date().toISOString(),
-            archived_by: userData.user?.id ?? null,
-            archive_reason: reason.trim() || null,
+            archived_by: databaseSafeUserId,
+            archive_reason: cleanedReason || null,
           })
           .eq("id", recordId);
 
         if (error) {
           throw new Error(error.message);
         }
+
+        await createWorkLogEntry({
+          actingUser,
+          actionType: "archive",
+          entityType,
+          entityId: recordId,
+          entityLabel,
+          summary: `${actingUser.displayName} archived ${readableEntityType(tableName)} "${entityLabel}".`,
+          details: cleanedReason || "No archive reason provided.",
+          metadata: {
+            table_name: tableName,
+            return_path: returnPath,
+            archive_reason: cleanedReason || null,
+            previous_is_archived: false,
+            next_is_archived: true,
+          },
+        });
       }
 
       reloadToPath(returnPath);

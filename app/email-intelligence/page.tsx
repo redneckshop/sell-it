@@ -9,7 +9,8 @@ import {
   type FormEvent,
 } from "react";
 import { supabase } from "../lib/supabase";
-import { getDatabaseSafeUserId } from "../lib/actingUser";
+import { getCurrentActingUserSnapshot, getDatabaseSafeUserId } from "../lib/actingUser";
+import { createWorkLogEntry } from "../lib/workLog";
 
 type EmailSourceType =
   | "Incoming Email"
@@ -1292,6 +1293,51 @@ export default function EmailIntelligencePage() {
         }
       }
 
+      const actingUser = getCurrentActingUserSnapshot();
+
+      await createWorkLogEntry({
+        actingUser,
+        actionType: "email_intelligence_save",
+        entityType: activityId ? "activity" : "email_intelligence",
+        entityId: activityId || null,
+        entityLabel:
+          cleanText(subject) ||
+          cleanText(review.activitySubject) ||
+          "Email Intelligence Save",
+        relatedEntityType: opportunityId
+          ? "opportunity"
+          : companyId
+            ? "company"
+            : contactId
+              ? "contact"
+              : taskId
+                ? "task"
+                : null,
+        relatedEntityId:
+          opportunityId || companyId || contactId || taskId || null,
+        summary: `${actingUser.displayName} saved Email Intelligence item${
+          cleanText(subject) ? `: "${cleanText(subject)}"` : ""
+        }.`,
+        details:
+          "Reviewed Email Intelligence item saved to Sell It records after manual review.",
+        metadata: {
+          source: "Email Intelligence Save Work Log V1",
+          email_source_type: sourceType,
+          mailbox: mailbox || null,
+          from: from || null,
+          to: to || null,
+          cc: cc || null,
+          subject: subject || null,
+          company_id: companyId || null,
+          contact_id: contactId || null,
+          opportunity_id: opportunityId || null,
+          task_id: taskId || null,
+          activity_id: activityId || null,
+          attachment_id: attachmentId || null,
+          pain_point_ids: painPointIds,
+        },
+      });
+
       setSavedRecords({
         companyId,
         contactId,
@@ -1770,3 +1816,4 @@ export default function EmailIntelligencePage() {
     </main>
   );
 }
+
