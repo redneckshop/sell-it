@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { supabase } from "../lib/supabase";
+import { REAL_USER_IDENTITY_CHANGED_EVENT } from "../lib/userIdentity";
 import {
   ACTING_USER_CHANGED_EVENT,
   ACTING_USER_OPTIONS,
@@ -130,10 +131,12 @@ export default function ActingUserSelector() {
     }
 
     window.addEventListener(ACTING_USER_CHANGED_EVENT, handleChange);
+    window.addEventListener(REAL_USER_IDENTITY_CHANGED_EVENT, handleChange);
     window.addEventListener("storage", handleChange);
 
     return () => {
       window.removeEventListener(ACTING_USER_CHANGED_EVENT, handleChange);
+      window.removeEventListener(REAL_USER_IDENTITY_CHANGED_EVENT, handleChange);
       window.removeEventListener("storage", handleChange);
     };
   }, []);
@@ -182,5 +185,6 @@ export default function ActingUserSelector() {
     </div>
   );
 }
+
 
 

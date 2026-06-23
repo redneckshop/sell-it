@@ -97,6 +97,21 @@ function getStoredDevelopmentActingUserSnapshot() {
   }
 }
 
+function keyForRealIdentity(input: {
+  displayName?: string | null;
+  email?: string | null;
+}): ActingUserKey {
+  const combined = `${input.displayName || ""} ${input.email || ""}`.toLowerCase();
+
+  if (combined.includes("trent")) return "trent";
+  if (combined.includes("angel")) return "angel";
+  if (combined.includes("charles") || combined.includes("charlebois")) {
+    return "charles";
+  }
+
+  return "charles";
+}
+
 function getRealUserAsActingSnapshot() {
   const realIdentity = getCachedRealUserIdentity();
 
@@ -105,7 +120,10 @@ function getRealUserAsActingSnapshot() {
   }
 
   return buildActingUserSnapshot({
-    key: "charles",
+    key: keyForRealIdentity({
+      displayName: realIdentity.displayName,
+      email: realIdentity.email,
+    }),
     displayName: realIdentity.displayName,
     teamMemberId: realIdentity.teamMemberId,
     profileId: realIdentity.profileId,
@@ -113,20 +131,13 @@ function getRealUserAsActingSnapshot() {
 }
 
 export function getCurrentActingUserSnapshot(): ActingUserSnapshot {
-  const storedDevelopmentUser = getStoredDevelopmentActingUserSnapshot();
-
-  if (
-    storedDevelopmentUser &&
-    (storedDevelopmentUser.key === "trent" || storedDevelopmentUser.key === "angel")
-  ) {
-    return storedDevelopmentUser;
-  }
-
   const realUser = getRealUserAsActingSnapshot();
 
   if (realUser) {
     return realUser;
   }
+
+  const storedDevelopmentUser = getStoredDevelopmentActingUserSnapshot();
 
   return storedDevelopmentUser || DEFAULT_ACTING_USER;
 }
@@ -163,3 +174,4 @@ export function getDatabaseSafeUserId(
 ) {
   return user.profileId || DEFAULT_CHARLES_PROFILE_ID;
 }
+

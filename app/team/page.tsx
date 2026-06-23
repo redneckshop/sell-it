@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { supabase } from "../lib/supabase";
+import TeamAccountManager from "./TeamAccountManager";
 
 const WORKSPACE_ID = "ba491d9b-3b36-426d-b98a-f05b0bf271ed";
 
@@ -382,6 +383,8 @@ export default function TeamPage() {
         </div>
       </section>
 
+      <TeamAccountManager />
+
       <section style={{ ...cardStyle, marginBottom: "18px" }}>
         <h2 style={{ marginTop: 0 }}>Add Placeholder Team Member</h2>
 
@@ -504,3 +507,4 @@ export default function TeamPage() {
     </main>
   );
 }
+

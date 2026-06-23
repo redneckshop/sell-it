@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import AssistantQuickLaunch from "./components/AssistantQuickLaunch";
 import HomeSearch from "./components/HomeSearch";
 import { supabase } from "./lib/supabase";
+import { DashboardLoggedInUser, DashboardUserGreeting } from "./components/DashboardRealUserIdentity";
 
 type SupabaseRelation<T> = T | T[] | null;
 
@@ -856,9 +857,7 @@ export default async function Home() {
         >
           <div style={elevatedPanelStyle()}>
             <p style={eyebrowStyle()}>Executive Command Center</p>
-            <h1 style={{ fontSize: "42px", lineHeight: 1.05, margin: "0 0 10px" }}>
-              Good Morning, Charles
-            </h1>
+            <DashboardUserGreeting fallbackName={fullName} />
             <p style={{ ...mutedTextStyle(), fontSize: "16px", lineHeight: 1.55, margin: "0 0 18px" }}>
               Open Sell It and immediately see what needs attention, who needs direction, which opportunities are at risk, and what should happen next.
             </p>
@@ -870,7 +869,7 @@ export default async function Home() {
               </div>
               <div style={compactPanelStyle()}>
                 <p style={{ ...mutedTextStyle(), margin: "0 0 7px", fontSize: "12px" }}>Logged In User</p>
-                <strong>{fullName}</strong>
+                <DashboardLoggedInUser fallbackName={fullName} />
               </div>
               <div style={compactPanelStyle()}>
                 <p style={{ ...mutedTextStyle(), margin: "0 0 7px", fontSize: "12px" }}>Date</p>
@@ -1106,4 +1105,5 @@ export default async function Home() {
     </main>
   );
 }
+
 
