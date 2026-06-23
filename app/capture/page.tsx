@@ -9,11 +9,11 @@ import {
   type FormEvent,
 } from "react";
 import { supabase } from "../lib/supabase";
-import { getCurrentActingUserSnapshot } from "../lib/actingUser";
+import { getCurrentActingUserSnapshot, getDatabaseSafeUserId } from "../lib/actingUser";
 import { createWorkLogEntry } from "../lib/workLog";
 
 const WORKSPACE_ID = "ba491d9b-3b36-426d-b98a-f05b0bf271ed";
-const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
+const FALLBACK_USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
 type CaptureResult = {
   company: string | null;
@@ -904,7 +904,7 @@ export default function CapturePage() {
           .from("companies")
           .update({
             phone,
-            updated_by: USER_ID,
+            updated_by: getDatabaseSafeUserId(),
           })
           .eq("id", existingCompany.id);
       }
@@ -918,8 +918,8 @@ export default function CapturePage() {
         workspace_id: WORKSPACE_ID,
         name: cleanName,
         phone: phone || null,
-        created_by: USER_ID,
-        updated_by: USER_ID,
+        created_by: getDatabaseSafeUserId(),
+        updated_by: getDatabaseSafeUserId(),
       })
       .select("id")
       .single();
@@ -1009,7 +1009,7 @@ export default function CapturePage() {
 
     if (matchingContact?.id) {
       const updatePayload: Record<string, string> = {
-        updated_by: USER_ID,
+        updated_by: getDatabaseSafeUserId(),
       };
 
       if (phone && !matchingContact.phone) {
@@ -1042,8 +1042,8 @@ export default function CapturePage() {
         phone: phone || null,
         email: email || null,
         notes: notes || null,
-        created_by: USER_ID,
-        updated_by: USER_ID,
+        created_by: getDatabaseSafeUserId(),
+        updated_by: getDatabaseSafeUserId(),
       })
       .select("id")
       .single();
@@ -1146,8 +1146,8 @@ export default function CapturePage() {
         name: cleanName,
         category: guessPainPointCategory(cleanName),
         description: `Discovered through AI Capture.\n\n${reviewSummary || inputText}`,
-        created_by: USER_ID,
-        updated_by: USER_ID,
+        created_by: getDatabaseSafeUserId(),
+        updated_by: getDatabaseSafeUserId(),
       })
       .select("id")
       .single();
@@ -1297,7 +1297,7 @@ export default function CapturePage() {
         estimated_driver_count: nextEstimatedDriverCount,
         next_step: nextNextStep,
         notes: nextNotes || null,
-        updated_by: USER_ID,
+        updated_by: getDatabaseSafeUserId(),
         updated_at: changedAt,
       };
 
@@ -1322,7 +1322,7 @@ export default function CapturePage() {
             opportunity_id: existingOpportunity.id,
             old_stage: existingOpportunity.stage || null,
             new_stage: capturedStage,
-            changed_by: USER_ID,
+            changed_by: getDatabaseSafeUserId(),
             changed_at: changedAt,
             notes: "Stage changed by AI Capture.",
           });
@@ -1415,8 +1415,8 @@ export default function CapturePage() {
             reviewContacts,
             reviewContact
           ).join("\n")}`.trim() || null,
-        created_by: USER_ID,
-        updated_by: USER_ID,
+        created_by: getDatabaseSafeUserId(),
+        updated_by: getDatabaseSafeUserId(),
       })
       .select("id")
       .single();
@@ -1488,7 +1488,7 @@ export default function CapturePage() {
 
     if (matchingTask?.id) {
       const updatePayload: Record<string, string> = {
-        updated_by: USER_ID,
+        updated_by: getDatabaseSafeUserId(),
       };
 
       if (companyId && !matchingTask.company_id) {
@@ -1532,12 +1532,12 @@ export default function CapturePage() {
         due_date: null,
         priority: "Normal",
         status: "Open",
-        assigned_to: USER_ID,
+        assigned_to: getDatabaseSafeUserId(),
         company_id: companyId,
         contact_id: primaryContactId,
         opportunity_id: opportunityId,
-        created_by: USER_ID,
-        updated_by: USER_ID,
+        created_by: getDatabaseSafeUserId(),
+        updated_by: getDatabaseSafeUserId(),
       })
       .select("id")
       .single();
@@ -1618,7 +1618,7 @@ export default function CapturePage() {
 
     if (matchingActivity?.id) {
       const updatePayload: Record<string, string> = {
-        updated_by: USER_ID,
+        updated_by: getDatabaseSafeUserId(),
       };
 
       if (companyId && !matchingActivity.company_id) {
@@ -1674,8 +1674,8 @@ export default function CapturePage() {
         contact_id: primaryContactId,
         task_id: taskId,
         opportunity_id: opportunityId,
-        created_by: USER_ID,
-        updated_by: USER_ID,
+        created_by: getDatabaseSafeUserId(),
+        updated_by: getDatabaseSafeUserId(),
       })
       .select("id")
       .single();
@@ -1721,8 +1721,8 @@ export default function CapturePage() {
         contact_id: null,
         task_id: null,
         opportunity_id: null,
-        created_by: USER_ID,
-        updated_by: USER_ID,
+        created_by: getDatabaseSafeUserId(),
+        updated_by: getDatabaseSafeUserId(),
       })
       .select("id")
       .single();
@@ -1794,7 +1794,7 @@ export default function CapturePage() {
           workspace_id: WORKSPACE_ID,
           pain_point_id: painPointId,
           company_id: companyId,
-          created_by: USER_ID,
+          created_by: getDatabaseSafeUserId(),
         },
         { onConflict: "pain_point_id,company_id" }
       );
@@ -1806,7 +1806,7 @@ export default function CapturePage() {
           workspace_id: WORKSPACE_ID,
           pain_point_id: painPointId,
           contact_id: contactId,
-          created_by: USER_ID,
+          created_by: getDatabaseSafeUserId(),
         },
         { onConflict: "pain_point_id,contact_id" }
       );
@@ -1818,7 +1818,7 @@ export default function CapturePage() {
           workspace_id: WORKSPACE_ID,
           pain_point_id: painPointId,
           activity_id: activityId,
-          created_by: USER_ID,
+          created_by: getDatabaseSafeUserId(),
         },
         { onConflict: "pain_point_id,activity_id" }
       );
@@ -2818,6 +2818,7 @@ export default function CapturePage() {
     </main>
   );
 }
+
 
 
 

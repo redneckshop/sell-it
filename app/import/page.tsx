@@ -9,11 +9,11 @@ import {
   type ChangeEvent,
 } from "react";
 import { supabase } from "../lib/supabase";
-import { getCurrentActingUserSnapshot } from "../lib/actingUser";
+import { getCurrentActingUserSnapshot, getDatabaseSafeUserId } from "../lib/actingUser";
 import { createWorkLogEntry } from "../lib/workLog";
 
 const WORKSPACE_ID = "ba491d9b-3b36-426d-b98a-f05b0bf271ed";
-const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
+const FALLBACK_USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
 type ImportType = "companies_only" | "companies_contacts";
 type DuplicateHandling = "skip_existing" | "update_existing" | "create_duplicate";
@@ -593,7 +593,7 @@ export default function ImportPage() {
         file_name: file.name,
         file_path: storagePath,
         file_size: file.size,
-        uploaded_by: USER_ID,
+        uploaded_by: getDatabaseSafeUserId(),
         file_type: "csv",
         file_url: publicUrl,
         storage_path: storagePath,
@@ -690,8 +690,8 @@ export default function ImportPage() {
           assets_equipment:
             getFirstMappedValue(row, "Company.AssetsEquipment") || null,
           notes: getMappedNotes(row, "Company.Notes") || null,
-          created_by: USER_ID,
-          updated_by: USER_ID,
+          created_by: getDatabaseSafeUserId(),
+          updated_by: getDatabaseSafeUserId(),
         };
 
         let companyId = "";
@@ -712,7 +712,7 @@ export default function ImportPage() {
               operating_regions: companyData.operating_regions,
               assets_equipment: companyData.assets_equipment,
               notes: companyData.notes,
-              updated_by: USER_ID,
+              updated_by: getDatabaseSafeUserId(),
             })
             .eq("id", existingCompany.id);
 
@@ -762,8 +762,8 @@ export default function ImportPage() {
             email: getFirstMappedValue(row, "Contact.Email") || null,
             phone: getFirstMappedValue(row, "Contact.Phone") || null,
             notes: getMappedNotes(row, "Contact.Notes") || null,
-            created_by: USER_ID,
-            updated_by: USER_ID,
+            created_by: getDatabaseSafeUserId(),
+            updated_by: getDatabaseSafeUserId(),
           });
 
           if (error) {
@@ -791,7 +791,7 @@ export default function ImportPage() {
           row_count: rows.length,
           rows_imported: rowsImported,
           rows_skipped: rowsSkipped,
-          created_by: USER_ID,
+          created_by: getDatabaseSafeUserId(),
         });
 
       if (historyError) {
@@ -1120,4 +1120,5 @@ export default function ImportPage() {
     </main>
   );
 }
+
 

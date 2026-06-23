@@ -1,12 +1,13 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
+import { getDatabaseSafeUserId } from "../../lib/actingUser";
 
 const WORKSPACE_ID = "ba491d9b-3b36-426d-b98a-f05b0bf271ed";
-const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
+const FALLBACK_USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
 type Company = {
   id: string;
@@ -312,8 +313,8 @@ export default function NewActivityPage() {
       contact_id: contactId || null,
       task_id: taskId || null,
       opportunity_id: opportunityId || null,
-      created_by: USER_ID,
-      updated_by: USER_ID,
+      created_by: getDatabaseSafeUserId(),
+      updated_by: getDatabaseSafeUserId(),
     });
 
     setSaving(false);

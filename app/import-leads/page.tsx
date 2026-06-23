@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { useMemo, useState, type CSSProperties, type FormEvent } from "react";
 import { supabase } from "../lib/supabase";
-import { getCurrentActingUserSnapshot } from "../lib/actingUser";
+import { getCurrentActingUserSnapshot, getDatabaseSafeUserId } from "../lib/actingUser";
 import { createWorkLogEntry } from "../lib/workLog";
 
 const WORKSPACE_ID = "ba491d9b-3b36-426d-b98a-f05b0bf271ed";
-const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
+const FALLBACK_USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
 type EnrichmentResult = {
   title: string | null;
@@ -796,7 +796,7 @@ export default function ImportLeadsPage() {
                 existingCompany?.assets_equipment ?? null,
                 sourceNote
               ),
-              updated_by: USER_ID,
+              updated_by: getDatabaseSafeUserId(),
             })
             .eq("id", lead.existingCompany.id);
 
@@ -815,8 +815,8 @@ export default function ImportLeadsPage() {
           lead_temperature: leadTemperature,
           operating_regions: lead.address || null,
           assets_equipment: sourceNote,
-          created_by: USER_ID,
-          updated_by: USER_ID,
+          created_by: getDatabaseSafeUserId(),
+          updated_by: getDatabaseSafeUserId(),
         });
 
         if (error) throw new Error(error.message);
@@ -1294,4 +1294,5 @@ export default function ImportLeadsPage() {
     </main>
   );
 }
+
 

@@ -1,7 +1,8 @@
 ﻿"use client";
 
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import { supabase } from "../lib/supabase"; import { createNotification } from "../lib/notifications";
+import { supabase } from "../lib/supabase";
+import { getCurrentActingUserSnapshot, getDatabaseSafeUserId } from "../lib/actingUser"; import { createNotification } from "../lib/notifications";
 import UniversalDuplicateReview from "./UniversalDuplicateReview";
 
 const MERGE_SLIDE_COMPLETE_VALUE = 100;
@@ -600,6 +601,9 @@ export default function MergeManagerPage() {
     setSuccessMessage("");
 
     try {
+      const actingUser = getCurrentActingUserSnapshot();
+      const databaseSafeUserId = getDatabaseSafeUserId(actingUser);
+
       const response = await fetch("/api/merge", {
         method: "POST",
         headers: {
@@ -609,6 +613,13 @@ export default function MergeManagerPage() {
           type: selectedCandidate.type,
           survivorId,
           duplicateId,
+          actor: {
+            actorUserId: databaseSafeUserId,
+            profileId: actingUser.profileId || databaseSafeUserId,
+            teamMemberId: actingUser.teamMemberId || null,
+            displayName: actingUser.displayName,
+            key: actingUser.key,
+          },
         }),
       });
 
@@ -918,6 +929,7 @@ export default function MergeManagerPage() {
     </main>
   );
 }
+
 
 
 

@@ -10,9 +10,10 @@ import {
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../../../../lib/supabase";
+import { getCurrentActingUserSnapshot, getDatabaseSafeUserId } from "../../../../lib/actingUser";
 
 const WORKSPACE_ID = "ba491d9b-3b36-426d-b98a-f05b0bf271ed";
-const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
+const FALLBACK_USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
 type Company = {
   id: string;
@@ -245,7 +246,7 @@ function AssistantScheduleTaskClient() {
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState("Normal");
   const [status, setStatus] = useState("Open");
-  const [assignedTo, setAssignedTo] = useState(USER_ID);
+  const [assignedTo, setAssignedTo] = useState(getDatabaseSafeUserId());
   const [assignedTeamMemberId, setAssignedTeamMemberId] = useState("");
   const [companyId, setCompanyId] = useState("");
   const [contactId, setContactId] = useState("");
@@ -269,7 +270,11 @@ function AssistantScheduleTaskClient() {
       const paramDescription = searchParams.get("description") || "";
       const paramDueDate = searchParams.get("due_date") || "";
       const paramPriority = searchParams.get("priority") || "Normal";
-      const paramAssignedTo = searchParams.get("assigned_to") || USER_ID;
+      const actingUser = getCurrentActingUserSnapshot();
+      const databaseSafeUserId = getDatabaseSafeUserId(actingUser);
+
+      const paramAssignedTo =
+        searchParams.get("assigned_to") || databaseSafeUserId;
       const paramAssignedTeamMemberId =
         searchParams.get("assigned_team_member_id") || "";
       const paramCompanyId = searchParams.get("company_id") || "";
@@ -358,7 +363,11 @@ function AssistantScheduleTaskClient() {
       const defaultTeamMember =
         loadedTeamMembers.find((member) => member.id === paramAssignedTeamMemberId) ||
         loadedTeamMembers.find((member) => member.profile_id === paramAssignedTo) ||
-        loadedTeamMembers.find((member) => member.profile_id === USER_ID);
+        loadedTeamMembers.find(
+          (member) =>
+            member.id === actingUser.teamMemberId ||
+            member.profile_id === actingUser.profileId
+        );
 
       if (defaultTeamMember) {
         setAssignedTeamMemberId(defaultTeamMember.id);
@@ -404,7 +413,7 @@ function AssistantScheduleTaskClient() {
           paramAssignedTeamMemberId || loadedTaskTeamMember?.id || ""
         );
         setAssignedTo(
-          loadedTaskTeamMember?.profile_id || paramAssignedTo || loadedTask.assigned_to || USER_ID
+          loadedTaskTeamMember?.profile_id || paramAssignedTo || loadedTask.assigned_to || databaseSafeUserId
         );
         setCompanyId(paramCompanyId || loadedTask.company_id || "");
         setContactId(paramContactId || loadedTask.contact_id || "");
@@ -441,6 +450,10 @@ function AssistantScheduleTaskClient() {
     setSavedTaskId("");
 
     const changedAt = new Date().toISOString();
+    const actingUser = getCurrentActingUserSnapshot();
+    const databaseSafeUserId = getDatabaseSafeUserId(actingUser);
+
+    // Assistant Task Schedule Real User Auth V1
     const nextStatus = status || "Open";
     const selectedTeamMember = teamMembers.find(
       (member) => member.id === assignedTeamMemberId
@@ -450,7 +463,7 @@ function AssistantScheduleTaskClient() {
       ? sourceTask?.completed_at || changedAt
       : null;
     const completionBy = isCompleted
-      ? sourceTask?.completed_by || USER_ID
+      ? sourceTask?.completed_by || databaseSafeUserId
       : null;
 
     if (sourceTaskId) {
@@ -469,7 +482,7 @@ function AssistantScheduleTaskClient() {
           opportunity_id: opportunityId || null,
           completed_at: completionAt,
           completed_by: completionBy,
-          updated_by: USER_ID,
+          updated_by: databaseSafeUserId,
           updated_at: changedAt,
         })
         .eq("id", sourceTaskId);
@@ -503,8 +516,8 @@ function AssistantScheduleTaskClient() {
         opportunity_id: opportunityId || null,
         completed_at: completionAt,
         completed_by: completionBy,
-        created_by: USER_ID,
-        updated_by: USER_ID,
+        created_by: databaseSafeUserId,
+        updated_by: databaseSafeUserId,
       })
       .select("id")
       .single();
@@ -816,4 +829,6 @@ export default function AssistantScheduleTaskPage() {
     </Suspense>
   );
 }
+
+
 

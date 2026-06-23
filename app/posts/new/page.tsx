@@ -1,12 +1,13 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
+import { getDatabaseSafeUserId } from "../../lib/actingUser";
 
 const WORKSPACE_ID = "ba491d9b-3b36-426d-b98a-f05b0bf271ed";
-const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
+const FALLBACK_USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
 type Community = {
   id: string;
@@ -260,8 +261,8 @@ export default function NewPostPage() {
         leads_found: leadsFound || null,
         follow_up_needed: followUpNeeded,
         tags: tags || null,
-        created_by: USER_ID,
-        updated_by: USER_ID,
+        created_by: getDatabaseSafeUserId(),
+        updated_by: getDatabaseSafeUserId(),
       })
       .select("id")
       .single();
@@ -341,7 +342,7 @@ export default function NewPostPage() {
                   {communities.map((community) => (
                     <option key={community.id} value={community.id}>
                       {community.name}
-                      {community.platform ? ` — ${community.platform}` : ""}
+                      {community.platform ? ` â€” ${community.platform}` : ""}
                     </option>
                   ))}
                 </select>

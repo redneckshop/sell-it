@@ -110,7 +110,7 @@ export default function ActingUserSelector() {
         .order("display_name", { ascending: true });
 
       if (error) {
-        console.warn("Acting user selector could not load team members:", error.message);
+        console.warn("Development acting user selector could not load team members:", error.message);
         return;
       }
 
@@ -166,12 +166,12 @@ export default function ActingUserSelector() {
       style={wrapperStyle}
       title="Development/testing only. This does not replace real login or permissions."
     >
-      <span style={labelStyle}>Acting As</span>
+      <span style={labelStyle}>Development Acting As</span>
       <select
         value={actingUser.key}
         onChange={(event) => handleSelect(event.target.value as ActingUserKey)}
         style={selectStyle}
-        aria-label="Acting user"
+        aria-label="Development acting user"
       >
         {options.map((option) => (
           <option key={option.key} value={option.key} style={optionStyle}>
@@ -182,3 +182,5 @@ export default function ActingUserSelector() {
     </div>
   );
 }
+
+

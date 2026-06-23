@@ -8,7 +8,7 @@ import { getCurrentActingUserSnapshot, getDatabaseSafeUserId } from "../../../li
 import { createWorkLogEntry } from "../../../lib/workLog";
 import { updateRecordWithConcurrencyGuard } from "../../../lib/concurrency";
 
-const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
+const FALLBACK_USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
 type Company = {
   id: string;
@@ -644,6 +644,7 @@ export default function EditOpportunityPage() {
     </main>
   );
 }
+
 
 
 

@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
+import { getDatabaseSafeUserId } from "../../../lib/actingUser";
 import { updateRecordWithConcurrencyGuard } from "../../../lib/concurrency";
 
-const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
+const FALLBACK_USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
 type Company = {
   id: string;
@@ -283,7 +284,7 @@ export default function EditNotePage() {
         company_id: companyId || null,
         contact_id: contactId || null,
         opportunity_id: opportunityId || null,
-        updated_by: USER_ID,
+        updated_by: getDatabaseSafeUserId(),
         updated_at: changedAt,
       },
     });
@@ -473,3 +474,4 @@ export default function EditNotePage() {
     </main>
   );
 }
+

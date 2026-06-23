@@ -7,7 +7,7 @@ import { supabase } from "../../lib/supabase"; import { createNotification } fro
 import { getCurrentActingUserSnapshot, getDatabaseSafeUserId } from "../../lib/actingUser";
 
 const WORKSPACE_ID = "ba491d9b-3b36-426d-b98a-f05b0bf271ed";
-const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
+const FALLBACK_USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
 const pageStyle: CSSProperties = {
   minHeight: "100vh",
@@ -322,6 +322,7 @@ export default function NewPainPointPage() {
     </main>
   );
 }
+
 
 
 

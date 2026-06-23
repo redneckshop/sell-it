@@ -12,7 +12,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../../../../lib/supabase"; import { createNotification } from "../../../../lib/notifications";
 import { getCurrentActingUserSnapshot, getDatabaseSafeUserId } from "../../../../lib/actingUser";
 
-const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
+const FALLBACK_USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
 type SupabaseRelation<T> = T | T[] | null;
 
@@ -421,12 +421,16 @@ function AssistantAssignTaskClient() {
     setSaving(true);
     setErrorMessage("");
 
+    const actingUser = getCurrentActingUserSnapshot();
+    const databaseSafeUserId = getDatabaseSafeUserId(actingUser);
+
+    // Assistant Task Assign Real User Auth V1
     const { error } = await supabase
       .from("tasks")
       .update({
         assigned_team_member_id: selectedTeamMember.id,
         assigned_to: selectedTeamMember.profile_id || null,
-        updated_by: getDatabaseSafeUserId(),
+        updated_by: databaseSafeUserId,
         updated_at: new Date().toISOString(),
       })
       .eq("id", task.id);
@@ -672,6 +676,7 @@ export default function AssistantAssignTaskPage() {
     </Suspense>
   );
 }
+
 
 
 

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import { supabase } from "../lib/supabase"; import { createNotification } from "../lib/notifications";
+import { supabase } from "../lib/supabase";
+import { getCurrentActingUserSnapshot, getDatabaseSafeUserId } from "../lib/actingUser"; import { createNotification } from "../lib/notifications";
 
 const MAX_ROWS_PER_TYPE = 150;
 const MAX_CANDIDATES_PER_TYPE = 40;
@@ -801,6 +802,9 @@ export default function UniversalDuplicateReview() {
     });
 
     try {
+      const actingUser = getCurrentActingUserSnapshot();
+      const databaseSafeUserId = getDatabaseSafeUserId(actingUser);
+
       const response = await fetch("/api/merge", {
         method: "POST",
         headers: {
@@ -811,6 +815,13 @@ export default function UniversalDuplicateReview() {
           survivorId,
           duplicateId,
           allowPermanentDelete: state.allowPermanentDelete,
+          actor: {
+            actorUserId: databaseSafeUserId,
+            profileId: actingUser.profileId || databaseSafeUserId,
+            teamMemberId: actingUser.teamMemberId || null,
+            displayName: actingUser.displayName,
+            key: actingUser.key,
+          },
         }),
       });
 
@@ -1273,6 +1284,7 @@ export default function UniversalDuplicateReview() {
     </section>
   );
 }
+
 
 
 

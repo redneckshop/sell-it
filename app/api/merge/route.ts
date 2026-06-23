@@ -1,4 +1,5 @@
 ﻿import { NextResponse } from "next/server";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { createClient } from "@supabase/supabase-js";
 
 type MergeType = "company" | "contact" | "note" | "task" | "pain_point";
@@ -71,7 +72,74 @@ type PainPointRecord = {
   is_archived?: boolean | null;
 };
 
-const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832"; const WORKSPACE_ID = "ba491d9b-3b36-426d-b98a-f05b0bf271ed";
+const DEFAULT_MERGE_USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
+const WORKSPACE_ID = "ba491d9b-3b36-426d-b98a-f05b0bf271ed";
+
+type MergeActor = {
+  actorUserId: string;
+  actorProfileId: string | null;
+  actorTeamMemberId: string | null;
+  actorDisplayName: string;
+  actorKey: string | null;
+};
+
+const DEFAULT_MERGE_ACTOR: MergeActor = {
+  actorUserId: DEFAULT_MERGE_USER_ID,
+  actorProfileId: DEFAULT_MERGE_USER_ID,
+  actorTeamMemberId: null,
+  actorDisplayName: "Sell It Merge API",
+  actorKey: "merge-api",
+};
+
+const mergeActorStorage = new AsyncLocalStorage<MergeActor>();
+
+function cleanActorText(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function objectValue(value: unknown) {
+  return value && typeof value === "object"
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function getMergeActor(input: unknown): MergeActor {
+  const body = objectValue(input);
+  const actor = objectValue(body.actor);
+
+  const actorUserId =
+    cleanActorText(actor.actorUserId) ||
+    cleanActorText(body.actorUserId) ||
+    DEFAULT_MERGE_USER_ID;
+
+  const actorProfileId =
+    cleanActorText(actor.profileId) ||
+    cleanActorText(actor.actorProfileId) ||
+    cleanActorText(body.actorProfileId) ||
+    actorUserId;
+
+  return {
+    actorUserId,
+    actorProfileId,
+    actorTeamMemberId:
+      cleanActorText(actor.teamMemberId) ||
+      cleanActorText(actor.actorTeamMemberId) ||
+      cleanActorText(body.actorTeamMemberId),
+    actorDisplayName:
+      cleanActorText(actor.displayName) ||
+      cleanActorText(actor.actorDisplayName) ||
+      cleanActorText(body.actorDisplayName) ||
+      "Sell It Merge API",
+    actorKey:
+      cleanActorText(actor.key) ||
+      cleanActorText(actor.actorKey) ||
+      cleanActorText(body.actorKey),
+  };
+}
+
+function getCurrentMergeActor() {
+  return mergeActorStorage.getStore() ?? DEFAULT_MERGE_ACTOR;
+}
 
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -231,7 +299,7 @@ async function moveRows(
     .from(tableName)
     .update({
       [columnName]: toId,
-      updated_by: USER_ID,
+      updated_by: getCurrentMergeActor().actorUserId,
     })
     .eq(columnName, fromId);
 
@@ -277,7 +345,7 @@ async function updateRecord(
   const updateValues = includeUpdatedBy
     ? {
         ...values,
-        updated_by: USER_ID,
+        updated_by: getCurrentMergeActor().actorUserId,
       }
     : values;
 
@@ -324,9 +392,9 @@ async function archiveOrDeleteRecord(
     .update({
       is_archived: true,
       archived_at: new Date().toISOString(),
-      archived_by: USER_ID,
+      archived_by: getCurrentMergeActor().actorUserId,
       archive_reason: archiveReason,
-      updated_by: USER_ID,
+      updated_by: getCurrentMergeActor().actorUserId,
     })
     .eq("id", duplicateId);
 
@@ -342,7 +410,7 @@ async function archiveOrDeleteRecord(
     .from(tableName)
     .update({
       is_archived: true,
-      updated_by: USER_ID,
+      updated_by: getCurrentMergeActor().actorUserId,
     })
     .eq("id", duplicateId);
 
@@ -1010,7 +1078,7 @@ async function createMergeCompletedNotification(
       duplicate_id: duplicateId,
       source: "Merge API",
     },
-    created_by: USER_ID,
+    created_by: getCurrentMergeActor().actorUserId,
   });
 
   if (error) {
@@ -1066,16 +1134,16 @@ async function createMergeWorkLogEntry(
   const { error } = await supabase.from("work_log").insert({
     workspace_id: WORKSPACE_ID,
     actor_type: "system",
-    actor_profile_id: null,
-    actor_team_member_id: null,
-    actor_display_name: "Sell It Merge API",
+    actor_profile_id: getCurrentMergeActor().actorProfileId,
+    actor_team_member_id: getCurrentMergeActor().actorTeamMemberId,
+    actor_display_name: getCurrentMergeActor().actorDisplayName,
     action_type: "merge",
     entity_type: entityType,
     entity_id: survivorId,
     entity_label: survivorLabel,
     related_entity_type: entityType,
     related_entity_id: duplicateId,
-    summary: `Sell It Merge API merged ${readableType} duplicate "${duplicateLabel}" into "${survivorLabel}".`,
+    summary: `${getCurrentMergeActor().actorDisplayName} merged ${readableType} duplicate "${duplicateLabel}" into "${survivorLabel}".`,
     details: `Duplicate record disposition: ${duplicateDisposition}.`,
     metadata: {
       source: "Merge Action Work Log V1",
@@ -1110,8 +1178,10 @@ export async function POST(request: Request) {
     const survivorId = requireString(body.survivorId, "survivorId");
     const duplicateId = requireString(body.duplicateId, "duplicateId");
     const allowPermanentDelete = body.allowPermanentDelete === true;
+    const mergeActor = getMergeActor(body);
 
-    if (survivorId === duplicateId) {
+    return await mergeActorStorage.run(mergeActor, async () => {
+      if (survivorId === duplicateId) {
       throw new Error("Survivor and duplicate cannot be the same record.");
     }
 
@@ -1148,6 +1218,7 @@ export async function POST(request: Request) {
       duplicateId,
       ...result,
     });
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown merge error.";
@@ -1161,5 +1232,6 @@ export async function POST(request: Request) {
     );
   }
 }
+
 
 

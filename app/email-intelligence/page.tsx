@@ -46,7 +46,7 @@ const emptyReview: EmailReview = {
 };
 
 const WORKSPACE_ID = "ba491d9b-3b36-426d-b98a-f05b0bf271ed";
-const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
+const FALLBACK_USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
 type SavedRecords = {
   companyId: string;
@@ -1018,7 +1018,7 @@ export default function EmailIntelligencePage() {
         ),
         priority: mapUrgencyToTaskPriority(review.urgency),
         status: "Open",
-        assigned_to: USER_ID,
+        assigned_to: getDatabaseSafeUserId(),
         company_id: companyId || null,
         contact_id: contactId || null,
         opportunity_id: opportunityId || null,
@@ -1816,4 +1816,5 @@ export default function EmailIntelligencePage() {
     </main>
   );
 }
+
 

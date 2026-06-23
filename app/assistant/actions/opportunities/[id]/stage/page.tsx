@@ -7,7 +7,7 @@ import { supabase } from "../../../../../lib/supabase"; import { createNotificat
 import { getCurrentActingUserSnapshot, getDatabaseSafeUserId } from "../../../../../lib/actingUser";
 import { createWorkLogEntry } from "../../../../../lib/workLog";
 
-const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
+const FALLBACK_USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
 const STAGE_OPTIONS = [
   "New Lead",
@@ -367,6 +367,7 @@ export default function AssistantMoveOpportunityStagePage() {
     </main>
   );
 }
+
 
 
 

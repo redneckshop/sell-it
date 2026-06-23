@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { supabase } from "../lib/supabase";
+import { getDatabaseSafeUserId } from "../lib/actingUser";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -7332,7 +7333,7 @@ function buildAssistantScheduleReviewHref(input: {
   params.set("status", "Open");
   params.set(
     "assigned_to",
-    input.sourceTask?.assigned_to || "a840f813-aba5-44f7-bf20-5f1e5a91e832"
+    input.sourceTask?.assigned_to || getDatabaseSafeUserId()
   );
 
   if (dueDate) params.set("due_date", dueDate);
@@ -7910,6 +7911,7 @@ ${answer}`,
     </main>
   );
 }
+
 
 
 

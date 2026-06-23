@@ -1,4 +1,6 @@
-﻿export type ActingUserKey = "charles" | "trent" | "angel";
+﻿import { getCachedRealUserIdentity } from "./userIdentity";
+
+export type ActingUserKey = "charles" | "trent" | "angel";
 
 export type ActingUserSnapshot = {
   key: ActingUserKey;
@@ -68,20 +70,20 @@ export function buildActingUserSnapshot(input: {
   };
 }
 
-export function getCurrentActingUserSnapshot(): ActingUserSnapshot {
+function getStoredDevelopmentActingUserSnapshot() {
   if (typeof window === "undefined") {
-    return DEFAULT_ACTING_USER;
+    return null;
   }
 
   try {
     const raw = window.localStorage.getItem(ACTING_USER_STORAGE_KEY);
     if (!raw) {
-      return DEFAULT_ACTING_USER;
+      return null;
     }
 
     const parsed = JSON.parse(raw) as Partial<ActingUserSnapshot>;
     if (!isValidKey(parsed.key)) {
-      return DEFAULT_ACTING_USER;
+      return null;
     }
 
     return buildActingUserSnapshot({
@@ -91,8 +93,42 @@ export function getCurrentActingUserSnapshot(): ActingUserSnapshot {
       profileId: parsed.profileId || null,
     });
   } catch {
-    return DEFAULT_ACTING_USER;
+    return null;
   }
+}
+
+function getRealUserAsActingSnapshot() {
+  const realIdentity = getCachedRealUserIdentity();
+
+  if (!realIdentity?.isAuthenticated || !realIdentity.profileId) {
+    return null;
+  }
+
+  return buildActingUserSnapshot({
+    key: "charles",
+    displayName: realIdentity.displayName,
+    teamMemberId: realIdentity.teamMemberId,
+    profileId: realIdentity.profileId,
+  });
+}
+
+export function getCurrentActingUserSnapshot(): ActingUserSnapshot {
+  const storedDevelopmentUser = getStoredDevelopmentActingUserSnapshot();
+
+  if (
+    storedDevelopmentUser &&
+    (storedDevelopmentUser.key === "trent" || storedDevelopmentUser.key === "angel")
+  ) {
+    return storedDevelopmentUser;
+  }
+
+  const realUser = getRealUserAsActingSnapshot();
+
+  if (realUser) {
+    return realUser;
+  }
+
+  return storedDevelopmentUser || DEFAULT_ACTING_USER;
 }
 
 export function setCurrentActingUserSnapshot(user: ActingUserSnapshot) {

@@ -1,15 +1,16 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "../../lib/supabase";
+import { getDatabaseSafeUserId } from "../../lib/actingUser";
 import RelationshipSummaryPanel, {
   type RelationshipSummaryItem,
 } from "../../components/RelationshipSummaryPanel";
 
 const WORKSPACE_ID = "ba491d9b-3b36-426d-b98a-f05b0bf271ed";
-const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
+const FALLBACK_USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
 type SupabaseRelation<T> = T | T[] | null;
 
@@ -443,7 +444,7 @@ export default function PainPointDetailPage() {
       workspace_id: WORKSPACE_ID,
       pain_point_id: id,
       company_id: companyId,
-      created_by: USER_ID,
+      created_by: getDatabaseSafeUserId(),
     });
 
     if (error) {
@@ -468,7 +469,7 @@ export default function PainPointDetailPage() {
       workspace_id: WORKSPACE_ID,
       pain_point_id: id,
       contact_id: contactId,
-      created_by: USER_ID,
+      created_by: getDatabaseSafeUserId(),
     });
 
     if (error) {
@@ -493,7 +494,7 @@ export default function PainPointDetailPage() {
       workspace_id: WORKSPACE_ID,
       pain_point_id: id,
       activity_id: activityId,
-      created_by: USER_ID,
+      created_by: getDatabaseSafeUserId(),
     });
 
     if (error) {
@@ -518,7 +519,7 @@ export default function PainPointDetailPage() {
       workspace_id: WORKSPACE_ID,
       pain_point_id: id,
       post_id: postId,
-      created_by: USER_ID,
+      created_by: getDatabaseSafeUserId(),
     });
 
     if (error) {
@@ -931,3 +932,4 @@ export default function PainPointDetailPage() {
     </main>
   );
 }
+

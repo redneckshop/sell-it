@@ -7,7 +7,7 @@ import { supabase } from "../../lib/supabase"; import { createNotification } fro
 import { getCurrentActingUserSnapshot, getDatabaseSafeUserId } from "../../lib/actingUser";
 
 const WORKSPACE_ID = "ba491d9b-3b36-426d-b98a-f05b0bf271ed";
-const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
+const FALLBACK_USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
 type Company = {
   id: string;
@@ -183,7 +183,7 @@ export default function NewTaskPage() {
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState("Normal");
   const [status, setStatus] = useState("Open");
-  const [assignedTo, setAssignedTo] = useState(USER_ID);
+  const [assignedTo, setAssignedTo] = useState(getDatabaseSafeUserId());
   const [assignedTeamMemberId, setAssignedTeamMemberId] = useState("");
   const [companyId, setCompanyId] = useState("");
   const [contactId, setContactId] = useState("");
@@ -289,7 +289,7 @@ export default function NewTaskPage() {
       setTeamMembers(loadedTeamMembers);
 
       const currentUserTeamMember = loadedTeamMembers.find(
-        (member) => member.profile_id === USER_ID
+        (member) => member.profile_id === getDatabaseSafeUserId()
       );
 
       if (currentUserTeamMember) {
@@ -310,6 +310,10 @@ export default function NewTaskPage() {
       (member) => member.id === assignedTeamMemberId
     );
 
+    const actingUser = getCurrentActingUserSnapshot();
+    const databaseSafeUserId = getDatabaseSafeUserId(actingUser);
+
+    // Task New Real User Auth V1
     const { data: createdTask, error } = await supabase.from("tasks").insert({
       workspace_id: WORKSPACE_ID,
       title,
@@ -322,8 +326,8 @@ export default function NewTaskPage() {
       company_id: companyId || null,
       contact_id: contactId || null,
       opportunity_id: opportunityId || null,
-      created_by: getDatabaseSafeUserId(),
-      updated_by: getDatabaseSafeUserId(),
+      created_by: databaseSafeUserId,
+      updated_by: databaseSafeUserId,
     });
 
     setSaving(false);
@@ -538,6 +542,10 @@ export default function NewTaskPage() {
     </main>
   );
 }
+
+
+
+
 
 
 

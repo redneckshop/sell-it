@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
+import { getDatabaseSafeUserId } from "../../../lib/actingUser";
 import { updateRecordWithConcurrencyGuard } from "../../../lib/concurrency";
 
-const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
+const FALLBACK_USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
 type PainPoint = {
   id: string;
@@ -237,7 +238,7 @@ export default function EditPainPointPage() {
         name,
         description: description || null,
         category: category || null,
-        updated_by: USER_ID,
+        updated_by: getDatabaseSafeUserId(),
         updated_at: changedAt,
       },
     });
@@ -390,3 +391,4 @@ export default function EditPainPointPage() {
     </main>
   );
 }
+
