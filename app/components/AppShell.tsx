@@ -6,7 +6,8 @@ import { useState, type CSSProperties, type ReactNode } from "react";
 import PageAssistant from "./PageAssistant";
 import NotificationCenter from "./NotificationCenter";
 import ActingUserSelector from "./ActingUserSelector";
-import UserIdentityStatus from "./UserIdentityStatus";
+import UserAvatarMenu from "./UserAvatarMenu";
+import AuthRouteGuard from "./AuthRouteGuard";
 
 type AppShellProps = {
   children: ReactNode;
@@ -555,6 +556,10 @@ function sidebarLinkStyle(active: boolean): CSSProperties {
   };
 }
 
+function isPublicShellPath(pathname: string) {
+  return pathname === "/login" || pathname === "/update-password";
+}
+
 function renderSidebarItem(item: SidebarItem, pathname: string) {
   const key = `${item.label}-${item.href ?? item.badge ?? "disabled"}`;
 
@@ -585,11 +590,18 @@ export default function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const [quickAddOpen, setQuickAddOpen] = useState(false);
 
+  if (isPublicShellPath(pathname)) {
+    return <AuthRouteGuard>{children}</AuthRouteGuard>;
+  }
+
   const currentSection = getCurrentSection(pathname);
   const sidebarGroups = contextNavGroups[currentSection];
+  const showDevelopmentActingUser =
+    process.env.NEXT_PUBLIC_SHOW_DEV_ACTING_USER === "true";
 
   return (
-    <div style={shellStyle}>
+    <AuthRouteGuard>
+      <div style={shellStyle}>
       <header style={topBarStyle}>
         <Link href="/" style={brandStyle}>
           <span style={logoStyle}>S</span>
@@ -635,7 +647,9 @@ export default function AppShell({ children }: AppShellProps) {
             Plan
           </Link>
 
-          <UserIdentityStatus /> <ActingUserSelector /> <NotificationCenter /> <div style={quickAddWrapperStyle}>
+          {showDevelopmentActingUser ? <ActingUserSelector /> : null}
+          <NotificationCenter />
+          <div style={quickAddWrapperStyle}>
             <button
               type="button"
               onClick={() => setQuickAddOpen((value) => !value)}
@@ -668,7 +682,7 @@ export default function AppShell({ children }: AppShellProps) {
             )}
           </div>
 
-          <span style={iconButtonStyle}>CC</span>
+          <UserAvatarMenu />
         </div>
       </header>
 
@@ -702,9 +716,14 @@ export default function AppShell({ children }: AppShellProps) {
 
         <main style={contentStyle}>{children}</main>
       </div>
-    </div>
+      </div>
+    </AuthRouteGuard>
   );
 }
+
+
+
+
 
 
 

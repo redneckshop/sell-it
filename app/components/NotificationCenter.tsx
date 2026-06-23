@@ -6,6 +6,7 @@ import { supabase } from "../lib/supabase";
 import {
   ACTING_USER_CHANGED_EVENT,
   getActingIdentityIds,
+  DEFAULT_ACTING_USER,
   getCurrentActingUserSnapshot,
   isActingUserId,
   type ActingUserSnapshot,
@@ -260,9 +261,8 @@ async function seedAssignedDueNotifications(user: ActingUserSnapshot) {
 
 export default function NotificationCenter() {
   const [open, setOpen] = useState(false);
-  const [actingUser, setActingUser] = useState<ActingUserSnapshot>(() =>
-    getCurrentActingUserSnapshot()
-  );
+  const [actingUser, setActingUser] =
+    useState<ActingUserSnapshot>(DEFAULT_ACTING_USER);
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -507,3 +507,4 @@ export default function NotificationCenter() {
     </div>
   );
 }
+

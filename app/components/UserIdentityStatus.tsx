@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useState, type CSSProperties } from "react";
 import { supabase } from "../lib/supabase";
 import {
-  clearCachedRealUserIdentity,
   getCachedRealUserIdentity,
   REAL_USER_IDENTITY_CHANGED_EVENT,
   resolveRealUserIdentity,
@@ -86,9 +85,7 @@ function identityMeta(identity: RealUserIdentitySnapshot | null) {
 }
 
 export default function UserIdentityStatus() {
-  const [identity, setIdentity] = useState<RealUserIdentitySnapshot | null>(
-    () => getCachedRealUserIdentity()
-  );
+  const [identity, setIdentity] = useState<RealUserIdentitySnapshot | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -130,11 +127,6 @@ export default function UserIdentityStatus() {
     };
   }, []);
 
-  async function handleSignOut() {
-    await supabase.auth.signOut();
-    clearCachedRealUserIdentity();
-    window.location.href = "/";
-  }
 
   const isRealLogin = Boolean(identity?.isAuthenticated && identity.profileId);
 
@@ -164,15 +156,9 @@ export default function UserIdentityStatus() {
         <span style={metaStyle}>{identityMeta(identity)}</span>
       </span>
 
-      {isRealLogin ? (
-        <button type="button" onClick={handleSignOut} style={actionStyle}>
-          Sign Out
-        </button>
-      ) : (
-        <Link href="/login" style={actionStyle}>
-          Login
-        </Link>
-      )}
+
     </div>
   );
 }
+
+

@@ -1,13 +1,31 @@
 ﻿"use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, type CSSProperties, type FormEvent } from "react";
 import { supabase } from "../lib/supabase";
-import {
-  clearCachedRealUserIdentity,
-  resolveRealUserIdentity,
-} from "../lib/userIdentity";
+import { setSellItAuthCookie } from "../lib/authSessionCookie";
+import { resolveRealUserIdentity } from "../lib/userIdentity";
+
+
+function safeNextPath(value: string | null) {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return "/";
+  }
+
+  if (value === "/login" || value.startsWith("/login?")) {
+    return "/";
+  }
+
+  return value;
+}
+
+function nextPathFromBrowser() {
+  if (typeof window === "undefined") {
+    return "/";
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  return safeNextPath(params.get("next"));
+}
 
 const pageStyle: CSSProperties = {
   minHeight: "100vh",
@@ -128,8 +146,6 @@ const linkStyle: CSSProperties = {
 };
 
 export default function LoginPage() {
-  const router = useRouter();
-
   const [email, setEmail] = useState("charlesjcharlebois@gmail.com");
   const [password, setPassword] = useState("");
   const [saving, setSaving] = useState(false);
@@ -168,8 +184,8 @@ export default function LoginPage() {
     }
 
     setSuccessMessage(`Signed in as ${identity.displayName}.`);
-    router.push("/");
-    router.refresh();
+    setSellItAuthCookie();
+    window.location.replace(nextPathFromBrowser());
   }
 
   async function handleSendPasswordReset() {
@@ -204,56 +220,14 @@ export default function LoginPage() {
     setSuccessMessage(
       `Password reset email sent to ${cleanEmail}. Open that email, click the reset link, then set your new password.`
     );
-  }
-  async function handleCheckCurrentSession() {
-    setChecking(true);
-    setErrorMessage("");
-    setSuccessMessage("");
-
-    const identity = await resolveRealUserIdentity();
-
-    setChecking(false);
-
-    if (!identity.isAuthenticated || !identity.profileId) {
-      setErrorMessage(
-        identity.errorMessage ||
-          "No real Supabase login session was detected in this browser."
-      );
-      return;
-    }
-
-    setSuccessMessage(
-      `Current session detected: ${identity.displayName} / ${identity.workspaceName}.`
-    );
-  }
-
-  async function handleLogout() {
-    setSaving(true);
-    setErrorMessage("");
-    setSuccessMessage("");
-
-    const { error } = await supabase.auth.signOut();
-    clearCachedRealUserIdentity();
-
-    setSaving(false);
-
-    if (error) {
-      setErrorMessage(error.message);
-      return;
-    }
-
-    setSuccessMessage("Signed out. Development Acting As fallback remains available.");
-    router.refresh();
-  }
-
+  }
   return (
     <main style={pageStyle}>
       <section style={cardStyle}>
         <p style={eyebrowStyle}>Sell It / Real User Login</p>
         <h1 style={titleStyle}>Sign in</h1>
         <p style={descriptionStyle}>
-          This is the Real User Auth V1 login path. Acting User remains available
-          only as a development/testing fallback.
+          Sign in to access your Sell It workspace, sales tasks, activity history, opportunities, and team dashboard.
         </p>
 
         {errorMessage ? <div style={errorStyle}>Error: {errorMessage}</div> : null}
@@ -298,33 +272,19 @@ export default function LoginPage() {
           {checking ? "Working..." : "Send Password Reset Link"}
         </button>
 
-        <button
-          type="button"
-          disabled={checking || saving}
-          onClick={handleCheckCurrentSession}
-          style={secondaryButtonStyle}
-        >
-          {checking ? "Checking..." : "Check Current Session"}
-        </button>
-
-        <button
-          type="button"
-          disabled={saving}
-          onClick={handleLogout}
-          style={secondaryButtonStyle}
-        >
-          Sign Out
-        </button>
-
         <p style={footerStyle}>
-          Back to{" "}
-          <Link href="/" style={linkStyle}>
-            Dashboard
-          </Link>
-          . If you do not know the password yet, click Send Password Reset Link and set a new one from your email.
+          Use your team login email and password. If you do not know the password yet,
+          click Send Password Reset Link and set a new one from your email.
         </p>
       </section>
     </main>
   );
 }
+
+
+
+
+
+
+
 

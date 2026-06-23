@@ -38,9 +38,7 @@ function displayNameFromIdentity(
 }
 
 function useDashboardIdentity(fallbackName: string) {
-  const [identity, setIdentity] = useState<RealUserIdentitySnapshot | null>(
-    () => getCachedRealUserIdentity()
-  );
+  const [identity, setIdentity] = useState<RealUserIdentitySnapshot | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -82,6 +80,11 @@ export function DashboardUserGreeting({
   fallbackName: string;
 }) {
   const displayName = useDashboardIdentity(fallbackName);
+  const [greeting, setGreeting] = useState("Hello");
+
+  useEffect(() => {
+    setGreeting(greetingForNow());
+  }, []);
 
   return (
     <h1
@@ -91,7 +94,7 @@ export function DashboardUserGreeting({
         margin: "0 0 10px",
       }}
     >
-      {greetingForNow()}, {firstName(displayName)}
+      {greeting}, {firstName(displayName)}
     </h1>
   );
 }
@@ -105,3 +108,4 @@ export function DashboardLoggedInUser({
 
   return <strong>{displayName}</strong>;
 }
+
