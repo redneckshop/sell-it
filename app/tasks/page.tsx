@@ -1,4 +1,5 @@
-﻿import Link from "next/link";
+import { businessTodayKey, dateKeyToLocalDate, dateOnlyKey, formatDateOnly } from "../lib/dateUtils";
+import Link from "next/link";
 import type { CSSProperties } from "react";
 import { supabase } from "../lib/supabase";
 
@@ -111,27 +112,15 @@ function uniqueValues(values: Array<string | null | undefined>) {
 }
 
 function todayDateOnly() {
-  const now = new Date();
-
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return dateKeyToLocalDate(businessTodayKey()) ?? new Date();
 }
 
 function parseTaskDate(value: string | null) {
-  if (!value) return null;
+  const key = dateOnlyKey(value);
 
-  const parts = value.split("-").map((part) => Number(part));
+  if (!key) return null;
 
-  if (parts.length >= 3 && parts.every((part) => Number.isFinite(part))) {
-    return new Date(parts[0], parts[1] - 1, parts[2]);
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  return dateKeyToLocalDate(key);
 }
 
 function matchesDueFilter(task: Task, dueFilter: string) {
@@ -172,13 +161,7 @@ function dueFilterLabel(value: string) {
 }
 
 function formatDate(value: string | null) {
-  if (!value) return "No due date";
-
-  try {
-    return new Date(`${value}T00:00:00`).toLocaleDateString();
-  } catch {
-    return value;
-  }
+  return formatDateOnly(value);
 }
 
 function getDueStatus(task: Task) {
@@ -697,3 +680,7 @@ export default async function TasksPage({ searchParams }: PageProps) {
     </main>
   );
 }
+
+
+
+

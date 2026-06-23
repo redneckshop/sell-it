@@ -1,4 +1,5 @@
-﻿"use client";
+"use client";
+import { addDaysToDateKey, businessTodayKey, dateOnlyKey, daysBetweenDateKeys, formatDateOnly } from "../lib/dateUtils";
 
 import Link from "next/link";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
@@ -2009,17 +2010,11 @@ const mutedTextStyle: CSSProperties = {
 };
 
 function todayIsoDate() {
-  return new Date().toISOString().slice(0, 10);
+  return businessTodayKey();
 }
 
-function formatDate(value: string | null) {
-  if (!value) return "No date";
-
-  try {
-    return new Date(value).toLocaleDateString();
-  } catch {
-    return value;
-  }
+function formatDate(value: string | null | undefined) {
+  return formatDateOnly(value);
 }
 
 function formatMoney(value: number | null) {
@@ -4300,26 +4295,19 @@ function parseDateValue(value: string | null | undefined) {
 }
 
 function daysSince(value: string | null | undefined) {
-  const date = parseDateValue(value);
+  const date = dateOnlyKey(value);
 
   if (!date) return null;
 
-  const now = new Date();
-  const difference = now.getTime() - date.getTime();
-
-  return Math.max(0, Math.floor(difference / 86400000));
+  return daysBetweenDateKeys(date, businessTodayKey());
 }
 
 function daysUntil(value: string | null | undefined) {
-  const date = parseDateValue(value);
+  const due = dateOnlyKey(value);
 
-  if (!date) return null;
+  if (!due) return null;
 
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
-  return Math.floor((target.getTime() - today.getTime()) / 86400000);
+  return daysBetweenDateKeys(businessTodayKey(), due);
 }
 
 function isOpenTask(task: Task) {
@@ -5494,14 +5482,8 @@ function assistantWorkloadStatusLabel(
 
 function buildAssistantWorkloadSummaries(data: RecommendationData) {
   const today = todayIsoDate();
-
-  const weekEndDate = new Date(`${today}T00:00:00`);
-  weekEndDate.setDate(weekEndDate.getDate() + 7);
-  const weekEnd = weekEndDate.toISOString().slice(0, 10);
-
-  const completedWeekStartDate = new Date(`${today}T00:00:00`);
-  completedWeekStartDate.setDate(completedWeekStartDate.getDate() - 7);
-  const completedWeekStart = completedWeekStartDate.toISOString().slice(0, 10);
+  const weekEnd = addDaysToDateKey(today, 7);
+  const completedWeekStart = addDaysToDateKey(today, -7);
 
   return data.teamMembers
     .map((member) => {
@@ -7911,6 +7893,12 @@ ${answer}`,
     </main>
   );
 }
+
+
+
+
+
+
 
 
 

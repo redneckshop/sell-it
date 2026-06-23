@@ -1,4 +1,5 @@
-﻿"use client";
+"use client";
+import { formatDateTimeLocal } from "../lib/dateUtils";
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
@@ -153,12 +154,8 @@ const errorStyle: CSSProperties = {
   fontWeight: 800,
 };
 
-function formatDateTime(value: string) {
-  if (!value) {
-    return "";
-  }
-
-  return new Date(value).toLocaleString();
+function formatDateTime(value: string | null) {
+  return formatDateTimeLocal(value);
 }
 
 function uniqueSorted(values: Array<string | null | undefined>) {
@@ -453,3 +450,5 @@ export default function WorkLogPage() {
     </main>
   );
 }
+
+

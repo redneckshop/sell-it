@@ -1,4 +1,5 @@
-﻿import Link from "next/link";
+import { addDaysToDateKey, businessTodayKey, dateOnlyKey, formatDateOnly, formatDateTimeLocal } from "../lib/dateUtils";
+import Link from "next/link";
 import type { CSSProperties } from "react";
 import { supabase } from "../lib/supabase";
 
@@ -78,56 +79,19 @@ function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
 }
 
 function todayKey() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
+  return businessTodayKey();
 }
 
 function addDaysKey(startKey: string, days: number) {
-  const [year, month, day] = startKey.split("-").map(Number);
-  const date = new Date(year, month - 1, day);
-  date.setDate(date.getDate() + days);
-
-  const nextYear = date.getFullYear();
-  const nextMonth = String(date.getMonth() + 1).padStart(2, "0");
-  const nextDay = String(date.getDate()).padStart(2, "0");
-
-  return `${nextYear}-${nextMonth}-${nextDay}`;
+  return addDaysToDateKey(startKey, days);
 }
 
-function dateKey(value: string | null) {
-  if (!value) return "";
-
-  const match = value.match(/^(\d{4}-\d{2}-\d{2})/);
-
-  if (match?.[1]) {
-    return match[1];
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
+function dateKey(value: string | null | undefined) {
+  return dateOnlyKey(value);
 }
 
-function formatDate(value: string | null) {
-  const key = dateKey(value);
-
-  if (!key) return "No due date";
-
-  const [year, month, day] = key.split("-").map(Number);
-
-  return new Date(year, month - 1, day).toLocaleDateString();
+function formatDate(value: string | null | undefined) {
+  return formatDateOnly(value);
 }
 
 function formatDateFromKey(key: string) {
@@ -143,14 +107,8 @@ function formatDateFromKey(key: string) {
   });
 }
 
-function formatDateTime(value: string | null) {
-  if (!value) return "Not available";
-
-  try {
-    return new Date(value).toLocaleString();
-  } catch {
-    return value;
-  }
+function formatDateTime(value: string | null | undefined) {
+  return formatDateTimeLocal(value);
 }
 
 function isCompleted(task: Task) {
@@ -1587,3 +1545,9 @@ export default async function PlannerPage({ searchParams }: PageProps) {
     </main>
   );
 }
+
+
+
+
+
+

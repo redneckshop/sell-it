@@ -1,4 +1,5 @@
-﻿import Link from "next/link";
+import { addDaysToDateKey, businessTodayKey, dateOnlyKey, formatDateOnly, formatDateTimeLocal, formatLongDate } from "./lib/dateUtils";
+import Link from "next/link";
 import type { CSSProperties } from "react";
 import AssistantQuickLaunch from "./components/AssistantQuickLaunch";
 import HomeSearch from "./components/HomeSearch";
@@ -116,59 +117,27 @@ function singleRelation<T>(value: SupabaseRelation<T> | undefined) {
 }
 
 function getTodayString() {
-  const now = new Date();
-  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-  return now.toISOString().slice(0, 10);
+  return businessTodayKey();
 }
 
 function addDaysKey(startKey: string, days: number) {
-  const [year, month, day] = startKey.split("-").map(Number);
-  const date = new Date(year, month - 1, day);
-  date.setDate(date.getDate() + days);
-  return [
-    date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, "0"),
-    String(date.getDate()).padStart(2, "0"),
-  ].join("-");
+  return addDaysToDateKey(startKey, days);
 }
 
 function dateKey(value: string | null) {
-  if (!value) return "";
-  const match = value.match(/^(\d{4}-\d{2}-\d{2})/);
-  if (match?.[1]) return match[1];
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return [
-    date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, "0"),
-    String(date.getDate()).padStart(2, "0"),
-  ].join("-");
+  return dateOnlyKey(value);
 }
 
 function formatDate(value: string | null) {
-  const key = dateKey(value);
-  if (!key) return "No date";
-  const [year, month, day] = key.split("-").map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString();
+  return formatDateOnly(value);
 }
 
 function formatDateTime(value: string | null) {
-  if (!value) return "No date";
-  try {
-    return new Date(value).toLocaleString();
-  } catch {
-    return value;
-  }
+  return formatDateTimeLocal(value);
 }
 
 function formatDisplayDate(today: string) {
-  const [year, month, day] = today.split("-").map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString(undefined, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+  return formatLongDate(today);
 }
 
 function formatMoney(value: number | null) {
@@ -1105,5 +1074,12 @@ export default async function Home() {
     </main>
   );
 }
+
+
+
+
+
+
+
 
 

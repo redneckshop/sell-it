@@ -1,3 +1,4 @@
+import { formatDateOnly, formatDateTimeLocal } from "../../lib/dateUtils";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { supabase } from "../../lib/supabase";
@@ -231,13 +232,7 @@ function assignedTeamMemberLabel(
 }
 
 function formatDateTime(value: string | null) {
-  if (!value) return "Not available";
-
-  try {
-    return new Date(value).toLocaleString();
-  } catch {
-    return value;
-  }
+  return formatDateTimeLocal(value);
 }
 
 export default async function TaskDetailPage({ params }: PageProps) {
@@ -383,7 +378,7 @@ export default async function TaskDetailPage({ params }: PageProps) {
 
               <div>
                 <div style={labelStyle}>Due Date</div>
-                <p style={valueStyle}>{task.due_date || "Not provided"}</p>
+                <p style={valueStyle}>{task.due_date ? formatDateOnly(task.due_date) : "Not provided"}</p>
               </div>
 
               <div>
@@ -492,3 +487,5 @@ export default async function TaskDetailPage({ params }: PageProps) {
     </main>
   );
 }
+
+

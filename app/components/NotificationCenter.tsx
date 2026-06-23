@@ -1,4 +1,5 @@
-﻿"use client";
+"use client";
+import { businessTodayKey, formatDateTimeLocal } from "../lib/dateUtils";
 
 import Link from "next/link";
 import { useEffect, useState, type CSSProperties } from "react";
@@ -182,20 +183,11 @@ const linkStyle: CSSProperties = {
 };
 
 function todayKey() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return businessTodayKey();
 }
 
-function formatDateTime(value: string | null | undefined) {
-  if (!value) return "Date not saved";
-  try {
-    return new Date(value).toLocaleString();
-  } catch {
-    return value;
-  }
+function formatDateTime(value: string | null) {
+  return formatDateTimeLocal(value);
 }
 
 function isClosedTask(status: string | null) {
@@ -507,4 +499,7 @@ export default function NotificationCenter() {
     </div>
   );
 }
+
+
+
 
