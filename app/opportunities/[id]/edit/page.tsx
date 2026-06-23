@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabase"; import { createNotification } from "../../../lib/notifications";
 import { getCurrentActingUserSnapshot, getDatabaseSafeUserId } from "../../../lib/actingUser";
 import { createWorkLogEntry } from "../../../lib/workLog";
+import { updateRecordWithConcurrencyGuard } from "../../../lib/concurrency";
 
 const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
@@ -292,9 +293,12 @@ export default function EditOpportunityPage() {
     const shouldRecordStageHistory =
       workspaceId && stagesAreDifferent(originalStage, stage);
 
-    const { error } = await supabase
-      .from("opportunities")
-      .update({
+    const updateResult = await updateRecordWithConcurrencyGuard({
+      tableName: "opportunities",
+      recordId: opportunityId,
+      loadedUpdatedAt: lastUpdated,
+      entityLabel: name || "Opportunity",
+      values: {
         name,
         company_id: companyId || null,
         primary_contact_id: primaryContactId || null,
@@ -316,12 +320,13 @@ export default function EditOpportunityPage() {
         notes: notes || null,
         updated_by: databaseSafeUserId,
         updated_at: changedAt,
-      })
-      .eq("id", opportunityId);
+      },
+    });
 
-    if (error) {
+    // Opportunity Edit Concurrency Protection V1
+    if (!updateResult.ok) {
       setSaving(false);
-      setErrorMessage(error.message);
+      setErrorMessage(updateResult.errorMessage);
       return;
     }
 
@@ -639,6 +644,7 @@ export default function EditOpportunityPage() {
     </main>
   );
 }
+
 
 
 

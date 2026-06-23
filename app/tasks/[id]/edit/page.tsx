@@ -7,6 +7,7 @@ import { supabase } from "../../../lib/supabase";
 import { createNotificationOnce } from "../../../lib/notifications";
 import { getCurrentActingUserSnapshot, getDatabaseSafeUserId } from "../../../lib/actingUser";
 import { createWorkLogEntry } from "../../../lib/workLog";
+import { updateRecordWithConcurrencyGuard } from "../../../lib/concurrency";
 
 const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
@@ -402,9 +403,12 @@ export default function EditTaskPage() {
       (priorAssignedTeamMemberId || "") !== (assignedTeamMemberId || "") ||
       (priorAssignedTo || "") !== (nextAssignedTo || "");
 
-    const { error } = await supabase
-      .from("tasks")
-      .update({
+    const updateResult = await updateRecordWithConcurrencyGuard({
+      tableName: "tasks",
+      recordId: taskId,
+      loadedUpdatedAt: lastUpdated,
+      entityLabel: title || "Task",
+      values: {
         title,
         description: description || null,
         due_date: dueDate || null,
@@ -419,12 +423,13 @@ export default function EditTaskPage() {
         completed_by: nextCompletedBy,
         updated_by: databaseSafeUserId,
         updated_at: changedAt,
-      })
-      .eq("id", taskId);
+      },
+    });
 
-    if (error) {
+    // Task Edit Concurrency Protection V1
+    if (!updateResult.ok) {
       setSaving(false);
-      setErrorMessage(error.message);
+      setErrorMessage(updateResult.errorMessage);
       return;
     }
 
@@ -797,6 +802,7 @@ export default function EditTaskPage() {
     </main>
   );
 }
+
 
 
 

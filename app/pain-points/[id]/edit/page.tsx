@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
+import { updateRecordWithConcurrencyGuard } from "../../../lib/concurrency";
 
 const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
@@ -225,23 +226,30 @@ export default function EditPainPointPage() {
     setSaving(true);
     setErrorMessage("");
 
-    const { error } = await supabase
-      .from("pain_points")
-      .update({
+    const changedAt = new Date().toISOString();
+
+    const updateResult = await updateRecordWithConcurrencyGuard({
+      tableName: "pain_points",
+      recordId: painPointId,
+      loadedUpdatedAt: lastUpdated,
+      entityLabel: name || "Pain Point",
+      values: {
         name,
         description: description || null,
         category: category || null,
         updated_by: USER_ID,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", painPointId);
+        updated_at: changedAt,
+      },
+    });
 
     setSaving(false);
 
-    if (error) {
-      setErrorMessage(error.message);
+    if (!updateResult.ok) {
+      setErrorMessage(updateResult.errorMessage);
       return;
     }
+
+    // Pain Point Edit Concurrency Protection V1
 
     router.push(`/pain-points/${painPointId}`);
     router.refresh();

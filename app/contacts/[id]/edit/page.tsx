@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { supabase } from "../../../lib/supabase";
+import { updateRecordWithConcurrencyGuard } from "../../../lib/concurrency";
 
 const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
@@ -255,9 +256,14 @@ export default function EditContactPage() {
     setSaving(true);
     setErrorMessage("");
 
-    const { error } = await supabase
-      .from("contacts")
-      .update({
+    const changedAt = new Date().toISOString();
+
+    const updateResult = await updateRecordWithConcurrencyGuard({
+      tableName: "contacts",
+      recordId: contactId,
+      loadedUpdatedAt: lastUpdated,
+      entityLabel: `${firstName} ${lastName}`.trim() || "Contact",
+      values: {
         first_name: firstName,
         last_name: lastName || null,
         company_id: companyId || null,
@@ -266,16 +272,18 @@ export default function EditContactPage() {
         title: title || null,
         notes: notes || null,
         updated_by: USER_ID,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", contactId);
+        updated_at: changedAt,
+      },
+    });
 
     setSaving(false);
 
-    if (error) {
-      setErrorMessage(error.message);
+    if (!updateResult.ok) {
+      setErrorMessage(updateResult.errorMessage);
       return;
     }
+
+    // Contact Edit Concurrency Protection V1
 
     router.push(`/contacts/${contactId}`);
     router.refresh();
@@ -432,3 +440,4 @@ export default function EditContactPage() {
     </main>
   );
 }
+

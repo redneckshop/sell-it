@@ -1,9 +1,10 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { supabase } from "../../../lib/supabase";
+import { updateRecordWithConcurrencyGuard } from "../../../lib/concurrency";
 
 const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
@@ -236,9 +237,14 @@ export default function EditCompanyPage() {
     setSaving(true);
     setErrorMessage("");
 
-    const { error } = await supabase
-      .from("companies")
-      .update({
+    const changedAt = new Date().toISOString();
+
+    const updateResult = await updateRecordWithConcurrencyGuard({
+      tableName: "companies",
+      recordId: companyId,
+      loadedUpdatedAt: lastUpdated,
+      entityLabel: name || "Company",
+      values: {
         name,
         website: website || null,
         phone: phone || null,
@@ -247,16 +253,18 @@ export default function EditCompanyPage() {
         operating_regions: operatingRegions || null,
         assets_equipment: assetsEquipment || null,
         updated_by: USER_ID,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", companyId);
+        updated_at: changedAt,
+      },
+    });
 
     setSaving(false);
 
-    if (error) {
-      setErrorMessage(error.message);
+    if (!updateResult.ok) {
+      setErrorMessage(updateResult.errorMessage);
       return;
     }
+
+    // Company Edit Concurrency Protection V1
 
     router.push(`/companies/${companyId}`);
     router.refresh();
@@ -416,3 +424,4 @@ export default function EditCompanyPage() {
     </main>
   );
 }
+

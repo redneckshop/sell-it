@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
+import { updateRecordWithConcurrencyGuard } from "../../../lib/concurrency";
 
 const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
@@ -322,9 +323,14 @@ export default function EditPostPage() {
     setSaving(true);
     setErrorMessage("");
 
-    const { error } = await supabase
-      .from("posts")
-      .update({
+    const changedAt = new Date().toISOString();
+
+    const updateResult = await updateRecordWithConcurrencyGuard({
+      tableName: "posts",
+      recordId: postId,
+      loadedUpdatedAt: lastUpdated,
+      entityLabel: title || "Post",
+      values: {
         community_id: communityId || null,
         title,
         platform: platform || null,
@@ -344,16 +350,18 @@ export default function EditPostPage() {
         follow_up_needed: followUpNeeded,
         tags: tags || null,
         updated_by: USER_ID,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", postId);
+        updated_at: changedAt,
+      },
+    });
 
     setSaving(false);
 
-    if (error) {
-      setErrorMessage(error.message);
+    if (!updateResult.ok) {
+      setErrorMessage(updateResult.errorMessage);
       return;
     }
+
+    // Post Edit Concurrency Protection V1
 
     router.push(`/posts/${postId}`);
     router.refresh();

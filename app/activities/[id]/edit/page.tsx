@@ -1,9 +1,10 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
+import { updateRecordWithConcurrencyGuard } from "../../../lib/concurrency";
 
 const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
@@ -323,9 +324,14 @@ export default function EditActivityPage() {
     setSaving(true);
     setErrorMessage("");
 
-    const { error } = await supabase
-      .from("activities")
-      .update({
+    const changedAt = new Date().toISOString();
+
+    const updateResult = await updateRecordWithConcurrencyGuard({
+      tableName: "activities",
+      recordId: activityId,
+      loadedUpdatedAt: lastUpdated,
+      entityLabel: subject || "Activity",
+      values: {
         activity_type: activityType,
         activity_date: activityDate || null,
         subject,
@@ -338,16 +344,18 @@ export default function EditActivityPage() {
         task_id: taskId || null,
         opportunity_id: opportunityId || null,
         updated_by: USER_ID,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", activityId);
+        updated_at: changedAt,
+      },
+    });
 
     setSaving(false);
 
-    if (error) {
-      setErrorMessage(error.message);
+    if (!updateResult.ok) {
+      setErrorMessage(updateResult.errorMessage);
       return;
     }
+
+    // Activity Edit Concurrency Protection V1
 
     router.push(`/activities/${activityId}`);
     router.refresh();

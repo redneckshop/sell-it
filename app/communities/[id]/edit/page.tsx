@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
+import { updateRecordWithConcurrencyGuard } from "../../../lib/concurrency";
 
 const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
@@ -278,9 +279,14 @@ export default function EditCommunityPage() {
     setSaving(true);
     setErrorMessage("");
 
-    const { error } = await supabase
-      .from("communities")
-      .update({
+    const changedAt = new Date().toISOString();
+
+    const updateResult = await updateRecordWithConcurrencyGuard({
+      tableName: "communities",
+      recordId: communityId,
+      loadedUpdatedAt: lastUpdated,
+      entityLabel: name || "Community",
+      values: {
         name,
         platform,
         url: url || null,
@@ -294,16 +300,18 @@ export default function EditCommunityPage() {
         relevance_score: relevanceScore ? Number(relevanceScore) : null,
         tags: tags || null,
         updated_by: USER_ID,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", communityId);
+        updated_at: changedAt,
+      },
+    });
 
     setSaving(false);
 
-    if (error) {
-      setErrorMessage(error.message);
+    if (!updateResult.ok) {
+      setErrorMessage(updateResult.errorMessage);
       return;
     }
+
+    // Community Edit Concurrency Protection V1
 
     router.push(`/communities/${communityId}`);
     router.refresh();

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
+import { updateRecordWithConcurrencyGuard } from "../../../lib/concurrency";
 
 const USER_ID = "a840f813-aba5-44f7-bf20-5f1e5a91e832";
 
@@ -266,9 +267,14 @@ export default function EditNotePage() {
     setSaving(true);
     setErrorMessage("");
 
-    const { error } = await supabase
-      .from("notes")
-      .update({
+    const changedAt = new Date().toISOString();
+
+    const updateResult = await updateRecordWithConcurrencyGuard({
+      tableName: "notes",
+      recordId: noteId,
+      loadedUpdatedAt: lastUpdated,
+      entityLabel: title || "Note",
+      values: {
         title,
         body: body || null,
         source: source || null,
@@ -278,16 +284,18 @@ export default function EditNotePage() {
         contact_id: contactId || null,
         opportunity_id: opportunityId || null,
         updated_by: USER_ID,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", noteId);
+        updated_at: changedAt,
+      },
+    });
 
     setSaving(false);
 
-    if (error) {
-      setErrorMessage(error.message);
+    if (!updateResult.ok) {
+      setErrorMessage(updateResult.errorMessage);
       return;
     }
+
+    // Note Edit Concurrency Protection V1
 
     router.push(`/notes/${noteId}`);
     router.refresh();
