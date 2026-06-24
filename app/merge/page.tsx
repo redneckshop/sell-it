@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { supabase } from "../lib/supabase";
@@ -77,7 +77,6 @@ const cardStyle: CSSProperties = {
     "linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72))",
   boxSizing: "border-box",
   minWidth: 0,
-  overflowWrap: "anywhere",
   overflowWrap: "anywhere",
   boxShadow: "0 20px 70px rgba(2, 6, 23, 0.24)",
 };

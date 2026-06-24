@@ -98,7 +98,7 @@ const formStyle: CSSProperties = {
 
 const formGridStyle: CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))",
   gap: "16px",
 };
 
@@ -604,3 +604,4 @@ export default function NewPostPage() {
     </main>
   );
 }
+
