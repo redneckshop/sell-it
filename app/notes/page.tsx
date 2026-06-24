@@ -128,7 +128,7 @@ function pageStyle(): CSSProperties {
     minHeight: "calc(100vh - 64px)",
     backgroundColor: "#101010",
     color: "white",
-    padding: "38px",
+    padding: "clamp(12px, 4vw, 38px)",
     fontFamily: "Arial, sans-serif",
     boxSizing: "border-box",
   };
@@ -333,7 +333,7 @@ export default async function NotesPage({ searchParams }: PageProps) {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
               gap: "12px",
               alignItems: "end",
             }}
@@ -488,7 +488,7 @@ export default async function NotesPage({ searchParams }: PageProps) {
                         ...mutedTextStyle(),
                         margin: "0 0 8px",
                         lineHeight: 1.4,
-                        wordBreak: "break-word",
+                        overflowWrap: "anywhere",
                       }}
                     >
                       {previewText(note.body)}
@@ -518,7 +518,7 @@ export default async function NotesPage({ searchParams }: PageProps) {
                       style={{
                         ...mutedTextStyle(),
                         margin: 0,
-                        wordBreak: "break-word",
+                        overflowWrap: "anywhere",
                       }}
                     >
                       Source URL: {note.source_url}
@@ -543,3 +543,4 @@ export default async function NotesPage({ searchParams }: PageProps) {
     </main>
   );
 }
+

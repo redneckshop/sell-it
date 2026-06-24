@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { formatDateTimeLocal } from "../lib/dateUtils";
 
 import Link from "next/link";
@@ -78,7 +78,7 @@ const cardStyle: CSSProperties = {
 
 const filterGridStyle: CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
   gap: "14px",
 };
 
@@ -176,7 +176,7 @@ function renderRecordLink(entry: WorkLogEntry) {
   const href = getWorkLogEntityHref(entry.entity_type, entry.entity_id);
 
   if (!href) {
-    return entry.entity_label || entry.entity_id || "—";
+    return entry.entity_label || entry.entity_id || "â€”";
   }
 
   return (
@@ -438,7 +438,7 @@ export default function WorkLogPage() {
                           </div>
                         )}
                       </td>
-                      <td style={tdStyle}>{renderRelatedLink(entry) || "—"}</td>
+                      <td style={tdStyle}>{renderRelatedLink(entry) || "â€”"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -450,5 +450,6 @@ export default function WorkLogPage() {
     </main>
   );
 }
+
 
 

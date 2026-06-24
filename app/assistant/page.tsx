@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { addDaysToDateKey, businessTodayKey, dateOnlyKey, daysBetweenDateKeys, formatDateOnly } from "../lib/dateUtils";
 
 import Link from "next/link";
@@ -7856,7 +7856,7 @@ ${answer}`,
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
               gap: "12px",
             }}
           >
@@ -7893,6 +7893,7 @@ ${answer}`,
     </main>
   );
 }
+
 
 
 

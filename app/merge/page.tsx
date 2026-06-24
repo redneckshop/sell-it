@@ -78,7 +78,7 @@ const cardStyle: CSSProperties = {
   boxSizing: "border-box",
   minWidth: 0,
   overflowWrap: "anywhere",
-  wordBreak: "break-word",
+  overflowWrap: "anywhere",
   boxShadow: "0 20px 70px rgba(2, 6, 23, 0.24)",
 };
 
@@ -929,6 +929,7 @@ export default function MergeManagerPage() {
     </main>
   );
 }
+
 
 
 

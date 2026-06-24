@@ -126,7 +126,7 @@ function pageStyle(): CSSProperties {
     minHeight: "calc(100vh - 64px)",
     backgroundColor: "#101010",
     color: "white",
-    padding: "38px",
+    padding: "clamp(12px, 4vw, 38px)",
     fontFamily: "Arial, sans-serif",
     boxSizing: "border-box",
   };
@@ -352,7 +352,7 @@ export default async function PostsPage({ searchParams }: PageProps) {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
               gap: "12px",
               alignItems: "end",
             }}
@@ -556,7 +556,7 @@ export default async function PostsPage({ searchParams }: PageProps) {
                         ...mutedTextStyle(),
                         margin: "8px 0 0",
                         lineHeight: 1.4,
-                        wordBreak: "break-word",
+                        overflowWrap: "anywhere",
                       }}
                     >
                       {previewText(post.original_post_text)}
@@ -569,7 +569,7 @@ export default async function PostsPage({ searchParams }: PageProps) {
                         ...mutedTextStyle(),
                         margin: "8px 0 0",
                         lineHeight: 1.4,
-                        wordBreak: "break-word",
+                        overflowWrap: "anywhere",
                       }}
                     >
                       AI Summary: {previewText(post.ai_summary)}
@@ -592,7 +592,7 @@ export default async function PostsPage({ searchParams }: PageProps) {
                       style={{
                         ...mutedTextStyle(),
                         margin: "0 0 6px",
-                        wordBreak: "break-word",
+                        overflowWrap: "anywhere",
                       }}
                     >
                       Pain Points: {previewText(post.pain_points_found)}
@@ -604,7 +604,7 @@ export default async function PostsPage({ searchParams }: PageProps) {
                       style={{
                         ...mutedTextStyle(),
                         margin: "0 0 6px",
-                        wordBreak: "break-word",
+                        overflowWrap: "anywhere",
                       }}
                     >
                       Leads: {previewText(post.leads_found)}
@@ -616,7 +616,7 @@ export default async function PostsPage({ searchParams }: PageProps) {
                       style={{
                         ...mutedTextStyle(),
                         margin: 0,
-                        wordBreak: "break-word",
+                        overflowWrap: "anywhere",
                       }}
                     >
                       Tags: {post.tags}
@@ -641,3 +641,4 @@ export default async function PostsPage({ searchParams }: PageProps) {
     </main>
   );
 }
+

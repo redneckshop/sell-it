@@ -79,7 +79,7 @@ function pageStyle(): CSSProperties {
     minHeight: "calc(100vh - 64px)",
     backgroundColor: "#101010",
     color: "white",
-    padding: "38px",
+    padding: "clamp(12px, 4vw, 38px)",
     fontFamily: "Arial, sans-serif",
     boxSizing: "border-box",
   };
@@ -271,7 +271,7 @@ export default async function PainPointsPage({ searchParams }: PageProps) {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
               gap: "12px",
               alignItems: "end",
             }}
@@ -421,7 +421,7 @@ export default async function PainPointsPage({ searchParams }: PageProps) {
                     margin: 0,
                     lineHeight: 1.4,
                     whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
+                    overflowWrap: "anywhere",
                   }}
                 >
                   {previewText(painPoint.description)}
@@ -454,3 +454,4 @@ export default async function PainPointsPage({ searchParams }: PageProps) {
     </main>
   );
 }
+
