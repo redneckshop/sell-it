@@ -1,4 +1,4 @@
-import { addDaysToDateKey, businessTodayKey, dateOnlyKey, formatDateOnly, formatDateTimeLocal } from "../lib/dateUtils";
+﻿import { addDaysToDateKey, businessTodayKey, dateOnlyKey, formatDateOnly, formatDateTimeLocal } from "../lib/dateUtils";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { supabase } from "../lib/supabase";
@@ -258,7 +258,7 @@ function pageStyle(): CSSProperties {
     minHeight: "calc(100vh - 64px)",
     backgroundColor: "#101010",
     color: "white",
-    padding: "38px",
+    padding: "clamp(12px, 4vw, 38px)",
     fontFamily: "Arial, sans-serif",
     boxSizing: "border-box",
   };
@@ -556,16 +556,16 @@ function CalendarMonth({
 
       <div
         style={{
-          overflowX: "auto",
+          overflowX: "auto", WebkitOverflowScrolling: "touch",
           paddingBottom: "4px",
         }}
       >
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(7, minmax(105px, 1fr))",
-            gap: "8px",
-            minWidth: "780px",
+            gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
+            gap: "4px",
+            minWidth: 0,
           }}
         >
           {weekDayLabels.map((label) => (
@@ -593,14 +593,14 @@ function CalendarMonth({
               <div
                 key={day.key}
                 style={{
-                  minHeight: "128px",
+                  minHeight: "74px",
                   border: isSelected
                     ? "2px solid #8b5cf6"
                     : day.isToday
                       ? "2px solid #fcd34d"
                       : "1px solid #2f2f2f",
-                  borderRadius: "12px",
-                  padding: "8px",
+                  borderRadius: "10px",
+                  padding: "5px",
                   backgroundColor: day.isCurrentMonth ? "#151515" : "#0f0f0f",
                   opacity: day.isCurrentMonth ? 1 : 0.45,
                 }}
@@ -626,7 +626,7 @@ function CalendarMonth({
                         : day.isToday
                           ? "#fcd34d"
                           : "white",
-                      fontSize: "16px",
+                      fontSize: "15px",
                       fontWeight: 900,
                       textDecoration: "none",
                     }}
@@ -641,37 +641,8 @@ function CalendarMonth({
                   )}
                 </div>
 
-                <div style={{ display: "grid", gap: "6px" }}>
-                  {visibleTasks.map((task) => (
-                    <Link
-                      key={task.id}
-                      href={`/tasks/${task.id}`}
-                      title={task.title}
-                      style={{
-                        display: "block",
-                        color: "white",
-                        backgroundColor:
-                          task.priority === "Urgent"
-                            ? "rgba(239, 68, 68, 0.24)"
-                            : task.priority === "High"
-                              ? "rgba(245, 158, 11, 0.24)"
-                              : "rgba(124, 58, 237, 0.22)",
-                        border: "1px solid rgba(255,255,255,0.08)",
-                        borderRadius: "8px",
-                        padding: "5px 6px",
-                        textDecoration: "none",
-                        fontSize: "12px",
-                        fontWeight: 800,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {taskPillLabel(task)}
-                    </Link>
-                  ))}
-
-                  {hiddenCount > 0 && (
+                <div style={{ display: "flex", justifyContent: "center", marginTop: "6px" }}>
+                  {dayTasks.length > 0 && (
                     <Link
                       href={buildPlannerDayHref({
                         day: day.key,
@@ -679,14 +650,23 @@ function CalendarMonth({
                         statusFilter,
                         priorityFilter,
                       })}
+                      title={`${dayTasks.length} task${dayTasks.length === 1 ? "" : "s"}`}
                       style={{
-                        color: "#c4b5fd",
-                        fontSize: "12px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        minWidth: "24px",
+                        height: "22px",
+                        borderRadius: "8px",
+                        color: "white",
+                        backgroundColor: "rgba(124, 58, 237, 0.36)",
+                        border: "1px solid rgba(196, 181, 253, 0.20)",
                         textDecoration: "none",
+                        fontSize: "12px",
                         fontWeight: 900,
                       }}
                     >
-                      +{hiddenCount} more
+                      {dayTasks.length}
                     </Link>
                   )}
                 </div>
@@ -734,7 +714,7 @@ function SelectedDaySection({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))",
             gap: "12px",
           }}
         >
@@ -1003,7 +983,7 @@ function TeamWorkloadSection({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))",
             gap: "12px",
           }}
         >
@@ -1137,7 +1117,7 @@ function TeamWorkloadSection({
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
               gap: "14px",
             }}
           >
@@ -1360,7 +1340,7 @@ export default async function PlannerPage({ searchParams }: PageProps) {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
             gap: "12px",
             marginBottom: "18px",
           }}
@@ -1397,7 +1377,7 @@ export default async function PlannerPage({ searchParams }: PageProps) {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
               gap: "12px",
               alignItems: "end",
             }}
@@ -1507,7 +1487,7 @@ export default async function PlannerPage({ searchParams }: PageProps) {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))",
             gap: "16px",
           }}
         >
@@ -1545,6 +1525,9 @@ export default async function PlannerPage({ searchParams }: PageProps) {
     </main>
   );
 }
+
+
+
 
 
 
