@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import PageAssistant from "./PageAssistant";
 import NotificationCenter from "./NotificationCenter";
 import ActingUserSelector from "./ActingUserSelector";
@@ -175,30 +175,6 @@ const shellStyle: CSSProperties = {
     'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif',
 };
 
-const topBarStyle: CSSProperties = {
-  height: "64px",
-  position: "sticky",
-  top: 0,
-  zIndex: 50,
-  display: "flex",
-  alignItems: "center",
-  gap: "18px",
-  borderBottom: "1px solid rgba(255,255,255,0.08)",
-  backgroundColor: "rgba(8, 8, 10, 0.94)",
-  backdropFilter: "blur(14px)",
-  padding: "0 22px",
-  boxSizing: "border-box",
-};
-
-const brandStyle: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: "10px",
-  minWidth: "165px",
-  color: "white",
-  textDecoration: "none",
-};
-
 const logoStyle: CSSProperties = {
   width: "34px",
   height: "34px",
@@ -227,15 +203,6 @@ const brandSubtitleStyle: CSSProperties = {
   marginTop: "2px",
 };
 
-const topNavStyle: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: "6px",
-  flex: 1,
-  minWidth: 0,
-  overflowX: "auto",
-};
-
 const topNavLinkBaseStyle: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
@@ -249,13 +216,6 @@ const topNavLinkBaseStyle: CSSProperties = {
   fontWeight: 850,
   whiteSpace: "nowrap",
   border: "1px solid transparent",
-};
-
-const topUtilityStyle: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: "10px",
-  flexShrink: 0,
 };
 
 const iconButtonStyle: CSSProperties = {
@@ -274,6 +234,7 @@ const iconButtonStyle: CSSProperties = {
   fontSize: "12px",
   padding: "0 9px",
   boxSizing: "border-box",
+  cursor: "pointer",
 };
 
 const quickAddWrapperStyle: CSSProperties = {
@@ -330,28 +291,6 @@ const quickAddLinkStyle: CSSProperties = {
   padding: "10px 12px",
   borderRadius: "12px",
   fontWeight: 900,
-};
-
-const layoutStyle: CSSProperties = {
-  display: "flex",
-  alignItems: "stretch",
-  minHeight: "calc(100vh - 64px)",
-};
-
-const sidebarStyle: CSSProperties = {
-  width: "265px",
-  minWidth: "265px",
-  borderRight: "1px solid rgba(255,255,255,0.08)",
-  background:
-    "linear-gradient(180deg, rgba(17, 17, 19, 0.98), rgba(8, 8, 10, 0.98))",
-  padding: "18px 14px",
-  boxSizing: "border-box",
-  position: "sticky",
-  top: "64px",
-  alignSelf: "flex-start",
-  height: "calc(100vh - 64px)",
-  overflowY: "auto",
-  boxShadow: "18px 0 45px rgba(0,0,0,0.22)",
 };
 
 const sectionLabelStyle: CSSProperties = {
@@ -441,6 +380,7 @@ const pageAssistantSlotStyle: CSSProperties = {
 const contentStyle: CSSProperties = {
   flex: 1,
   minWidth: 0,
+  width: "100%",
 };
 
 function cleanHref(href: string) {
@@ -458,17 +398,9 @@ function isActivePath(pathname: string, href: string) {
 }
 
 function getCurrentSection(pathname: string): AppSection {
-  if (pathname === "/") {
-    return "dashboard";
-  }
-
-  if (pathname.startsWith("/assistant")) {
-    return "assistant";
-  }
-
-  if (pathname.startsWith("/merge") || pathname.startsWith("/work-log")) {
-    return "management";
-  }
+  if (pathname === "/") return "dashboard";
+  if (pathname.startsWith("/assistant")) return "assistant";
+  if (pathname.startsWith("/merge") || pathname.startsWith("/work-log")) return "management";
 
   if (
     pathname.startsWith("/communities") ||
@@ -480,9 +412,7 @@ function getCurrentSection(pathname: string): AppSection {
     return "intelligence";
   }
 
-  if (pathname.startsWith("/capture") || pathname.startsWith("/import")) {
-    return "capture";
-  }
+  if (pathname.startsWith("/capture") || pathname.startsWith("/import")) return "capture";
 
   if (
     pathname.startsWith("/companies") ||
@@ -560,7 +490,11 @@ function isPublicShellPath(pathname: string) {
   return pathname === "/login" || pathname === "/update-password";
 }
 
-function renderSidebarItem(item: SidebarItem, pathname: string) {
+function renderSidebarItem(
+  item: SidebarItem,
+  pathname: string,
+  onNavigate?: () => void
+) {
   const key = `${item.label}-${item.href ?? item.badge ?? "disabled"}`;
 
   if (item.disabled || !item.href) {
@@ -575,7 +509,13 @@ function renderSidebarItem(item: SidebarItem, pathname: string) {
   const active = isActivePath(pathname, item.href);
 
   return (
-    <Link key={key} href={item.href} title={item.description} style={sidebarLinkStyle(active)}>
+    <Link
+      key={key}
+      href={item.href}
+      title={item.description}
+      style={sidebarLinkStyle(active)}
+      onClick={onNavigate}
+    >
       <span>{item.label}</span>
       {item.badge ? (
         <span style={navBadgeStyle}>{item.badge}</span>
@@ -589,6 +529,24 @@ function renderSidebarItem(item: SidebarItem, pathname: string) {
 export default function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 900);
+    }
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+    setQuickAddOpen(false);
+  }, [pathname]);
 
   if (isPublicShellPath(pathname)) {
     return <AuthRouteGuard>{children}</AuthRouteGuard>;
@@ -599,136 +557,358 @@ export default function AppShell({ children }: AppShellProps) {
   const showDevelopmentActingUser =
     process.env.NEXT_PUBLIC_SHOW_DEV_ACTING_USER === "true";
 
+  const topBarStyle: CSSProperties = {
+    height: isMobile ? "58px" : "64px",
+    position: "sticky",
+    top: 0,
+    zIndex: 50,
+    display: "flex",
+    alignItems: "center",
+    gap: isMobile ? "10px" : "18px",
+    borderBottom: "1px solid rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(8, 8, 10, 0.94)",
+    backdropFilter: "blur(14px)",
+    padding: isMobile ? "0 10px" : "0 22px",
+    boxSizing: "border-box",
+  };
+
+  const brandStyle: CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    minWidth: isMobile ? "0" : "165px",
+    color: "white",
+    textDecoration: "none",
+    flexShrink: 0,
+  };
+
+  const topNavStyle: CSSProperties = {
+    display: isMobile ? "none" : "flex",
+    alignItems: "center",
+    gap: "6px",
+    flex: 1,
+    minWidth: 0,
+    overflowX: "auto",
+  };
+
+  const topUtilityStyle: CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: isMobile ? "6px" : "10px",
+    flexShrink: 0,
+    marginLeft: "auto",
+  };
+
+  const layoutStyle: CSSProperties = {
+    display: "flex",
+    alignItems: "stretch",
+    minHeight: isMobile ? "calc(100vh - 58px)" : "calc(100vh - 64px)",
+  };
+
+  const sidebarStyle: CSSProperties = {
+    width: "265px",
+    minWidth: "265px",
+    borderRight: "1px solid rgba(255,255,255,0.08)",
+    background:
+      "linear-gradient(180deg, rgba(17, 17, 19, 0.98), rgba(8, 8, 10, 0.98))",
+    padding: "18px 14px",
+    boxSizing: "border-box",
+    position: "sticky",
+    top: "64px",
+    alignSelf: "flex-start",
+    height: "calc(100vh - 64px)",
+    overflowY: "auto",
+    boxShadow: "18px 0 45px rgba(0,0,0,0.22)",
+    display: isMobile ? "none" : "block",
+  };
+
+  const mobileOverlayStyle: CSSProperties = {
+    position: "fixed",
+    inset: 0,
+    backgroundColor: "rgba(0,0,0,0.62)",
+    zIndex: 90,
+  };
+
+  const mobileDrawerStyle: CSSProperties = {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    bottom: 0,
+    width: "86vw",
+    maxWidth: "335px",
+    background:
+      "linear-gradient(180deg, rgba(17, 17, 19, 0.99), rgba(8, 8, 10, 0.99))",
+    borderRight: "1px solid rgba(255,255,255,0.10)",
+    boxShadow: "24px 0 70px rgba(0,0,0,0.62)",
+    zIndex: 100,
+    padding: "14px",
+    boxSizing: "border-box",
+    overflowY: "auto",
+  };
+
+  const mobileDrawerHeaderStyle: CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "12px",
+    marginBottom: "14px",
+    paddingBottom: "12px",
+    borderBottom: "1px solid rgba(255,255,255,0.08)",
+  };
+
+  const mobileSectionGridStyle: CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "8px",
+    marginBottom: "14px",
+  };
+
+  const mobileTopSectionLinkStyle = (active: boolean): CSSProperties => ({
+    ...topNavLinkBaseStyle,
+    minHeight: "42px",
+    width: "100%",
+    padding: "0 10px",
+    fontSize: "13px",
+    color: active ? "white" : "#d1d5db",
+    background: active
+      ? "linear-gradient(135deg, rgba(124, 58, 237, 0.85), rgba(76, 29, 149, 0.6))"
+      : "rgba(255,255,255,0.04)",
+    border: active
+      ? "1px solid rgba(196, 181, 253, 0.45)"
+      : "1px solid rgba(255,255,255,0.08)",
+  });
+
   return (
     <AuthRouteGuard>
       <div style={shellStyle}>
-      <header style={topBarStyle}>
-        <Link href="/" style={brandStyle}>
-          <span style={logoStyle}>S</span>
-          <span>
-            <span style={brandTitleStyle}>Sell It</span>
-            <span style={brandSubtitleStyle}>Knotty Logistics</span>
-          </span>
-        </Link>
-
-        <nav aria-label="Main sections" style={topNavStyle}>
-          {topNavItems.map((item) => {
-            const active = currentSection === item.section;
-
-            return (
-              <Link
-                key={item.section}
-                href={item.href}
-                style={{
-                  ...topNavLinkBaseStyle,
-                  color: active ? "white" : "#d1d5db",
-                  background: active
-                    ? "linear-gradient(135deg, rgba(124, 58, 237, 0.85), rgba(76, 29, 149, 0.6))"
-                    : "transparent",
-                  border: active
-                    ? "1px solid rgba(196, 181, 253, 0.45)"
-                    : "1px solid transparent",
-                  boxShadow: active
-                    ? "0 10px 24px rgba(124, 58, 237, 0.20)"
-                    : "none",
-                }}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div style={topUtilityStyle}>
-          <Link href="/assistant" style={iconButtonStyle}>
-            AI
-          </Link>
-          <Link href="/planner" style={iconButtonStyle}>
-            Plan
-          </Link>
-
-          {showDevelopmentActingUser ? <ActingUserSelector /> : null}
-          <NotificationCenter />
-          <div style={quickAddWrapperStyle}>
+        <header style={topBarStyle}>
+          {isMobile ? (
             <button
               type="button"
-              onClick={() => setQuickAddOpen((value) => !value)}
-              style={quickAddButtonStyle}
-              aria-expanded={quickAddOpen}
-              aria-haspopup="menu"
+              onClick={() => setMobileMenuOpen(true)}
+              style={iconButtonStyle}
+              aria-label="Open navigation menu"
             >
-              + New 
+              ☰
             </button>
+          ) : null}
 
-            {quickAddOpen && (
-              <div style={quickAddMenuStyle} role="menu">
-                <div style={quickAddMenuHeaderStyle}>
-                  <p style={quickAddMenuTitleStyle}>Create New Record</p>
+          <Link href="/" style={brandStyle}>
+            <span style={logoStyle}>S</span>
+            <span>
+              <span style={brandTitleStyle}>Sell It</span>
+              {!isMobile ? (
+                <span style={brandSubtitleStyle}>Knotty Logistics</span>
+              ) : null}
+            </span>
+          </Link>
+
+          <nav aria-label="Main sections" style={topNavStyle}>
+            {topNavItems.map((item) => {
+              const active = currentSection === item.section;
+
+              return (
+                <Link
+                  key={item.section}
+                  href={item.href}
+                  style={{
+                    ...topNavLinkBaseStyle,
+                    color: active ? "white" : "#d1d5db",
+                    background: active
+                      ? "linear-gradient(135deg, rgba(124, 58, 237, 0.85), rgba(76, 29, 149, 0.6))"
+                      : "transparent",
+                    border: active
+                      ? "1px solid rgba(196, 181, 253, 0.45)"
+                      : "1px solid transparent",
+                    boxShadow: active
+                      ? "0 10px 24px rgba(124, 58, 237, 0.20)"
+                      : "none",
+                  }}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div style={topUtilityStyle}>
+            {!isMobile ? (
+              <>
+                <Link href="/assistant" style={iconButtonStyle}>
+                  AI
+                </Link>
+                <Link href="/planner" style={iconButtonStyle}>
+                  Plan
+                </Link>
+              </>
+            ) : null}
+
+            {showDevelopmentActingUser ? <ActingUserSelector /> : null}
+            <NotificationCenter />
+
+            <div style={quickAddWrapperStyle}>
+              <button
+                type="button"
+                onClick={() => setQuickAddOpen((value) => !value)}
+                style={{
+                  ...quickAddButtonStyle,
+                  padding: isMobile ? "0 12px" : "0 17px",
+                }}
+                aria-expanded={quickAddOpen}
+                aria-haspopup="menu"
+              >
+                + New
+              </button>
+
+              {quickAddOpen && (
+                <div style={quickAddMenuStyle} role="menu">
+                  <div style={quickAddMenuHeaderStyle}>
+                    <p style={quickAddMenuTitleStyle}>Create New Record</p>
+                  </div>
+
+                  {quickAddItems.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setQuickAddOpen(false)}
+                      style={quickAddLinkStyle}
+                      role="menuitem"
+                    >
+                      <span>{item.label}</span>
+                      <span aria-hidden="true">+</span>
+                    </Link>
+                  ))}
                 </div>
+              )}
+            </div>
 
-                {quickAddItems.map((item) => (
+            <UserAvatarMenu />
+          </div>
+        </header>
+
+        {isMobile && mobileMenuOpen ? (
+          <>
+            <div
+              style={mobileOverlayStyle}
+              onClick={() => setMobileMenuOpen(false)}
+              aria-hidden="true"
+            />
+            <aside style={mobileDrawerStyle} aria-label="Mobile navigation">
+              <div style={mobileDrawerHeaderStyle}>
+                <Link
+                  href="/"
+                  style={brandStyle}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <span style={logoStyle}>S</span>
+                  <span>
+                    <span style={brandTitleStyle}>Sell It</span>
+                    <span style={brandSubtitleStyle}>Knotty Logistics</span>
+                  </span>
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuOpen(false)}
+                  style={iconButtonStyle}
+                  aria-label="Close navigation menu"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div style={mobileSectionGridStyle}>
+                {topNavItems.map((item) => (
                   <Link
-                    key={item.href}
+                    key={item.section}
                     href={item.href}
-                    onClick={() => setQuickAddOpen(false)}
-                    style={quickAddLinkStyle}
-                    role="menuitem"
+                    onClick={() => setMobileMenuOpen(false)}
+                    style={mobileTopSectionLinkStyle(currentSection === item.section)}
                   >
-                    <span>{item.label}</span>
-                    <span aria-hidden="true">+</span>
+                    {item.label}
                   </Link>
                 ))}
               </div>
-            )}
-          </div>
 
-          <UserAvatarMenu />
-        </div>
-      </header>
+              <div style={sidebarIntroCardStyle}>
+                <p style={sectionLabelStyle}>{getSectionTitle(currentSection)}</p>
+                <p style={contextDescriptionStyle}>
+                  {getSectionDescription(currentSection)}
+                </p>
+              </div>
 
-      <div style={layoutStyle}>
-        <aside style={sidebarStyle}>
-          <div style={sidebarIntroCardStyle}>
-            <p style={sectionLabelStyle}>{getSectionTitle(currentSection)}</p>
-            <p style={contextDescriptionStyle}>{getSectionDescription(currentSection)}</p>
-          </div>
+              {sidebarGroups.map((group) => (
+                <div key={group.label} style={sidebarGroupStyle}>
+                  <p style={sidebarGroupTitleStyle}>{group.label}</p>
+                  <div>
+                    {group.items.map((item) =>
+                      renderSidebarItem(item, pathname, () => setMobileMenuOpen(false))
+                    )}
+                  </div>
+                </div>
+              ))}
 
-          {sidebarGroups.map((group) => (
-            <div key={group.label} style={sidebarGroupStyle}>
-              <p style={sidebarGroupTitleStyle}>{group.label}</p>
-              <div>{group.items.map((item) => renderSidebarItem(item, pathname))}</div>
+              <div style={sidebarFooterStyle}>
+                <p style={sidebarGroupTitleStyle}>Quick Links</p>
+                <Link
+                  href="/assistant"
+                  onClick={() => setMobileMenuOpen(false)}
+                  style={sidebarLinkStyle(pathname.startsWith("/assistant"))}
+                >
+                  <span>Assistant</span>
+                </Link>
+                <Link
+                  href="/planner"
+                  onClick={() => setMobileMenuOpen(false)}
+                  style={sidebarLinkStyle(pathname.startsWith("/planner"))}
+                >
+                  <span>Planner</span>
+                </Link>
+              </div>
+
+              <div style={pageAssistantSlotStyle}>
+                <p style={sidebarGroupTitleStyle}>Page Assistant</p>
+                <PageAssistant />
+              </div>
+            </aside>
+          </>
+        ) : null}
+
+        <div style={layoutStyle}>
+          <aside style={sidebarStyle}>
+            <div style={sidebarIntroCardStyle}>
+              <p style={sectionLabelStyle}>{getSectionTitle(currentSection)}</p>
+              <p style={contextDescriptionStyle}>
+                {getSectionDescription(currentSection)}
+              </p>
             </div>
-          ))}
 
-          <div style={sidebarFooterStyle}>
-            <p style={sidebarGroupTitleStyle}>Area</p>
-            <p style={contextDescriptionStyle}>
-              Top navigation chooses the business area. This sidebar shows the tools that
-              belong to that area.
-            </p>
-          </div>
+            {sidebarGroups.map((group) => (
+              <div key={group.label} style={sidebarGroupStyle}>
+                <p style={sidebarGroupTitleStyle}>{group.label}</p>
+                <div>
+                  {group.items.map((item) => renderSidebarItem(item, pathname))}
+                </div>
+              </div>
+            ))}
 
-          <div style={pageAssistantSlotStyle}>
-            <p style={sidebarGroupTitleStyle}>Page Assistant</p>
-            <PageAssistant />
-          </div>
-        </aside>
+            <div style={sidebarFooterStyle}>
+              <p style={sidebarGroupTitleStyle}>Area</p>
+              <p style={contextDescriptionStyle}>
+                Top navigation chooses the business area. This sidebar shows the tools
+                that belong to that area.
+              </p>
+            </div>
 
-        <main style={contentStyle}>{children}</main>
-      </div>
+            <div style={pageAssistantSlotStyle}>
+              <p style={sidebarGroupTitleStyle}>Page Assistant</p>
+              <PageAssistant />
+            </div>
+          </aside>
+
+          <main style={contentStyle}>{children}</main>
+        </div>
       </div>
     </AuthRouteGuard>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

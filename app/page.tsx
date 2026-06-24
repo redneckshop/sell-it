@@ -414,7 +414,7 @@ function pageStyle(): CSSProperties {
       "radial-gradient(circle at top left, rgba(124,58,237,0.20), transparent 30%), radial-gradient(circle at 85% 10%, rgba(59,130,246,0.12), transparent 26%), #101010",
     color: "white",
     fontFamily: "Arial, sans-serif",
-    padding: "34px",
+    padding: "clamp(12px, 4vw, 34px)",
     boxSizing: "border-box",
   };
 }
@@ -818,7 +818,7 @@ export default async function Home() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "minmax(0, 1.45fr) minmax(320px, 0.8fr)",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 520px), 1fr))",
             gap: "16px",
             alignItems: "stretch",
             marginBottom: "16px",
@@ -905,7 +905,7 @@ export default async function Home() {
           </div>
         </section>
 
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 0.95fr) minmax(0, 1.05fr)", gap: "16px", marginBottom: "16px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 460px), 1fr))", gap: "16px", marginBottom: "16px" }}>
           <section style={panelStyle()}>
             <div style={sectionHeaderStyle()}>
               <div>
@@ -983,7 +983,7 @@ export default async function Home() {
           </div>
         </section>
 
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.15fr) minmax(300px, 0.85fr)", gap: "16px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 520px), 1fr))", gap: "16px" }}>
           <section style={panelStyle()}>
             <div style={sectionHeaderStyle()}>
               <div>
@@ -1074,6 +1074,7 @@ export default async function Home() {
     </main>
   );
 }
+
 
 
 
