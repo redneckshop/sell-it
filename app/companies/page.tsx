@@ -87,7 +87,7 @@ function pageStyle(): CSSProperties {
     minHeight: "calc(100vh - 64px)",
     backgroundColor: "#101010",
     color: "white",
-    padding: "38px",
+    padding: "clamp(12px, 4vw, 38px)",
     fontFamily: "Arial, sans-serif",
     boxSizing: "border-box",
   };
@@ -130,7 +130,7 @@ function fieldLabelStyle(): CSSProperties {
 function primaryButtonStyle(): CSSProperties {
   return {
     display: "inline-flex",
-    alignItems: "center",
+    alignItems: "start",
     justifyContent: "center",
     minHeight: "42px",
     backgroundColor: "#7c3aed",
@@ -147,7 +147,7 @@ function primaryButtonStyle(): CSSProperties {
 function secondaryButtonStyle(): CSSProperties {
   return {
     display: "inline-flex",
-    alignItems: "center",
+    alignItems: "start",
     justifyContent: "center",
     minHeight: "42px",
     color: "white",
@@ -183,7 +183,7 @@ function temperatureBadgeStyle(value: string | null): CSSProperties {
 
   return {
     display: "inline-flex",
-    alignItems: "center",
+    alignItems: "start",
     borderRadius: "999px",
     padding: "3px 9px",
     fontSize: "12px",
@@ -390,7 +390,7 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
           style={{
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "center",
+            alignItems: "start",
             gap: "12px",
             flexWrap: "wrap",
             marginBottom: "14px",
@@ -420,9 +420,9 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
               href={`/companies/${company.id}`}
               style={{
                 display: "grid",
-                gridTemplateColumns: "48px minmax(0, 1.35fr) minmax(180px, 0.85fr) 26px",
+                gridTemplateColumns: "48px minmax(0, 1fr) 26px",
                 gap: "14px",
-                alignItems: "center",
+                alignItems: "start",
                 border: company.is_archived
                   ? "1px solid rgba(245, 158, 11, 0.65)"
                   : "1px solid #2f2f2f",
@@ -442,7 +442,7 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
                   height: "42px",
                   borderRadius: "999px",
                   display: "flex",
-                  alignItems: "center",
+                  alignItems: "start",
                   justifyContent: "center",
                   backgroundColor: "#2b2b2b",
                   color: "white",
@@ -457,7 +457,7 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
                 <div
                   style={{
                     display: "flex",
-                    alignItems: "center",
+                    alignItems: "start",
                     gap: "8px",
                     flexWrap: "wrap",
                     marginBottom: "5px",
@@ -471,7 +471,25 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
                     </span>
                   )}
 
-                  {company.is_archived && (
+                  {company.phone && (
+                  <p style={{ ...mutedTextStyle(), margin: "6px 0 0", lineHeight: 1.4, wordBreak: "break-word" }}>
+                    Phone: {company.phone}
+                  </p>
+                )}
+
+                {company.email && (
+                  <p style={{ ...mutedTextStyle(), margin: "4px 0 0", lineHeight: 1.4, wordBreak: "break-word" }}>
+                    Email: {company.email}
+                  </p>
+                )}
+
+                {company.website && (
+                  <p style={{ ...mutedTextStyle(), margin: "4px 0 0", lineHeight: 1.4, wordBreak: "break-word" }}>
+                    Website: {company.website}
+                  </p>
+                )}
+
+                {company.is_archived && (
                     <span style={temperatureBadgeStyle("archived")}>Archived</span>
                   )}
                 </div>
@@ -502,6 +520,24 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
                     : "Assets / Equipment: Not listed"}
                 </p>
 
+                {company.phone && (
+                  <p style={{ ...mutedTextStyle(), margin: "6px 0 0", lineHeight: 1.4, wordBreak: "break-word" }}>
+                    Phone: {company.phone}
+                  </p>
+                )}
+
+                {company.email && (
+                  <p style={{ ...mutedTextStyle(), margin: "4px 0 0", lineHeight: 1.4, wordBreak: "break-word" }}>
+                    Email: {company.email}
+                  </p>
+                )}
+
+                {company.website && (
+                  <p style={{ ...mutedTextStyle(), margin: "4px 0 0", lineHeight: 1.4, wordBreak: "break-word" }}>
+                    Website: {company.website}
+                  </p>
+                )}
+
                 {company.is_archived && (
                   <p style={{ color: "#ffcc66", margin: "8px 0 0" }}>
                     Archived: {formatDateTime(company.archived_at)}
@@ -512,43 +548,7 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
                 )}
               </div>
 
-              <div style={{ minWidth: 0 }}>
-                {company.phone && (
-                  <p
-                    style={{
-                      ...mutedTextStyle(),
-                      margin: "0 0 6px",
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    Phone: {company.phone}
-                  </p>
-                )}
-
-                {company.email && (
-                  <p
-                    style={{
-                      ...mutedTextStyle(),
-                      margin: "0 0 6px",
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    Email: {company.email}
-                  </p>
-                )}
-
-                {company.website && (
-                  <p
-                    style={{
-                      ...mutedTextStyle(),
-                      margin: 0,
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    Website: {company.website}
-                  </p>
-                )}
-              </div>
+              <div style={{ display: "none" }} />
 
               <div
                 style={{
@@ -566,3 +566,5 @@ export default async function CompaniesPage({ searchParams }: PageProps) {
     </main>
   );
 }
+
+
