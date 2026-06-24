@@ -670,7 +670,7 @@ export default async function TasksPage({ searchParams }: PageProps) {
                     textAlign: "right",
                   }}
                 >
-                  â€º
+                  ›
                 </div>
               </Link>
             );

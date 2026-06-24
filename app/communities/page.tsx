@@ -247,7 +247,7 @@ function fieldLabelStyle(): CSSProperties {
 function primaryButtonStyle(): CSSProperties {
   return {
     display: "inline-flex",
-    alignItems: "center",
+    alignItems: "start",
     justifyContent: "center",
     minHeight: "42px",
     backgroundColor: "#7c3aed",
@@ -264,7 +264,7 @@ function primaryButtonStyle(): CSSProperties {
 function secondaryButtonStyle(): CSSProperties {
   return {
     display: "inline-flex",
-    alignItems: "center",
+    alignItems: "start",
     justifyContent: "center",
     minHeight: "42px",
     color: "white",
@@ -308,7 +308,7 @@ function badgeStyle(value: string | null): CSSProperties {
 
   return {
     display: "inline-flex",
-    alignItems: "center",
+    alignItems: "start",
     borderRadius: "999px",
     padding: "3px 9px",
     fontSize: "12px",
@@ -519,7 +519,7 @@ export default async function CommunitiesPage({ searchParams }: PageProps) {
           style={{
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "center",
+            alignItems: "start",
             gap: "12px",
             flexWrap: "wrap",
             marginBottom: "14px",
@@ -553,10 +553,9 @@ export default async function CommunitiesPage({ searchParams }: PageProps) {
               href={`/communities/${community.id}`}
               style={{
                 display: "grid",
-                gridTemplateColumns:
-                  "48px minmax(0, 1.25fr) minmax(190px, 0.85fr) 26px",
+                gridTemplateColumns: "1fr",
                 gap: "14px",
-                alignItems: "center",
+                alignItems: "start",
                 border: "1px solid #2f2f2f",
                 padding: "14px",
                 borderRadius: "14px",
@@ -573,7 +572,7 @@ export default async function CommunitiesPage({ searchParams }: PageProps) {
                   height: "42px",
                   borderRadius: "999px",
                   display: "flex",
-                  alignItems: "center",
+                  alignItems: "start",
                   justifyContent: "center",
                   backgroundColor: "#2b2b2b",
                   color: "white",
@@ -588,7 +587,7 @@ export default async function CommunitiesPage({ searchParams }: PageProps) {
                 <div
                   style={{
                     display: "flex",
-                    alignItems: "center",
+                    alignItems: "start",
                     gap: "8px",
                     flexWrap: "wrap",
                     marginBottom: "5px",
