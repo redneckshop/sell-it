@@ -7434,8 +7434,163 @@ async function answerAssistantScheduleTaskRequest(userQuestion: string) {
     .join("\n");
 }
 
+
+type AssistantSocialPostRow = {
+  id: string;
+  platform: string | null;
+  group_name: string | null;
+  post_title: string;
+  post_text: string | null;
+  pain_point_text: string | null;
+  goal: string | null;
+  status: string | null;
+  posted_date: string | null;
+  communities: { id: string; name: string | null } | null;
+  pain_points: { id: string; name: string | null } | null;
+};
+
+type AssistantSocialMediaRow = {
+  id: string;
+  title: string;
+  category: string | null;
+  tags: string | null;
+  description: string | null;
+};
+
+function isSocialIntelligenceQuestion(lowerQuestion: string) {
+  return (
+    lowerQuestion.includes("social draft") ||
+    lowerQuestion.includes("social drafts") ||
+    lowerQuestion.includes("social post") ||
+    lowerQuestion.includes("social posts") ||
+    lowerQuestion.includes("tracked post") ||
+    lowerQuestion.includes("tracked posts") ||
+    lowerQuestion.includes("published post") ||
+    lowerQuestion.includes("published posts") ||
+    lowerQuestion.includes("media library") ||
+    lowerQuestion.includes("marketing media") ||
+    lowerQuestion.includes("which posts mention") ||
+    lowerQuestion.includes("communities have the most tracked posts") ||
+    lowerQuestion.includes("community has the most tracked posts")
+  );
+}
+
+function socialPostLine(post: AssistantSocialPostRow) {
+  const communityName = post.communities?.name || post.group_name || "No community";
+  const painPointName = post.pain_points?.name || post.pain_point_text || "No pain point";
+
+  return `- ${post.post_title} | ${post.status || "No status"} | ${post.platform || "No platform"} | ${communityName} | Pain Point: ${painPointName} | /social-intelligence/posts/${post.id}`;
+}
+
+function socialMediaLine(asset: AssistantSocialMediaRow) {
+  return `- ${asset.title} | ${asset.category || "No category"} | ${asset.tags || "No tags"} | /social-intelligence/media/${asset.id}`;
+}
+
+function extractSocialMentionNeedle(userQuestion: string) {
+  const direct = userQuestion.match(/which posts mention\s+(.+?)\??$/i);
+  if (direct?.[1]) return direct[1].trim();
+
+  const about = userQuestion.match(/posts (?:about|for|with)\s+(.+?)\??$/i);
+  if (about?.[1]) return about[1].trim();
+
+  return "";
+}
+
+async function answerSocialIntelligenceQuestion(userQuestion: string) {
+  const lower = userQuestion.toLowerCase();
+
+  const [postResult, mediaResult] = await Promise.all([
+    supabase
+      .from("social_posts")
+      .select("id, platform, group_name, post_title, post_text, pain_point_text, goal, status, posted_date, communities(id, name), pain_points(id, name)")
+      .order("created_at", { ascending: false })
+      .limit(80),
+    supabase
+      .from("social_media_assets")
+      .select("id, title, category, tags, description")
+      .order("created_at", { ascending: false })
+      .limit(50),
+  ]);
+
+  if (postResult.error) throw new Error(postResult.error.message);
+  if (mediaResult.error) throw new Error(mediaResult.error.message);
+
+  const posts = (postResult.data ?? []) as unknown as AssistantSocialPostRow[];
+  const mediaAssets = (mediaResult.data ?? []) as AssistantSocialMediaRow[];
+
+  if (lower.includes("communities have the most tracked posts") || lower.includes("community has the most tracked posts")) {
+    const counts = new Map<string, number>();
+
+    for (const post of posts) {
+      const communityName = post.communities?.name || post.group_name || "No community saved";
+      counts.set(communityName, (counts.get(communityName) || 0) + 1);
+    }
+
+    const ranked = Array.from(counts.entries())
+      .sort((left, right) => right[1] - left[1])
+      .slice(0, 10)
+      .map(([name, count]) => `- ${name}: ${count}`)
+      .join("\n");
+
+    return `SOCIAL INTELLIGENCE\nCommunities With Most Tracked Posts\n\n${ranked || "- No tracked social posts found."}
+
+Open Social Intelligence: /social-intelligence`;
+  }
+
+  if (lower.includes("media library") || lower.includes("marketing media")) {
+    return `SOCIAL INTELLIGENCE\nMedia Library\n\n${mediaAssets.slice(0, 15).map(socialMediaLine).join("\n") || "- No media assets found."}
+
+Open Social Intelligence: /social-intelligence`;
+  }
+
+  if (lower.includes("draft")) {
+    const drafts = posts.filter((post) => (post.status || "").toLowerCase() === "draft");
+
+    return `SOCIAL INTELLIGENCE\nSocial Drafts\n\n${drafts.slice(0, 15).map(socialPostLine).join("\n") || "- No social drafts found."}
+
+Open Social Intelligence: /social-intelligence`;
+  }
+
+  if (lower.includes("which posts mention") || lower.includes("need trucks")) {
+    const needle = (extractSocialMentionNeedle(userQuestion) || "need trucks").toLowerCase();
+
+    const matches = posts.filter((post) =>
+      [
+        post.post_title,
+        post.post_text,
+        post.pain_point_text,
+        post.goal,
+        post.communities?.name,
+        post.group_name,
+        post.pain_points?.name,
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(needle)
+    );
+
+    return `SOCIAL INTELLIGENCE\nPosts Mentioning "${needle}"\n\n${matches.slice(0, 15).map(socialPostLine).join("\n") || "- No matching tracked social posts found."}
+
+Open Social Intelligence: /social-intelligence`;
+  }
+
+  return `SOCIAL INTELLIGENCE\nTracked Social Posts\n\n${posts.slice(0, 15).map(socialPostLine).join("\n") || "- No tracked social posts found."}
+
+Summary:
+- Total tracked posts loaded: ${posts.length}
+- Drafts: ${posts.filter((post) => (post.status || "").toLowerCase() === "draft").length}
+- Posted/Monitoring/Closed: ${posts.filter((post) => (post.status || "").toLowerCase() !== "draft").length}
+- Media assets loaded: ${mediaAssets.length}
+
+Open Social Intelligence: /social-intelligence`;
+}
+
 async function routeQuestion(userQuestion: string) {
   const lower = userQuestion.toLowerCase();
+
+  if (isSocialIntelligenceQuestion(lower)) {
+    return answerSocialIntelligenceQuestion(userQuestion);
+  }
 
   if (isAssistantAssignmentRequest(lower)) {
     return answerAssistantAssignmentRequest(userQuestion);
@@ -7893,6 +8048,8 @@ ${answer}`,
     </main>
   );
 }
+
+
 
 
 

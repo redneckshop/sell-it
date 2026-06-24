@@ -48,7 +48,7 @@ type QuickAddItem = {
 const topNavItems: TopNavItem[] = [
   { label: "Dashboard", href: "/", section: "dashboard" },
   { label: "Sales", href: "/companies", section: "sales" },
-  { label: "Intelligence", href: "/communities", section: "intelligence" },
+  { label: "Intelligence", href: "/social-intelligence", section: "intelligence" },
   { label: "Capture", href: "/capture", section: "capture" },
   { label: "Management", href: "/merge", section: "management" },
   { label: "Assistant", href: "/assistant", section: "assistant" },
@@ -87,6 +87,7 @@ const contextNavGroups: Record<AppSection, SidebarGroup[]> = {
     {
       label: "Market Signals",
       items: [
+        { label: "Social Intelligence", href: "/social-intelligence" },
         { label: "Communities", href: "/communities" },
         { label: "Posts", href: "/posts" },
       ],
@@ -163,6 +164,7 @@ const quickAddItems: QuickAddItem[] = [
   { label: "Note", href: "/notes/new" },
   { label: "Community", href: "/communities/new" },
   { label: "Post", href: "/posts/new" },
+  { label: "Social Post", href: "/social-intelligence" },
   { label: "Pain Point", href: "/pain-points/new" },
 ];
 
@@ -403,6 +405,7 @@ function getCurrentSection(pathname: string): AppSection {
   if (pathname.startsWith("/merge") || pathname.startsWith("/work-log")) return "management";
 
   if (
+    pathname.startsWith("/social-intelligence") ||
     pathname.startsWith("/communities") ||
     pathname.startsWith("/posts") ||
     pathname.startsWith("/pain-points") ||
@@ -453,7 +456,7 @@ function getSectionDescription(section: AppSection) {
     case "sales":
       return "Relationships, opportunities, work, planner, and team workload.";
     case "intelligence":
-      return "Communities, posts, pain points, email intelligence, and lead imports.";
+      return "Social intelligence, communities, posts, pain points, email intelligence, and lead imports.";
     case "capture":
       return "AI capture, CSV import, and email capture tools.";
     case "management":
